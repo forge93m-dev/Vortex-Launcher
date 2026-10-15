@@ -1,0 +1,25 @@
+Vortex Launcher - macOS beta
+
+This beta has an ad-hoc signature, not an Apple Developer ID signature.
+It has NOT been notarized by Apple. First launch may be blocked by Gatekeeper.
+Only open the package if you trust its source.
+
+1. Choose osx-arm64 for Apple Silicon (M1/M2/M3/etc.), or osx-x64 for Intel.
+2. Extract VortexLauncher-<version>-<architecture>.zip with Finder.
+3. Drag Vortex Launcher.app into Applications, then open it.
+4. If macOS blocks this trusted beta, open System Settings > Privacy & Security,
+   scroll down to the security notice, and use Open Anyway if offered.
+   Confirm Open in the following dialog.
+
+No Terminal command is part of this installation. Do not disable Gatekeeper.
+If macOS reports the app is damaged, do not attempt to bypass that warning:
+download a fresh copy of the matching package and report the exact message.
+
+The .verification.json beside the ZIP records signature checks, native CLI
+startup verification and the SHA-256 of the packaged ZIP on the macOS builder.
+These checks are NOT Apple notarization or a test on your own Mac.
+
+Worlds, mods, accounts and settings stay in:
+~/Library/Application Support/VortexLauncher
+
+Apple instructions: https://support.apple.com/en-us/102445

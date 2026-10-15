@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+		<Version>0.1.2</Version>
+		<AssemblyVersion>0.1.2.0</AssemblyVersion>
+		<FileVersion>0.1.2.0</FileVersion>
+		<InformationalVersion>0.1.2</InformationalVersion>
+		<Platforms>AnyCPU;x64</Platforms>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Remove="Tests/**/*.cs" />
+		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-26.3-fabric-0.1.21.jar" LogicalName="VortexLauncher.Client.vortex-client-26.3-fabric-0.1.21.jar" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Avalonia" Version="11.0.6" />
+		<PackageReference Include="Avalonia.Desktop" Version="11.0.6" />
+		<PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.6" />
+		<PackageReference Include="Avalonia.Fonts.Inter" Version="11.0.6" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+	</ItemGroup>
+</Project>

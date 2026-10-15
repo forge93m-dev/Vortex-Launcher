@@ -1,0 +1,15 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="VortexLauncher.Views.RenameInstanceWindow" Title="Rename instance" Width="460" Height="280" CanResize="False" WindowStartupLocation="CenterOwner" ExtendClientAreaToDecorationsHint="True" Background="{DynamicResource ThemeBackgroundBrush}">
+    <Border x:Name="dialogContent" Background="{DynamicResource ThemeBackgroundBrush}" CornerRadius="14" Padding="28">
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
+            <TextBlock Text="A fresh name" FontSize="25" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextBrush}" />
+            <StackPanel Grid.Row="1" Spacing="8" Margin="0,16,0,0">
+                <TextBlock Text="Rename your instance. Your worlds and files stay untouched." FontSize="12" Foreground="{DynamicResource ThemeSubtextBrush}" />
+                <TextBox x:Name="NameInput" Watermark="Instance name" TextChanged="OnNameChanged" Background="{DynamicResource ThemePanelBrush}" Foreground="{DynamicResource ThemeTextBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" CornerRadius="14" Padding="12,10" />
+            </StackPanel>
+            <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                <Button Classes="SecondaryBtn" Content="Cancel" Click="OnCancel" />
+                <Button x:Name="SaveButton" Classes="PrimaryBtn" Content="Save name" Click="OnSave" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

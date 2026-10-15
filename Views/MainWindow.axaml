@@ -1,0 +1,548 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:VortexLauncher.ViewModels" xmlns:conv="using:VortexLauncher.Converters" x:Class="VortexLauncher.Views.MainWindow" x:DataType="vm:MainWindowViewModel" x:Name="root" Opened="OnWindowOpened" Title="Vortex Launcher" Width="1280" Height="800" MinWidth="960" MinHeight="600" WindowStartupLocation="CenterScreen" Background="{DynamicResource ThemeBackgroundBrush}">
+    <Window.Resources>
+        <conv:BitmapAssetValueConverter x:Key="LocalBitmapConverter" />
+    </Window.Resources>
+    <Window.Styles>
+        <Style Selector="ScrollBar">
+            <Setter Property="AllowAutoHide" Value="True" />
+        </Style>
+        <Style Selector="Button.NavButton">
+            <Setter Property="Background" Value="{DynamicResource ThemePanelBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource ThemeSubtextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="Width" Value="52" />
+            <Setter Property="Height" Value="48" />
+            <Setter Property="Margin" Value="0,4" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Focusable" Value="True" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="ClipToBounds" Value="True" />
+            <Setter Property="RenderTransform" Value="scale(1)" />
+            <Setter Property="RenderTransformOrigin" Value="0%,50%" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Width" Duration="0:0:0.26" Easing="CubicEaseOut" />
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" Easing="CubicEaseOut" />
+                </Transitions>
+            </Setter>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border x:Name="NavChrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True">
+                        <Border.Transitions>
+                            <Transitions>
+                                <BrushTransition Property="Background" Duration="0:0:0.18" />
+                                <BrushTransition Property="BorderBrush" Duration="0:0:0.18" />
+                            </Transitions>
+                        </Border.Transitions>
+                        <ContentPresenter x:Name="PART_ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.NavButton:pointerover">
+            <Setter Property="Width" Value="190" />
+            <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+            <Setter Property="RenderTransform" Value="scale(1)" />
+        </Style>
+        <Style Selector="Button.NavButton:focus-visible">
+            <Setter Property="Width" Value="190" />
+            <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+        </Style>
+        <Style Selector="Button.NavButton.active">
+            <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+        </Style>
+        <Style Selector="Button.NavButton:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.98)" />
+        </Style>
+        <Style Selector="Button.NavButton TextBlock.NavLabel">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="RenderTransform" Value="translate(8px,0px)" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="CubicEaseOut" />
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22" Easing="CubicEaseOut" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.NavButton:pointerover TextBlock.NavLabel">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="RenderTransform" Value="translate(0px,0px)" />
+        </Style>
+        <Style Selector="Button.NavButton:focus-visible TextBlock.NavLabel">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="RenderTransform" Value="translate(0px,0px)" />
+        </Style>
+        <Style Selector="Grid.PagePanel">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.StartupShell">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.42" />
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.48" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.StartupOverlay">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.45" />
+                </Transitions>
+            </Setter>
+        </Style>
+    </Window.Styles>
+    <Panel>
+        <Border x:Name="mainShell" Classes="StartupShell" Background="{DynamicResource ThemeBackgroundBrush}">
+            <Grid ColumnDefinitions="208,*">
+                <Border x:Name="navigationRail" Grid.Column="0" Background="Transparent" BorderThickness="0" Padding="18,24,0,18">
+                    <Grid RowDefinitions="Auto, *, Auto">
+                        <StackPanel Grid.Row="0" Spacing="14" Margin="0,0,0,32">
+                            <Grid ColumnDefinitions="Auto, *">
+                                <Border Grid.Column="0" Width="34" Height="34" CornerRadius="8" Background="{DynamicResource ThemeSidebarBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="1">
+                                    <PathIcon Data="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" Foreground="{DynamicResource AccentBrush}" Width="16" Height="16" />
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                                    <TextBlock Text="VORTEX" FontWeight="Black" FontSize="15" Foreground="{DynamicResource ThemeTextBrush}" LetterSpacing="1" />
+                                    <TextBlock Text="LAUNCHER" FontSize="9" Foreground="{DynamicResource ThemeSubtextBrush}" FontWeight="Bold" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Spacing="2">
+                            <Button x:Name="libraryNav" Classes="NavButton" Classes.active="{Binding IsInstancesTab}" Command="{Binding SelectTabCommand}" CommandParameter="Instances" AutomationProperties.Name="Library">
+                                <Grid Width="188" Height="46" ColumnDefinitions="50,*" HorizontalAlignment="Left">
+                                    <PathIcon Grid.Column="0" Data="M 3 13 L 11 13 L 11 3 L 3 3 Z M 3 21 L 11 21 L 11 15 L 3 15 Z M 13 21 L 21 21 L 21 11 L 13 11 Z M 13 3 L 13 9 L 21 9 L 21 3 Z" Width="18" Height="18" />
+                                    <TextBlock Grid.Column="1" Classes="NavLabel" Text="Library" FontWeight="SemiBold" FontSize="13" Margin="4,0,12,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+                            <Button x:Name="modpacksNav" Classes="NavButton" Classes.active="{Binding IsModpacksTab}" Command="{Binding SelectTabCommand}" CommandParameter="Modpacks" AutomationProperties.Name="Modpacks">
+                                <Grid Width="188" Height="46" ColumnDefinitions="50,*" HorizontalAlignment="Left">
+                                    <PathIcon Grid.Column="0" Data="M 12 2 L 2 7 L 12 12 L 22 7 Z M 2 17 L 12 22 L 22 17 M 2 12 L 12 17 L 22 12" Width="18" Height="18" />
+                                    <TextBlock Grid.Column="1" Classes="NavLabel" Text="Modpacks" FontWeight="SemiBold" FontSize="13" Margin="4,0,12,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+                            <Button x:Name="profilesNav" Classes="NavButton" Classes.active="{Binding IsAccountsTab}" Command="{Binding SelectTabCommand}" CommandParameter="Accounts" AutomationProperties.Name="Profiles">
+                                <Grid Width="188" Height="46" ColumnDefinitions="50,*" HorizontalAlignment="Left">
+                                    <PathIcon Grid.Column="0" Data="M 12 12 C 14.21 12 16 10.21 16 8 C 16 5.79 14.21 4 12 4 C 9.79 4 8 5.79 8 8 C 8 10.21 9.79 12 12 12 Z M 12 14 C 9.33 14 4 15.34 4 18 L 4 20 L 20 20 L 20 18 C 20 15.34 14.67 14 12 14 Z" Width="18" Height="18" />
+                                    <TextBlock Grid.Column="1" Classes="NavLabel" Text="Profiles" FontWeight="SemiBold" FontSize="13" Margin="4,0,12,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+                            <Button x:Name="settingsNav" Classes="NavButton" Classes.active="{Binding IsSettingsTab}" Command="{Binding SelectTabCommand}" CommandParameter="Settings" AutomationProperties.Name="Settings">
+                                <Grid Width="188" Height="46" ColumnDefinitions="50,*" HorizontalAlignment="Left">
+                                    <PathIcon Grid.Column="0" Data="M 19.14 12.94 C 19.18 12.64 19.2 12.33 19.2 12 C 19.2 11.68 19.18 11.36 19.13 11.06 L 21.16 9.48 C 21.34 9.34 21.39 9.07 21.28 8.87 L 19.36 5.55 C 19.24 5.33 18.99 5.26 18.77 5.33 L 16.38 6.29 C 15.88 5.91 15.35 5.59 14.76 5.35 L 14.4 2.81 C 14.36 2.57 14.16 2.4 13.92 2.4 L 10.08 2.4 C 9.84 2.4 9.65 2.57 9.61 2.81 L 9.25 5.35 C 8.66 5.59 8.12 5.92 7.63 6.29 L 5.24 5.33 C 5.02 5.25 4.77 5.33 4.65 5.55 L 2.73 8.87 C 2.61 9.08 2.65 9.34 2.85 9.48 L 4.88 11.06 C 4.83 11.36 4.79 11.69 4.79 12 C 4.79 12.31 4.81 12.64 4.86 12.94 L 2.83 14.52 C 2.65 14.66 2.6 14.93 2.71 15.13 L 4.63 18.45 C 4.75 18.67 5 18.74 5.22 18.67 L 7.61 17.71 C 8.11 18.09 8.64 18.41 9.23 18.65 L 9.59 21.19 C 9.64 21.43 9.83 21.6 10.07 21.6 L 13.91 21.6 C 14.15 21.6 14.35 21.43 14.74 18.65 C 15.33 18.41 15.87 18.09 16.36 17.71 L 18.75 18.67 C 18.97 18.75 19.22 18.67 19.34 18.45 L 21.26 15.13 C 21.38 14.91 21.33 14.66 21.14 14.52 Z M 12 15.6 C 10.02 15.6 8.4 13.98 8.4 12 C 8.4 10.02 10.02 8.4 12 8.4 C 13.98 8.4 15.6 10.02 15.6 12 C 15.6 13.98 13.98 15.6 12 15.6 Z" Width="18" Height="18" />
+                                    <TextBlock Grid.Column="1" Classes="NavLabel" Text="Settings" FontWeight="SemiBold" FontSize="13" Margin="4,0,12,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+                        </StackPanel>
+                        <Border x:Name="activePlayerCard" Grid.Row="2" Background="{DynamicResource ThemePanelBrush}" Height="56" CornerRadius="28" Padding="12,9" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="1" ClipToBounds="True">
+                            <Grid ColumnDefinitions="Auto, *">
+                                <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16" Background="{DynamicResource AccentSoftBrush}" ClipToBounds="True">
+                                    <TextBlock Text="{Binding ActiveAccount.Username[0]}" Foreground="{DynamicResource ThemeTextBrush}" FontWeight="Bold" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,0,0">
+                                    <TextBlock Text="{Binding ActiveAccount.Username}" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextBrush}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="Active profile" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Border>
+                <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*" Margin="28,24,28,24">
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,26">
+                        <StackPanel Spacing="6" Margin="0,0,14,0">
+                            <TextBlock Classes="Eyebrow" Text="{Binding PageEyebrow}" />
+                            <TextBlock Classes="PageTitle" Text="{Binding PageTitle}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Classes="Muted" Text="{Binding PageDescription}" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Classes="VortexCard" Padding="12,8" CornerRadius="12" VerticalAlignment="Top" Margin="0,6,0,0">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="Downloads" Command="{Binding ShowDownloadsCommand}" Classes="SecondaryBtn" Padding="10,6" />
+                                <Ellipse Width="6" Height="6" Fill="#34D399" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding StatusMessage}" Classes="Muted" FontSize="11" MaxWidth="180" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" VerticalAlignment="Center" ToolTip.Tip="{Binding StatusMessage}" />
+                                <Button Content="Install update" Command="{Binding InstallLauncherUpdateCommand}" Classes="PrimaryBtn" IsVisible="{Binding UpdateAvailable}" IsEnabled="{Binding !IsInstallingUpdate}" Padding="10,6" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                    <Border Grid.Row="1" Classes="VortexCard" Padding="16" Margin="0,0,0,18" IsVisible="{Binding CanCancelInstallation}">
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                            <TextBlock Text="{Binding TransferDetails}" Classes="Muted" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Margin="0,0,14,8" />
+                            <ProgressBar Grid.Row="1" Value="{Binding DownloadProgress}" Maximum="100" Height="5" Margin="0,0,14,0" />
+                            <Button Grid.Column="1" Grid.RowSpan="2" Content="Cancel" Command="{Binding CancelInstallationCommand}" Classes="SecondaryBtn" />
+                        </Grid>
+                    </Border>
+                    <Panel Grid.Row="2">
+                        <Grid x:Name="instancesPage" Classes="PagePanel" RowDefinitions="Auto,Auto,*" IsVisible="{Binding IsInstancesTab}">
+                            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,18">
+                                <TextBox x:Name="librarySearch" Text="{Binding Library.SearchQuery, Mode=TwoWay}" Watermark="Search your instances..." Width="400" HorizontalAlignment="Left" Margin="0,0,20,0" AutomationProperties.Name="Search instances" />
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                                    <Button Classes="SecondaryBtn" Content="Import pack" Click="OnImportPackClick" />
+                                    <Button Classes="PrimaryBtn" Content="+  Create instance" Click="OnAddInstanceClick" />
+                                </StackPanel>
+                            </Grid>
+                            <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+                                <TextBlock Grid.Column="1" Text="{Binding Library.CountLabel}" Classes="Muted" VerticalAlignment="Center"/>
+                                <Border HorizontalAlignment="Left" Background="{DynamicResource ThemePanelBrush}" CornerRadius="12" Padding="4">
+                                    <StackPanel Orientation="Horizontal" Spacing="2">
+                                        <Button x:Name="allInstancesFilter" Classes="FilterBtn" Classes.active="{Binding Library.IsAllSelected}" Content="All instances" Command="{Binding Library.ShowAllCommand}" />
+                                        <Button x:Name="favoritesFilter" Classes="FilterBtn" Classes.active="{Binding Library.FavoritesOnly}" Content="★  Favorites" Command="{Binding Library.ShowFavoritesCommand}" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                            <Panel Grid.Row="2">
+                                <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                                    <ItemsControl x:Name="instanceCards" ItemsSource="{Binding Library.VisibleInstances}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border AttachedToVisualTree="OnCardAttached" DetachedFromVisualTree="OnCardDetached" Margin="0,0,12,12">
+                                                    <Border Classes="VortexCard InstanceCard" Width="272" Height="154" Opacity="{Binding CardOpacity}" PointerPressed="OnInstanceCardPointerPressed">
+                                                        <Panel>
+                                                            <Border IsVisible="{Binding HasCover}" CornerRadius="12" ClipToBounds="True" Opacity="0.14" IsHitTestVisible="False">
+                                                                <Image Source="{Binding CoverImagePath, Converter={StaticResource LocalBitmapConverter}}" Stretch="UniformToFill" />
+                                                            </Border>
+                                                            <Grid RowDefinitions="44,*,32" Margin="14">
+                                                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                                                    <Border Width="34" Height="34" CornerRadius="10" Background="{DynamicResource AccentSoftBrush}" Margin="0,0,10,0" ClipToBounds="True" VerticalAlignment="Center">
+                                                                        <Panel>
+                                                                            <PathIcon Data="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" Foreground="{DynamicResource AccentBrush}" Width="13" Height="13" IsVisible="{Binding !HasIcon}" />
+                                                                            <Image Source="{Binding IconPath, Converter={StaticResource LocalBitmapConverter}}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}" />
+                                                                        </Panel>
+                                                                    </Border>
+                                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                                                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" />
+                                                                        <TextBlock Text="{Binding SummaryText}" Classes="Muted" FontSize="10" LineHeight="14" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                                                    </StackPanel>
+                                                                    <Button Grid.Column="2" Classes="IconButton" Width="24" Content="···" FontSize="18" Click="OnOpenInstanceMenuClick" Tag="{Binding}" ToolTip.Tip="Instance actions" AutomationProperties.Name="Instance actions" />
+                                                                </Grid>
+                                                                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                                                    <TextBlock Text="{Binding PlayTimeText}" Classes="Muted" FontSize="10" LineHeight="14" ToolTip.Tip="{Binding StatusText}" />
+                                                                    <TextBlock Grid.Column="1" Text="Vortex Client" IsVisible="{Binding VortexClientEnabled}" Foreground="{DynamicResource AccentBrush}" FontSize="10" />
+                                                                </Grid>
+                                                            <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto,Auto">
+                                                                <Button Classes="SecondaryBtn" Content="Manage" Click="OnManageInstanceClick" Tag="{Binding}" HorizontalAlignment="Left" HorizontalContentAlignment="Center" Padding="10,4" />
+                                                                <Button Grid.Column="1" Classes="IconButton" Width="26" Margin="4,0" Foreground="{DynamicResource AccentBrush}" Content="{Binding FavoriteSymbol}" Command="{Binding #root.DataContext.ToggleFavoriteCommand}" CommandParameter="{Binding}" ToolTip.Tip="Pin / unpin favorite" AutomationProperties.Name="Toggle favorite" />
+                                                                <Button Grid.Column="2" Classes="IconButton" Width="26" Margin="0,0,6,0" Click="OnExportInstanceCardClick" Tag="{Binding}" ToolTip.Tip="Export instance" AutomationProperties.Name="Export instance">
+                                                                    <PathIcon Width="14" Height="14" Data="M11 3h2v10l3-3 1.4 1.4L12 17l-5.4-5.6L8 10l3 3V3zM4 18h2v2h12v-2h2v4H4z" />
+                                                                </Button>
+                                                                <Button Grid.Column="3" Classes="PrimaryBtn PlayButton" Width="72" Content="{Binding LaunchButtonText}" Command="{Binding #root.DataContext.LaunchSpecificInstanceCommand}" CommandParameter="{Binding}" IsEnabled="{Binding CanChangeFiles}" Padding="6,4" ToolTip.Tip="{Binding StatusText}" />
+                                                            </Grid>
+                                                        </Grid>
+                                                        </Panel>
+                                                    </Border>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                                <StackPanel x:Name="libraryEmptyState" IsVisible="{Binding Library.IsEmpty}" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="390" Spacing="12">
+                                    <Border Width="72" Height="72" CornerRadius="24" Background="{DynamicResource AccentSoftBrush}" HorizontalAlignment="Center" Margin="0,0,0,8">
+                                        <PathIcon Data="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" Foreground="{DynamicResource AccentBrush}" Width="28" Height="28" />
+                                    </Border>
+                                    <TextBlock Text="{Binding Library.EmptyTitle}" Classes="SectionTitle" TextAlignment="Center" />
+                                    <TextBlock Text="{Binding Library.EmptyDescription}" Classes="Muted" TextAlignment="Center" />
+                                    <Button Classes="SecondaryBtn" Content="Clear filters" Command="{Binding Library.ClearFiltersCommand}" IsVisible="{Binding Library.HasInstances}" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                                    <Button Classes="PrimaryBtn" Content="Create your first instance" Click="OnAddInstanceClick" IsVisible="{Binding !Library.HasInstances}" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Panel>
+                        </Grid>
+                        <Grid x:Name="modpacksPage" Classes="PagePanel" RowDefinitions="*" IsVisible="{Binding IsModpacksTab}">
+                            <Grid Grid.Row="0" x:Name="modpacksContentGrid" DataContext="{Binding ModpacksVm}" RowDefinitions="Auto, *">
+                                <StackPanel Grid.Row="0" Spacing="10" Margin="0,0,0,16" IsEnabled="{Binding !IsInstalling}">
+                                    <Grid ColumnDefinitions="*, Auto">
+                                        <TextBox Grid.Column="0" Text="{Binding SearchQuery}" Watermark="Search modpacks..." Background="{DynamicResource ThemePanelBrush}" Foreground="{DynamicResource ThemeTextBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10" />
+                                        <Button Grid.Column="1" Classes="PrimaryBtn" Content="Search" Command="{Binding SearchModpacksCommand}" Margin="10,0,0,0" />
+                                    </Grid>
+                                    <Grid ColumnDefinitions="*,*,*,Auto">
+                                        <StackPanel Spacing="5" Margin="0,0,10,0">
+                                            <TextBlock Text="Category" FontSize="12" Foreground="{DynamicResource ThemeSubtextBrush}" />
+                                            <ComboBox x:Name="ModpackCategoryFilter" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}" HorizontalAlignment="Stretch" MaxDropDownHeight="280">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Label}" />
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="5" Margin="0,0,10,0">
+                                            <TextBlock Text="Loader" FontSize="11" Foreground="{DynamicResource ThemeSubtextBrush}" />
+                                            <ComboBox ItemsSource="{Binding Loaders}" SelectedItem="{Binding SelectedLoader, Mode=TwoWay}" HorizontalAlignment="Stretch" MaxDropDownHeight="280">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Spacing="5" Margin="0,0,10,0">
+                                            <TextBlock Text="Sort by" FontSize="11" Foreground="{DynamicResource ThemeSubtextBrush}" />
+                                            <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSort, Mode=TwoWay}" HorizontalAlignment="Stretch" MaxDropDownHeight="280">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Label}" />
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <Button Grid.Column="3" Classes="SecondaryBtn" Content="Reset" Command="{Binding ResetFiltersCommand}" VerticalAlignment="Bottom" />
+                                    </Grid>
+                                    <Grid ColumnDefinitions="*,Auto,Auto">
+                                        <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        <ProgressBar Grid.Column="1" IsVisible="{Binding IsSearching}" IsIndeterminate="True" Width="70" Height="3" Margin="10,0" />
+                                        <Button Grid.Column="2" Content="Load more" Command="{Binding LoadMoreCommand}" IsVisible="{Binding HasMore}" IsEnabled="{Binding !IsSearching}" />
+                                    </Grid>
+                                </StackPanel>
+                                <Grid Grid.Row="1" ColumnDefinitions="*, 300">
+                                    <ScrollViewer Grid.Column="0" Margin="0,0,16,0" HorizontalScrollBarVisibility="Disabled">
+                                        <ListBox ItemsSource="{Binding Modpacks}" SelectedItem="{Binding SelectedModpack}" Background="Transparent" BorderThickness="0" Padding="0">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Classes="VortexCard" Padding="14" CornerRadius="14">
+                                                        <Grid ColumnDefinitions="Auto, *">
+                                                            <Border Grid.Column="0" Width="48" Height="48" CornerRadius="12" ClipToBounds="True" Background="{DynamicResource ThemeBorderBrush}" Margin="0,0,12,0" VerticalAlignment="Center">
+                                                                <Image Source="{Binding IconBitmap}" Width="48" Height="48" Stretch="UniformToFill" />
+                                                            </Border>
+                                                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Item.Title}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextBrush}" FontSize="15" />
+                                                                <TextBlock Text="{Binding Item.Description}" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="11" TextWrapping="Wrap" MaxLines="2" />
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                    </ScrollViewer>
+                                    <Border Grid.Column="1" Classes="VortexCard" Padding="20">
+                                        <Panel>
+                                            <TextBlock Text="Select a modpack from the list to view details and install" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" IsVisible="{Binding SelectedModpack, Converter={x:Static ObjectConverters.IsNull}}" />
+                                            <ContentControl Content="{Binding SelectedModpack}">
+                                                <ContentControl.ContentTemplate>
+                                                    <DataTemplate DataType="vm:ModrinthModItemViewModel">
+                                                        <Grid RowDefinitions="*,Auto">
+                                                            <ScrollViewer HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,16">
+                                                                <StackPanel Spacing="16">
+                                                                    <Grid ColumnDefinitions="Auto,*">
+                                                                        <Border Width="44" Height="44" CornerRadius="12" Margin="0,0,12,0" Background="{DynamicResource ThemeSidebarBrush}" ClipToBounds="True">
+                                                                            <Image Source="{Binding IconBitmap}" Stretch="UniformToFill"/>
+                                                                        </Border>
+                                                                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                                                                            <TextBlock Text="{Binding Item.Title}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Item.Title}"/>
+                                                                            <TextBlock Text="{Binding Item.Author, StringFormat='by {0}'}" Classes="Muted" FontSize="11" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                                        </StackPanel>
+                                                                    </Grid>
+                                                                    <StackPanel Spacing="6">
+                                                                        <TextBlock Text="Choose a version" Classes="FieldLabel"/>
+                                                                        <ComboBox ItemsSource="{Binding DataContext.ModpacksVm.ModpackVersions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                            SelectedItem="{Binding DataContext.ModpacksVm.SelectedVersion, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
+                                                                            IsEnabled="{Binding !DataContext.ModpacksVm.IsLoadingVersions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                            MaxDropDownHeight="280" HorizontalAlignment="Stretch" AutomationProperties.Name="Modpack version">
+                                                                            <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/></DataTemplate></ComboBox.ItemTemplate>
+                                                                        </ComboBox>
+                                                                    </StackPanel>
+                                                                    <Border BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+                                                                        <TextBlock Text="{Binding Item.Description}" Classes="Muted" FontSize="12"/>
+                                                                    </Border>
+                                                                </StackPanel>
+                                                            </ScrollViewer>
+                                                            <Button Grid.Row="1" Classes="PrimaryBtn" Content="Install modpack"
+                                                                Command="{Binding DataContext.ModpacksVm.InstallSelectedModpackCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                IsEnabled="{Binding !DataContext.ModpacksVm.IsInstalling, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                HorizontalAlignment="Stretch"/>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ContentControl.ContentTemplate>
+                                            </ContentControl>
+                                        </Panel>
+                                    </Border>
+                                </Grid>
+                            </Grid>
+                        </Grid>
+                        <Grid x:Name="accountsPage" Classes="PagePanel" ColumnDefinitions="280,*" IsVisible="{Binding IsAccountsTab}">
+                            <Border Classes="VortexCard" Padding="24" Margin="0,0,20,0" VerticalAlignment="Top">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Classes="Eyebrow" Text="NEW PROFILE" />
+                                    <TextBlock Classes="SectionTitle" Text="Make yourself at home" TextWrapping="Wrap" />
+                                    <TextBlock Classes="Muted" Text="Add a local player profile for your Minecraft instances." />
+                                    <StackPanel Spacing="6" Margin="0,8,0,0">
+                                        <TextBlock Classes="FieldLabel" Text="Player name" />
+                                        <TextBox Text="{Binding NewAccountUsername}" Watermark="Minecraft username" AutomationProperties.Name="Player name" />
+                                    </StackPanel>
+                                    <Button Classes="PrimaryBtn" Content="+  Add profile" Command="{Binding AddAccountCommand}" HorizontalAlignment="Stretch" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="1" Classes="VortexCard" Padding="24">
+                                <Grid RowDefinitions="Auto,*">
+                                    <StackPanel Margin="0,0,0,20" Spacing="6">
+                                        <TextBlock Classes="SectionTitle" Text="Your profiles" />
+                                        <TextBlock Classes="Muted" Text="Select a profile to use it for your next launch." />
+                                    </StackPanel>
+                                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+                                        <ItemsControl ItemsSource="{Binding Accounts}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="{DynamicResource ThemeSidebarBrush}" CornerRadius="14" Padding="16" Margin="0,0,0,10">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                                            <Border Width="42" Height="42" CornerRadius="14" Background="{DynamicResource AccentSoftBrush}" Margin="0,0,14,0">
+                                                                <TextBlock Text="{Binding Username[0]}" FontWeight="Bold" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                            </Border>
+                                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                                                <TextBlock Text="{Binding Username}" FontWeight="SemiBold" FontSize="15" TextTrimming="CharacterEllipsis" />
+                                                                <TextBlock Classes="Muted" Text="Local player profile" FontSize="11" />
+                                                            </StackPanel>
+                                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                                <Button Classes="SecondaryBtn" Content="Use profile" Command="{Binding #root.DataContext.SelectAccountCommand}" CommandParameter="{Binding}" />
+                                                                <Button Classes="IconButton danger" Command="{Binding #root.DataContext.DeleteAccountCommand}" CommandParameter="{Binding}" ToolTip.Tip="Delete profile" AutomationProperties.Name="Delete profile">
+                                                                    <PathIcon Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" Width="14" Height="14" />
+                                                                </Button>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                        <Grid x:Name="settingsPage" Classes="PagePanel" RowDefinitions="*,Auto" IsVisible="{Binding IsSettingsTab}">
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                                <Grid ColumnDefinitions="*,*" Margin="0,0,0,10">
+                                    <StackPanel Spacing="18" Margin="0,0,9,0">
+                                        <Border Classes="VortexCard" Padding="24">
+                                            <StackPanel Spacing="14">
+                                                <TextBlock Classes="Eyebrow" Text="APPEARANCE" />
+                                                <TextBlock Classes="SectionTitle" Text="Choose your atmosphere" />
+                                                <TextBlock Classes="Muted" Text="Every screen follows your palette. Pick a theme or fine-tune the accent." />
+                                                <ItemsControl ItemsSource="{Binding ThemePresets}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <UniformGrid Columns="2" />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Button Classes="SecondaryBtn" Click="OnThemePresetClick" Margin="3" HorizontalContentAlignment="Stretch" Padding="12,10">
+                                                                <Grid ColumnDefinitions="Auto,*">
+                                                                    <Border Width="14" Height="14" CornerRadius="7" Background="{Binding Brush}" Margin="0,0,8,0" />
+                                                                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                                                </Grid>
+                                                            </Button>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Classes="FieldLabel" Text="Accent color" />
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBox Text="{Binding AccentColor}" Watermark="#7AA2F7" Margin="0,0,10,0" />
+                                                    <Border Grid.Column="1" Width="40" Height="40" CornerRadius="12" Background="{DynamicResource AccentBrush}" />
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Classes="VortexCard" Padding="24">
+                                            <StackPanel Spacing="12">
+                                                <TextBlock Classes="Eyebrow" Text="GAME BEHAVIOR" />
+                                                <TextBlock Classes="SectionTitle" Text="Stay out of the way" />
+                                                <ToggleSwitch Content="Minimize while playing" IsChecked="{Binding MinimizeOnGameLaunch}" />
+                                                <TextBlock Classes="Muted" Text="The launcher returns automatically when you exit Minecraft." FontSize="12" />
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="18" Margin="9,0,0,0">
+                                        <Border Classes="VortexCard" Padding="24">
+                                            <StackPanel Spacing="12">
+                                                <TextBlock Classes="Eyebrow" Text="LAUNCHER UPDATES" />
+                                                <TextBlock Classes="SectionTitle" Text="{Binding LauncherVersionLabel}" TextWrapping="Wrap" />
+                                                <TextBlock Classes="Muted" Text="{Binding LauncherUpdateStatus}" />
+                                                <TextBlock Classes="Muted" Text="{Binding LastLauncherUpdateResult}" FontSize="11" />
+                                                <TextBlock Text="{Binding LauncherUpdateNotes}" TextWrapping="Wrap" IsVisible="{Binding UpdateAvailable}" />
+                                                <TextBlock Classes="Muted" Text="{Binding UpdateSource}" FontSize="10" TextWrapping="Wrap" />
+                                                <StackPanel Spacing="8">
+                                                    <Button x:Name="CheckLauncherUpdatesButton" Content="Check for updates" Command="{Binding CheckLauncherUpdatesCommand}" Classes="SecondaryBtn" IsEnabled="{Binding !IsCheckingUpdates}" />
+                                                    <Button x:Name="InstallLauncherUpdateButton" Content="Install update" Command="{Binding InstallLauncherUpdateCommand}" Classes="PrimaryBtn" IsVisible="{Binding UpdateAvailable}" IsEnabled="{Binding !IsInstallingUpdate}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Classes="VortexCard" Padding="24">
+                                            <StackPanel Spacing="12">
+                                                <TextBlock Classes="Eyebrow" Text="PERFORMANCE" />
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Classes="SectionTitle" Text="Memory allocation" />
+                                                    <Border Grid.Column="1" Classes="Chip" Background="{DynamicResource AccentSoftBrush}">
+                                                        <TextBlock Text="{Binding RamGb, StringFormat='{}{0} GB'}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" />
+                                                    </Border>
+                                                </Grid>
+                                                <TextBlock Classes="Muted" Text="Give your instance room to breathe. Large modpacks may need more memory." />
+                                                <Slider Minimum="2" Maximum="16" Value="{Binding RamGb}" IsSnapToTickEnabled="True" TickFrequency="1" />
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Classes="Muted" Text="2 GB" FontSize="11" />
+                                                    <TextBlock Grid.Column="1" Classes="Muted" Text="16 GB" FontSize="11" />
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Classes="VortexCard" Padding="24">
+                                            <StackPanel Spacing="12">
+                                                <TextBlock Classes="Eyebrow" Text="ADVANCED" />
+                                                <TextBlock Classes="SectionTitle" Text="Java runtime" />
+                                                <TextBlock Classes="Muted" Text="Leave the path empty to use automatic Java detection." FontSize="12" />
+                                                <TextBlock Classes="FieldLabel" Text="Java executable" />
+                                                <TextBox Text="{Binding CustomJavaPath}" Watermark="Automatic detection" />
+                                                <TextBlock Classes="FieldLabel" Text="JVM arguments" Margin="0,8,0,0" />
+                                                <TextBox Text="{Binding JvmArgs}" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="80" />
+                                                <TextBlock Classes="Muted" Text="Only change these arguments if you know what they do." FontSize="12" />
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+                            </ScrollViewer>
+                            <Border Grid.Row="1" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,1,0,0" Padding="0,16,0,0">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Classes="Muted" Text="Your preferences, your launcher." VerticalAlignment="Center" />
+                                    <Button Grid.Column="1" Classes="PrimaryBtn" Content="Save settings" Command="{Binding SaveSettingsCommand}" />
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Panel>
+                </Grid>
+            </Grid>
+        </Border>
+        <Border Background="#BB080B12" IsVisible="{Binding IsGlobalLoading}">
+            <Border Classes="VortexCard" Width="520" Padding="32" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Spacing="16">
+                    <TextBlock Classes="Eyebrow" Text="WORKING ON IT" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding LoadingTitle}" FontWeight="SemiBold" FontSize="22" TextWrapping="Wrap" TextAlignment="Center" />
+                    <TextBlock Text="{Binding StatusMessage}" Classes="Muted" TextAlignment="Center" />
+                    <ProgressBar IsIndeterminate="{Binding !CanCancelInstallation}" Value="{Binding DownloadProgress}" Maximum="100" Height="5" Margin="0,8" />
+                    <TextBlock Text="{Binding TransferDetails}" Classes="Muted" FontSize="12" TextAlignment="Center" />
+                    <Button Content="Cancel installation" Command="{Binding CancelInstallationCommand}" Classes="SecondaryBtn" IsVisible="{Binding CanCancelInstallation}" HorizontalAlignment="Center" />
+                    <Button Content="View downloads" Command="{Binding ShowDownloadsCommand}" Classes="SecondaryBtn" HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border x:Name="startupOverlay" Classes="StartupOverlay" Background="{DynamicResource ThemeBackgroundBrush}" IsVisible="{Binding IsStartupGreetingVisible}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                <TextBlock Classes="Eyebrow" Text="VORTEX LAUNCHER" HorizontalAlignment="Center" Margin="0,0,0,12" />
+                <TextBlock Text="{Binding StartupGreeting}" FontSize="32" FontWeight="Bold" HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding StartupUsername}" Foreground="{DynamicResource AccentBrush}" FontSize="20" HorizontalAlignment="Center" />
+                <TextBlock Text="Preparing your next adventure..." Classes="Muted" HorizontalAlignment="Center" Margin="0,12,0,0" />
+            </StackPanel>
+        </Border>
+    </Panel>
+</Window>

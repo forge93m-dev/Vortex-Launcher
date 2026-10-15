@@ -1,0 +1,35 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:downloads="clr-namespace:VortexLauncher.Core.Management"
+        x:Class="VortexLauncher.Views.DownloadsWindow" Title="Downloads" Width="760" Height="590" MinWidth="600" MinHeight="400"
+        Background="{DynamicResource ThemeBackgroundBrush}" WindowStartupLocation="CenterOwner">
+    <Grid Margin="24" RowDefinitions="Auto,Auto,*">
+        <TextBlock Text="Downloads &amp; tasks" FontSize="24" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="1" Classes="Muted" Margin="0,8,0,20" Text="Game files, mods, packs, imports and repairs · history for this session" />
+        <Panel Grid.Row="2">
+            <TextBlock x:Name="emptyHint" Text="No downloads yet. Your next installation will appear here." Classes="Muted" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <ScrollViewer>
+                <ItemsControl x:Name="tasks">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="downloads:DownloadOperation">
+                            <Border Classes="VortexCard" Padding="18" Margin="0,0,0,12">
+                                <StackPanel Spacing="8">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                        <TextBlock Grid.Column="1" Text="{Binding State}" Foreground="{DynamicResource AccentBrush}" Margin="16,0,0,0" />
+                                    </Grid>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="{Binding Stage}" Classes="Muted" TextWrapping="Wrap" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Started}" Classes="Muted" Margin="12,0,0,0" />
+                                    </Grid>
+                                    <ProgressBar Value="{Binding Percent}" IsIndeterminate="{Binding Indeterminate}" Maximum="100" Height="4" />
+                                    <TextBlock Text="{Binding Details}" Classes="Muted" FontSize="12" TextWrapping="Wrap" />
+                                    <Button Content="Cancel" Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" Classes="SecondaryBtn" HorizontalAlignment="Right" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Panel>
+    </Grid>
+</Window>

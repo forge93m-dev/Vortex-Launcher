@@ -1,0 +1,25 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="VortexLauncher.Views.DebugLogWindow" Title="Vortex Game Console &amp; Debug Logs" Width="900" Height="500" WindowStartupLocation="CenterScreen" Background="{DynamicResource ThemeBackgroundBrush}">
+    <Grid RowDefinitions="Auto,*,Auto" Margin="24">
+        <Border Grid.Row="0" Background="Transparent" Padding="0,0,0,20">
+            <Grid ColumnDefinitions="*, Auto">
+                <StackPanel Grid.Column="0" Spacing="6" VerticalAlignment="Center">
+                    <TextBlock Classes="Eyebrow" Text="LIVE DIAGNOSTICS" />
+                    <TextBlock Text="Game console" Foreground="{DynamicResource ThemeTextBrush}" FontWeight="SemiBold" FontSize="25" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="SecondaryBtn" Content="Clear logs" Click="OnClearClick" Background="{DynamicResource ThemePanelBrush}" Foreground="{DynamicResource ThemeSubtextBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,4" FontSize="12" />
+            </Grid>
+        </Border>
+        <Border Grid.Row="1" Classes="VortexCard" Padding="16">
+            <ScrollViewer x:Name="LogScrollViewer">
+                <ItemsControl x:Name="LogItems">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Text}" Foreground="{Binding Color}" FontFamily="Consolas, Cascadia Code, Courier New, monospace" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,2" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+        <TextBlock Grid.Row="2" Classes="Muted" Text="Warnings do not always indicate a crash. Look for the final error when troubleshooting." FontSize="11" Margin="0,12,0,0" />
+    </Grid>
+</Window>

@@ -1,0 +1,30 @@
+{
+  "version": "0.1.2",
+  "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.1.2/VortexLauncherSetup-0.1.2.exe",
+  "platforms": {
+    "win-x64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.1.2/VortexLauncherSetup-0.1.2.exe",
+    "osx-arm64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.1.2/VortexLauncher-0.1.2-osx-arm64.zip",
+    "osx-x64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.1.2/VortexLauncher-0.1.2-osx-x64.zip"
+  },
+  "packages": {
+    "win-x64": {
+      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.1.2/VortexLauncher-0.1.2-win-x64.zip",
+      "sha256": "REPLACE_WITH_SHA256_GENERATED_FROM_THE_REAL_ZIP",
+      "size": 0,
+      "kind": "windows-singlefile-zip"
+    },
+    "osx-arm64": {
+      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.1.2/VortexLauncher-0.1.2-osx-arm64.zip",
+      "sha256": "REPLACE_WITH_SHA256_GENERATED_FROM_THE_REAL_ZIP",
+      "size": 0,
+      "kind": "mac-app-zip"
+    },
+    "osx-x64": {
+      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.1.2/VortexLauncher-0.1.2-osx-x64.zip",
+      "sha256": "REPLACE_WITH_SHA256_GENERATED_FROM_THE_REAL_ZIP",
+      "size": 0,
+      "kind": "mac-app-zip"
+    }
+  },
+  "notes": "Template only: use Installer/GenerateUpdateManifest.ps1 after packaging/signing. Do not publish this placeholder manifest."
+}

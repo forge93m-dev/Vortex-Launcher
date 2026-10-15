@@ -1,0 +1,111 @@
+name: Prepare launcher release packages (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      notarize_mac:
+        description: 'Developer ID sign and notarize macOS packages (requires Apple secrets)'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and test update/download safety
+        shell: pwsh
+        run: |
+          dotnet run --project Tests/DownloadSmoke/DownloadSmoke.csproj -p:UseSharedCompilation=false
+          if ($LASTEXITCODE -ne 0) { throw 'Regression tests failed.' }
+          ./publish-win-x64.ps1
+          [xml]$project = Get-Content 'Vortex Launcher.csproj'
+          dotnet run --project Tests/DownloadSmoke/DownloadSmoke.csproj -p:UseSharedCompilation=false -- --verify-release "release/VortexLauncher-$($project.Project.PropertyGroup.Version)-win-x64.zip"
+          if ($LASTEXITCODE -ne 0) { throw 'Published binary smoke check failed.' }
+      - name: Build legacy Windows installer
+        shell: pwsh
+        run: |
+          $compiler = 'C:/Program Files (x86)/Inno Setup 6/ISCC.exe'
+          if (!(Test-Path -LiteralPath $compiler)) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Installer compiler setup failed.' }
+          }
+          [xml]$project = Get-Content 'Vortex Launcher.csproj'
+          & $compiler "/DAppVersion=$($project.Project.PropertyGroup.Version)" 'Installer/VortexLauncher.iss'
+          if ($LASTEXITCODE -ne 0) { throw 'Installer build failed.' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: release/*
+          if-no-files-found: error
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Import publisher certificate (notarized releases only)
+        if: inputs.notarize_mac
+        shell: pwsh
+        env:
+          MAC_CERTIFICATE_P12: ${{ secrets.MAC_CERTIFICATE_P12 }}
+          MAC_CERTIFICATE_PASSWORD: ${{ secrets.MAC_CERTIFICATE_PASSWORD }}
+          MAC_KEYCHAIN_PASSWORD: ${{ secrets.MAC_KEYCHAIN_PASSWORD }}
+        run: |
+          if (!$env:MAC_CERTIFICATE_P12 -or !$env:MAC_CERTIFICATE_PASSWORD -or !$env:MAC_KEYCHAIN_PASSWORD) { throw 'Missing signing secrets.' }
+          $certificate = Join-Path $env:RUNNER_TEMP 'vortex-signing.p12'
+          $keychain = Join-Path $env:RUNNER_TEMP 'vortex-signing.keychain-db'
+          [IO.File]::WriteAllBytes($certificate, [Convert]::FromBase64String($env:MAC_CERTIFICATE_P12))
+          security create-keychain -p $env:MAC_KEYCHAIN_PASSWORD $keychain
+          if ($LASTEXITCODE -ne 0) { throw 'Keychain creation failed.' }
+          security set-keychain-settings -lut 21600 $keychain
+          security unlock-keychain -p $env:MAC_KEYCHAIN_PASSWORD $keychain
+          security import $certificate -P $env:MAC_CERTIFICATE_PASSWORD -T /usr/bin/codesign -T /usr/bin/security -t cert -f pkcs12 -k $keychain
+          if ($LASTEXITCODE -ne 0) { throw 'Certificate import failed.' }
+          security list-keychains -d user -s $keychain login.keychain-db
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $env:MAC_KEYCHAIN_PASSWORD $keychain
+          if ($LASTEXITCODE -ne 0) { throw 'Signing key access failed.' }
+      - name: Build, sign and optionally notarize both macOS architectures
+        shell: pwsh
+        env:
+          MAC_SIGN_IDENTITY: ${{ secrets.MAC_SIGN_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          NOTARIZE_MAC: ${{ inputs.notarize_mac }}
+        run: |
+          if ($env:NOTARIZE_MAC -eq 'true') {
+            if (!$env:MAC_SIGN_IDENTITY) { throw 'Missing Developer ID Application identity.' }
+            ./publish-macos.ps1 -Runtime all -SignIdentity $env:MAC_SIGN_IDENTITY -Notarize
+          } else {
+            ./publish-macos.ps1 -Runtime all
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-release
+          path: release/*
+          if-no-files-found: error
+  manifest:
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*-release'
+          path: release
+          merge-multiple: true
+      - name: Generate matching checksummed platform manifest
+        shell: pwsh
+        run: ./Installer/GenerateUpdateManifest.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-ready-for-publication
+          path: release/*
+          if-no-files-found: error
+# This workflow prepares artifacts only. It does not publish a release, change latest.json
+# in the repository or run on push. Publication requires a separate explicit decision.

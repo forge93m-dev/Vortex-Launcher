@@ -1,0 +1,18 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="VortexLauncher.Views.RemoveContentWindow" Title="Remove content" Width="470" Height="310"
+        CanResize="False" WindowStartupLocation="CenterOwner" Background="{DynamicResource ThemeBackgroundBrush}">
+    <Border x:Name="dialogContent" Padding="28">
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
+            <TextBlock Text="Remove this file?" FontSize="24" FontWeight="SemiBold"/>
+            <StackPanel Grid.Row="1" Spacing="12" Margin="0,16,0,0">
+                <TextBlock x:Name="FileNameLabel" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Text="It will be removed from this instance and saved in .vortex-trash. You can restore the file from that folder later."
+                           Foreground="{DynamicResource ThemeSubtextBrush}" TextWrapping="Wrap" FontSize="12" LineHeight="20"/>
+            </StackPanel>
+            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+                <Button x:Name="CancelButton" Classes="SecondaryBtn" Content="Cancel" Click="OnCancel"/>
+                <Button x:Name="RemoveButton" Classes="PrimaryBtn" Content="Remove file" Click="OnRemove"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
