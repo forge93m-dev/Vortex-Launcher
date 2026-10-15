@@ -21,12 +21,17 @@ public partial class MainWindowViewModel
     }
     private async Task RefreshRecoveriesAsync()
     {
+        try
+        {
         var disk = await Task.Run(() => _instanceManager.LoadInstances());
         using (Library.DeferRefresh())
             foreach (var item in disk) if (!Instances.Any(i => i.InstancePath == item.InstancePath)) Instances.Add(item);
-        var instances = Instances.ToArray();
-        var items = await Task.Run(() => instances.Select(OperationJournal.Discover).Where(item => item != null).ToArray());
+        var instances = Instances.Select(i => (Model: i, i.InstancePath, i.Name, HasMetadata: i.MetadataProblem.Length == 0)).ToArray();
+        var items = await Task.Run(() => instances.Select(i => OperationJournal.Inspect(i.InstancePath, i.Name, i.HasMetadata)).ToArray());
+        for (int i = 0; i < instances.Length; i++) instances[i].Model.HasInterruptedOperation = items[i] != null;
         SetRecoveries(items);
+        }
+        catch (Exception ex) { StatusMessage = "Could not refresh saved operations: " + ex.Message; }
     }
     [RelayCommand] private void OpenInterruptedFolder(InterruptedOperation? item)
     {
@@ -37,6 +42,7 @@ public partial class MainWindowViewModel
     [RelayCommand] private async Task CancelInterruptedAsync(InterruptedOperation? item)
     {
         if (item == null || IsInitializing || IsGlobalLoading || IsDownloading) return;
+        IsGlobalLoading = true; LoadingTitle = "Updating saved operation";
         try
         {
             _instanceManager.ValidateRecoveryTarget(item.Target);
@@ -45,10 +51,13 @@ public partial class MainWindowViewModel
             StatusMessage = "Operation cancelled. All files were kept; Resume remains available.";
         }
         catch (Exception ex) { StatusMessage = "Could not cancel the saved operation: " + ex.Message; }
+        finally { IsGlobalLoading = false; }
     }
     [RelayCommand] private async Task ResumeInterruptedAsync(InterruptedOperation? item)
     {
         if (item == null || !item.CanResume || IsInitializing || IsGlobalLoading || IsDownloading) return;
+        bool delegatedInstall = false;
+        IsGlobalLoading = true; LoadingTitle = "Resuming " + item.Kind;
         try
         {
             _instanceManager.ValidateRecoveryTarget(item.Target);
@@ -59,6 +68,7 @@ public partial class MainWindowViewModel
             if (item.Kind is "Install" or "Repair")
             {
                 instance.HasInterruptedOperation = false;
+                delegatedInstall = true; IsGlobalLoading = false;
                 await InstallInstanceAsync(instance, item.Kind == "Repair");
                 return;
             }
@@ -84,6 +94,13 @@ public partial class MainWindowViewModel
             catch (Exception ex) { operation.Fail(ex); throw; }
         }
         catch (Exception ex) { StatusMessage = "Recovery could not finish: " + ex.Message; }
-        finally { IsGlobalLoading = false; CanCancelInstallation = false; _installationCancellation = null; await RefreshRecoveriesAsync(); }
+        finally
+        {
+            if (!delegatedInstall)
+            {
+                CanCancelInstallation = false; await RefreshRecoveriesAsync();
+                _installationCancellation = null; IsGlobalLoading = false;
+            }
+        }
     }
 }

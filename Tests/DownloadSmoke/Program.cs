@@ -7,7 +7,15 @@ using System.Text;
 using System.Text.Json;
 using VortexLauncher.Core.Launch;
 
-string testRoot = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "vortex-download-smoke-" + Guid.NewGuid().ToString("N"))).FullName;
+// Keep updater fixtures on a physical path: macOS /var is a system symlink,
+// while application replacement deliberately refuses linked parent directories.
+string fixtureTemp = Path.GetPathRoot(Path.GetFullPath(Path.GetTempPath()))!;
+foreach (string segment in Path.GetTempPath()[fixtureTemp.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
+{
+    var directory = new DirectoryInfo(Path.Combine(fixtureTemp, segment));
+    fixtureTemp = directory.Exists && directory.LinkTarget != null ? directory.ResolveLinkTarget(true)!.FullName : directory.FullName;
+}
+string testRoot = Directory.CreateDirectory(Path.Combine(fixtureTemp, "vortex-download-smoke-" + Guid.NewGuid().ToString("N"))).FullName;
 PlatformSupport.DataRootOverride = Directory.CreateDirectory(Path.Combine(testRoot, "data")).FullName;
 string cache = Path.Combine(testRoot, "cache");
 var handler = new FixtureHandler();

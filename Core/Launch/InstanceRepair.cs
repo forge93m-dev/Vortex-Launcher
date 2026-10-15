@@ -18,8 +18,14 @@ public static class InstanceRepair
         ArchiveImportPlan.ValidatePath(instance.Version);
         if (instance.Version.Contains('/') || instance.Version.Contains('\\')) throw new IOException("Invalid Minecraft version.");
         // Reject junctions rather than following them outside the scoped game directories.
+        string dataRoot = Path.GetFullPath(PlatformSupport.DataRoot).TrimEnd(Path.DirectorySeparatorChar);
         for (var dir = new DirectoryInfo(path); dir != null; dir = dir.Parent)
+        {
             if (dir.Exists && (dir.Attributes & FileAttributes.ReparsePoint) != 0) throw new IOException("Repair cannot follow linked instance folders.");
+            // System ancestors such as macOS /var -> /private/var are outside the
+            // selected data root; links within the owned data tree still fail.
+            if (string.Equals(dir.FullName, dataRoot, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)) break;
+        }
         foreach (string name in new[] { "libraries", "assets", "versions", "natives" })
         {
             var dir = new DirectoryInfo(Path.Combine(path, name));

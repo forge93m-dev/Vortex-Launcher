@@ -101,7 +101,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { operation.Cancelled(); StatusMessage = "Copy stopped safely. Resume it from the recovery banner."; }
         catch (Exception ex) { operation.Fail(ex); StatusMessage = $"Copy failed: {ex.Message}"; }
-        finally { IsGlobalLoading = false; TransferDetails = string.Empty; _installationCancellation = null; CanCancelInstallation = false; await RefreshRecoveriesAsync(); }
+        finally { CanCancelInstallation = false; await RefreshRecoveriesAsync(); TransferDetails = string.Empty; _installationCancellation = null; IsGlobalLoading = false; }
     }
 
     [ObservableProperty]
@@ -288,9 +288,10 @@ public partial class MainWindowViewModel : ObservableObject
         finally
         {
             operation?.Dispose();
-            if (operation != null) { IsGlobalLoading = false; CanCancelInstallation = false; _installationCancellation = null; TransferDetails = ""; }
+            if (operation != null) CanCancelInstallation = false;
             _isImportingArchive = false;
             if (operation != null) await RefreshRecoveriesAsync();
+            if (operation != null) { IsGlobalLoading = false; _installationCancellation = null; TransferDetails = ""; }
         }
     }
 
@@ -585,10 +586,10 @@ public partial class MainWindowViewModel : ObservableObject
         finally
         {
             instance.IsInstalling = false;
-            IsGlobalLoading = false;
             CanCancelInstallation = false;
-            _installationCancellation = null;
             await RefreshRecoveriesAsync();
+            _installationCancellation = null;
+            IsGlobalLoading = false;
         }
     }
 

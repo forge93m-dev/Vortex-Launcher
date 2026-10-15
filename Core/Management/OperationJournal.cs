@@ -59,14 +59,18 @@ internal static class OperationJournal
     }
     internal static InterruptedOperation? Discover(InstanceModel instance)
     {
-        var stored = Read(instance.InstancePath);
-        instance.HasInterruptedOperation = false;
-        if (stored == null && !HasMarker(instance.InstancePath) && !File.Exists(Path.Combine(instance.InstancePath, FileName))
-            && !File.Exists(Path.Combine(instance.InstancePath, FileName + ".bak"))) return null;
+        var stored = Inspect(instance.InstancePath, instance.Name, instance.MetadataProblem.Length == 0);
+        instance.HasInterruptedOperation = stored != null;
+        return stored;
+    }
+    internal static InterruptedOperation? Inspect(string target, string name, bool metadataAvailable)
+    {
+        var stored = Read(target);
+        if (stored == null && !HasMarker(target) && !File.Exists(Path.Combine(target, FileName))
+            && !File.Exists(Path.Combine(target, FileName + ".bak"))) return null;
         stored ??= new InterruptedOperation { Kind = "Legacy task (source not recorded)" };
-        stored.Target = instance.InstancePath; stored.Name = instance.Name;
-        stored.MetadataAvailable = instance.MetadataProblem.Length == 0 || stored.Kind is "Import" or "Clone";
-        instance.HasInterruptedOperation = true;
+        stored.Target = target; stored.Name = name;
+        stored.MetadataAvailable = metadataAvailable || stored.Kind is "Import" or "Clone";
         return stored;
     }
 }
