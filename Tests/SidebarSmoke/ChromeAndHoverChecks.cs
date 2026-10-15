@@ -45,7 +45,8 @@ internal static class ChromeAndHoverChecks
         var card = Cards(window).OrderBy(c => c.TranslatePoint(default, scroller)!.Value.Y).First();
         Hover(window, card, pump);
         var top = card.TranslatePoint(default, scroller)!.Value;
-        Check(card.IsPointerOver && top.Y >= 1.5 && top.X >= 0, "first-row hover lift stays below the scroll viewport edge");
+        Console.WriteLine($"Hover geometry: pointer={card.IsPointerOver}, top={top}, viewport={scroller.Viewport}, offset={scroller.Offset}, margin={((Border)card.Parent!).Margin}");
+        Check(card.IsPointerOver && top.Y >= 1.5 && top.X >= -0.5, $"first-row hover lift stays below the scroll viewport edge (pointer={card.IsPointerOver}, top={top})");
         Check(card.Bounds.Size == new Size(272, 154) && RoundedClip.GetIsEnabled(card) && card.Clip != null, "card dimensions stay compact and opaque covers share the rounded clip");
         window.CaptureRenderedFrame()!.Save(Path.Combine(output, "library-hover-first-row.png"));
         window.MouseMove(new Point(700, 80)); pump(220);

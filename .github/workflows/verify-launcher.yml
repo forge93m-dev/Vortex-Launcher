@@ -37,6 +37,8 @@ jobs:
       - name: Headless interface, virtualized library, images and startup tests
         shell: pwsh
         run: |
+          dotnet run --project Tests/SidebarSmoke/SidebarSmoke.csproj -p:UseSharedCompilation=false -- --chrome
+          if ($LASTEXITCODE -ne 0) { throw 'Window chrome/card hover regression failed.' }
           dotnet run --project Tests/SidebarSmoke/SidebarSmoke.csproj -p:UseSharedCompilation=false
           if ($LASTEXITCODE -ne 0) { throw 'Interface regression failed.' }
           dotnet run --project Tests/SidebarSmoke/SidebarSmoke.csproj --no-build -- --benchmark
@@ -61,3 +63,4 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 # No publishing, release, tag, manifest changes, signing secrets or Apple account.
+
