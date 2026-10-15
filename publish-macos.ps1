@@ -68,8 +68,7 @@ foreach ($target in $targets) {
         & /usr/bin/codesign --verify --deep --strict $verifiedBundle
         if ($LASTEXITCODE -ne 0) { throw "The packaged app signature is invalid for $target." }
         $verifiedBinary = Join-Path $verifiedBundle 'Contents/MacOS/Vortex Launcher'
-        & /usr/bin/test -x $verifiedBinary
-        if ($LASTEXITCODE -ne 0) { throw "The packaged launcher lost its executable permission for $target." }
+        if (([IO.File]::GetUnixFileMode($verifiedBinary) -band [IO.UnixFileMode]::UserExecute) -eq 0) { throw "The packaged launcher lost its executable permission for $target." }
         if ($target -eq $hostRid) {
             $reportedVersion = & $verifiedBinary --launcher-version
             if ($LASTEXITCODE -ne 0 -or ($reportedVersion -join '').Trim() -ne "$appVersion $target") { throw 'The extracted macOS executable failed its CLI startup check.' }
