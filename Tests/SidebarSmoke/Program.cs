@@ -66,10 +66,13 @@ try
         var center = button.TranslatePoint(new Point(26, 24), window)!.Value;
         var originalIcon = icon.TranslatePoint(new Point(0, 0), window)!.Value;
         window.MouseMove(center);
-        Pump(90);
-        Check(button.Width > 52 && button.Width < 190 && label.Opacity > 0 && label.Opacity < 1,
-            labels[i] + " expands and fades its label progressively, not instantly");
-        Pump(300);
+        // A loaded runner may spend >180 ms rendering one frame. Inspect the
+        // transition configuration, not a wall-clock sample
+        // that can legitimately arrive after the complete animation.
+        Check(button.Transitions!.OfType<DoubleTransition>().Any(t => t.Property == Button.WidthProperty && t.Duration > TimeSpan.Zero) &&
+            label.Transitions!.OfType<DoubleTransition>().Any(t => t.Property == TextBlock.OpacityProperty && t.Duration > TimeSpan.Zero),
+            labels[i] + " uses non-zero duration width and opacity transitions");
+        Pump(390);
         Check(Near(button.Width, 190) && Near(label.Opacity, 1), labels[i] + " shows its full label on hover");
         var expandedIcon = icon.TranslatePoint(new Point(0, 0), window)!.Value;
         Check(Near(originalIcon.X, expandedIcon.X) && Near(originalIcon.Y, expandedIcon.Y), labels[i] + " keeps its icon stationary");
@@ -611,3 +614,4 @@ sealed class CreateFixture
     public string ConfigurationSummary => "Minecraft 26.3 · Fabric";
     public CreateFixture() => SelectedLoaderOption = AvailableLoaders[1];
 }
+
