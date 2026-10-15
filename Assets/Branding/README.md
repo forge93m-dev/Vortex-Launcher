@@ -1,0 +1,7 @@
+# Vortex launcher icon v1
+
+Generated with the built-in image generation tool. The master PNG has a transparent background. Windows ICO and macOS ICNS are packaging conversions only, preserving the artwork. No existing icon was overwritten.
+
+## Generation prompt
+
+Use case: logo-brand. Asset type: final square desktop application icon for Vortex Launcher, an original independent Minecraft launcher. Primary request: a memorable, beautifully simple abstract vortex emblem that also reads as a capital V, one bold continuous folded swirling ribbon, strong asymmetric rotational motion, precise geometric silhouette. Composition: one centered large emblem occupying 72% of square with generous 14% padding, no tile/background shape, genuinely transparent background outside emblem, crisp antialiased edges, legible at 32px. Style: premium modern desktop app identity, clean near-flat vector-like geometry with restrained smooth lavender-to-violet shading inside solid broad forms, just enough depth to distinguish the folded ribbon, no dramatic 3D bevel. Palette: soft pale lavender highlights and rich violet midtones to fit a dark navy and purple launcher interface. Constraints: original brand symbol, no text, no wordmark, no letter other than the abstract V silhouette, no Minecraft blocks, no feather, no moon, no borrowed logos, no tiny particles, no fine decorative strokes, no busy glow, no mockup, no surrounding presentation. Single production-ready icon, not a contact sheet.

@@ -61,6 +61,18 @@ public partial class InstanceDetailsWindow : Window
             _sectionMotion?.Cancel();
         };
         DataContext = new InstanceDetailsViewModel(instance, joinServerCallback);
+        if (DataContext is InstanceDetailsViewModel model)
+        {
+            model.OpenModsManagerAsync = async updates =>
+            {
+                using var vm = new InstanceModsViewModel(instance.Version, instance.Loader, instance.InstancePath)
+                { CanChangeFiles = () => instance.CanChangeFiles, IsPreviewVisible = updates };
+                var mods = new InstanceModsWindow { DataContext = vm };
+                if (updates) mods.Opened += async (_, _) => await vm.CheckUpdatesCommand.ExecuteAsync(null);
+                await mods.ShowDialog(this);
+            };
+            model.ExportReportAsync = () => DiagnosticReportExport.SaveAsync(this, instance.InstancePath);
+        }
     }
 
     private void ObserveSections()

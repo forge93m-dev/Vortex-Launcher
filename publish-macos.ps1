@@ -19,6 +19,7 @@ foreach ($target in $targets) {
     $binaryPath = Join-Path $bundlePath 'Contents/MacOS'
     New-Item -ItemType Directory -Path $binaryPath -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $bundlePath 'Contents/Resources') -Force | Out-Null
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Assets/Branding/vortex-icon-v1.icns') -Destination (Join-Path $bundlePath 'Contents/Resources/vortex-icon-v1.icns')
     dotnet publish $projectPath -c Release -r $target --self-contained true -o $binaryPath `
         -p:UseAppHost=true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
         -p:DebugType=None -p:DebugSymbols=false

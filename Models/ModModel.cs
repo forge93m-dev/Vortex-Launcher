@@ -4,6 +4,9 @@ namespace VortexLauncher.Models;
 
 public partial class ModModel : ObservableObject
 {
+    [ObservableProperty] private bool _isSelected;
+    public string StateLabel => IsEnabled ? "Enabled" : "Disabled";
+    partial void OnIsEnabledChanged(bool value) => OnPropertyChanged(nameof(StateLabel));
     [ObservableProperty]
     private string _name = string.Empty;
 

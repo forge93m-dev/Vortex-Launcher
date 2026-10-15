@@ -8,6 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="../../Vortex Launcher.csproj" />
     <Compile Include="../Shared/FixturePaths.cs" />
+    <Compile Include="../Shared/ModFixtures.cs" />
     <PackageReference Include="Avalonia.Headless" Version="11.0.6" />
     <PackageReference Include="Avalonia.Skia" Version="11.0.6" />
   </ItemGroup>

@@ -25,7 +25,6 @@ namespace VortexLauncher.ViewModels;
 public partial class InstanceDetailsViewModel : ObservableObject, IDisposable
 {
     private readonly InstanceModel _instance;
-    private readonly ModrinthService _modrinthService = new();
     private readonly Func<string, Task>? _joinServerCallback;
     public Func<string, Task<bool>>? ConfirmRemovalAsync { get; set; }
     public Func<Task>? RepairCallback { get; set; }
@@ -114,6 +113,8 @@ public partial class InstanceDetailsViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         ConfirmRemovalAsync = null;
+        OpenModsManagerAsync = null;
+        ExportReportAsync = null;
         _instance.PropertyChanged -= OnContentStateChanged;
         UpdateAllModsCommand.PropertyChanged -= OnContentStateChanged;
         RemoveItemCommand.PropertyChanged -= OnContentStateChanged;
@@ -358,76 +359,37 @@ public partial class InstanceDetailsViewModel : ObservableObject, IDisposable
             // Use the actual file name instead of IsEnabled because a ToggleSwitch
             // updates its two-way binding before the command is invoked.
             bool isDisabled = item.Path.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase);
-            string newPath = isDisabled ? item.Path[..^9] : $"{item.Path}.disabled";
-            File.Move(item.Path, newPath, true);
+            Core.Management.ModFiles.SetEnabled(_instance.InstancePath, item.Path, isDisabled);
             RefreshItems();
         }
         catch { }
     }
 
+    public Func<bool, Task>? OpenModsManagerAsync { get; set; }
+    public Func<Task<string>>? ExportReportAsync { get; set; }
+
+    [RelayCommand]
+    private async Task ManageModsAsync()
+    {
+        if (!_instance.CanChangeFiles || IsImporting || RemoveItemCommand.IsRunning || UpdateAllModsCommand.IsRunning || OpenModsManagerAsync == null) return;
+        await OpenModsManagerAsync(false);
+        RefreshItems();
+    }
+
     [RelayCommand]
     private async Task UpdateAllModsAsync()
     {
-        if (!_instance.CanChangeFiles || IsImporting || RemoveItemCommand.IsRunning || !string.Equals(SelectedSection, "Mods", StringComparison.OrdinalIgnoreCase)) return;
-
-        string directory = Path.Combine(_instance.InstancePath, "mods");
-        if (!Directory.Exists(directory))
-        {
-            StatusMessage = "No mods installed.";
-            return;
-        }
-
-        string[] files = Directory.GetFiles(directory, "*.jar*");
-        using var operation = VortexLauncher.Core.Management.DownloadCenter.Begin($"Mod updates: {_instance.Name}");
-        int updated = 0;
-        int checkedCount = 0;
-        int failed = 0;
-
-        foreach (string path in files)
-        {
-            if (VortexClientService.HasClientId(path)) continue; // Updated only by the dedicated, verified updater.
-            string fileName = Path.GetFileName(path);
-            bool disabled = fileName.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase);
-            string baseName = disabled ? fileName[..^9] : fileName;
-            string withoutExtension = Path.GetFileNameWithoutExtension(baseName);
-            int separator = withoutExtension.IndexOf('-');
-            string modName = separator > 0 ? withoutExtension[..separator].Replace('_', ' ') : withoutExtension.Replace('_', ' ');
-
-            StatusMessage = $"Checking {modName}...";
-            operation.Report(StatusMessage, 100d * checkedCount / Math.Max(1, files.Length));
-            string? latestUrl = await _modrinthService.FindLatestDownloadUrlAsync(modName, _instance.Version, _instance.Loader);
-            if (string.IsNullOrWhiteSpace(latestUrl)) continue;
-
-            string latestFileName = Path.GetFileName(new Uri(latestUrl).AbsolutePath);
-            if (string.IsNullOrWhiteSpace(latestFileName) ||
-                string.Equals(latestFileName, baseName, StringComparison.OrdinalIgnoreCase))
-            {
-                checkedCount++;
-                continue;
-            }
-
-            try
-            {
-                using var client = new HttpClient();
-                byte[] data = await client.GetByteArrayAsync(latestUrl);
-                if (!_instance.CanChangeFiles) { operation.Cancelled(); return; }
-                string targetName = disabled ? $"{latestFileName}.disabled" : latestFileName;
-                string targetPath = Path.Combine(directory, targetName);
-                await File.WriteAllBytesAsync(targetPath, data);
-                File.Delete(path);
-                updated++;
-            }
-            catch { failed++; }
-
-            checkedCount++;
-        }
-
+        if (!_instance.CanChangeFiles || IsImporting || RemoveItemCommand.IsRunning || OpenModsManagerAsync == null) return;
+        await OpenModsManagerAsync(true);
         RefreshItems();
-        StatusMessage = updated == 0
-            ? $"Checked {checkedCount} mods. Everything is up to date."
-            : $"Updated {updated} mods.";
-        if (failed > 0) { StatusMessage += $" {failed} updates failed."; operation.Fail(new IOException(StatusMessage)); }
-        else operation.Complete(StatusMessage);
+    }
+
+    [RelayCommand]
+    private async Task SaveErrorReportAsync()
+    {
+        if (ExportReportAsync == null) return;
+        try { StatusMessage = await ExportReportAsync(); }
+        catch (Exception ex) { StatusMessage = "Could not save report: " + ex.Message; }
     }
 
     private void RefreshItems()

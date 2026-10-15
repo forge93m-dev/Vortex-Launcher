@@ -405,6 +405,7 @@ try
     fixture.UpdateAvailable = false; fixture.Notify("UpdateAvailable");
     Console.WriteLine("LAUNCHER_UPDATE_UI_OK");
     StabilityUiChecks.Run(Pump, output);
+    ModManagementUiChecks.Run(Pump, output);
     Console.WriteLine("MAINTENANCE_UI_OK");
     Console.WriteLine("REDESIGN_UI_OK");
     Console.WriteLine("Rendered previews: " + output);

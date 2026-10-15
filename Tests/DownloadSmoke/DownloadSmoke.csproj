@@ -5,5 +5,5 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup><ProjectReference Include="../../Vortex Launcher.csproj" /><Compile Include="../Shared/FixturePaths.cs" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../Vortex Launcher.csproj" /><Compile Include="../Shared/FixturePaths.cs" /><Compile Include="../Shared/ModFixtures.cs" /></ItemGroup>
 </Project>

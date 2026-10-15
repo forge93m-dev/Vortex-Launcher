@@ -144,6 +144,7 @@ Check(File.ReadAllText(Path.Combine(instance, "saves", "World", "level.dat")) ==
 await MaintenanceChecks.RunAsync(testRoot, handler, client);
 await UpdateChecks.RunAsync(testRoot, handler, client);
 await StabilityChecks.RunAsync(testRoot);
+await ModAndReportChecks.RunAsync(testRoot);
 if (args.Length == 2 && args[0] == "--verify-release") await UpdateChecks.VerifyPublishedZipAsync(Path.GetFullPath(args[1]), testRoot);
 if (args.Length == 3 && args[0] == "--verify-release")
 {

@@ -34,6 +34,15 @@ public sealed class TaskDialog : Window
             var copy = new Button { Content = "Copy details" }; copy.Classes.Add("SecondaryBtn");
             copy.Click += async (_, _) => { if (Clipboard != null) { await Clipboard.SetTextAsync(title + "\n" + message + "\n\n" + details); copy.Content = "Copied"; } };
             actions.Children.Insert(0, copy);
+            var report = new Button { Content = "Save error report" }; report.Classes.Add("SecondaryBtn");
+            report.Click += async (_, _) =>
+            {
+                report.IsEnabled = false;
+                try { report.Content = "Saving…"; string result = await DiagnosticReportExport.SaveAsync(this, folder, new[] { title, message, details }); report.Content = result.StartsWith("Report saved:", StringComparison.Ordinal) ? "Report saved" : "Save error report"; ToolTip.SetTip(report, result); }
+                catch (Exception ex) { report.Content = "Report failed"; ToolTip.SetTip(report, ex.Message); }
+                finally { report.IsEnabled = true; }
+            };
+            actions.Children.Insert(0, report);
         }
         if (confirm != null)
         {

@@ -39,6 +39,8 @@ public class ModrinthModItem
 
 public class ModrinthVersionItem
 {
+    [JsonPropertyName("changelog")] public string? Changelog { get; set; }
+    [JsonPropertyName("version_type")] public string VersionType { get; set; } = "release";
     [JsonPropertyName("project_id")]
     public string ProjectId { get; set; } = string.Empty;
     [JsonPropertyName("dependencies")]
@@ -68,6 +70,7 @@ public class ModrinthVersionItem
 
 public class ModrinthFileItem
 {
+    [JsonPropertyName("size")] public long Size { get; set; }
     [JsonPropertyName("hashes")]
     public Dictionary<string, string> Hashes { get; set; } = new();
     [JsonPropertyName("url")]
@@ -215,5 +218,21 @@ public class ModrinthService
         return project == null
             ? null
             : await GetDownloadUrlAsync(project.ProjectId, gameVersion, loader, "mod");
+    }
+
+    // Unlike the legacy browser method, update discovery must surface network
+    // failures rather than calling an empty response "everything up to date".
+    public virtual async Task<List<ModrinthVersionItem>> GetUpdateVersionsAsync(string projectId, CancellationToken token)
+    {
+        string json = await HttpClient.GetStringAsync($"https://api.modrinth.com/v2/project/{Uri.EscapeDataString(projectId)}/version", token);
+        return JsonSerializer.Deserialize<List<ModrinthVersionItem>>(json) ?? throw new JsonException("Missing version list.");
+    }
+
+    public virtual async Task<ModrinthVersionItem?> IdentifyForUpdateAsync(string hash, CancellationToken token)
+    {
+        using var response = await HttpClient.GetAsync($"https://api.modrinth.com/v2/version_file/{hash}?algorithm=sha512", token);
+        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        response.EnsureSuccessStatusCode();
+        return JsonSerializer.Deserialize<ModrinthVersionItem>(await response.Content.ReadAsStringAsync(token));
     }
 }

@@ -4,15 +4,18 @@
 		<TargetFramework>net8.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-		<Version>0.1.3</Version>
-		<AssemblyVersion>0.1.3.0</AssemblyVersion>
-		<FileVersion>0.1.3.0</FileVersion>
-		<InformationalVersion>0.1.3</InformationalVersion>
+		<Version>0.1.4</Version>
+		<AssemblyVersion>0.1.4.0</AssemblyVersion>
+		<FileVersion>0.1.4.0</FileVersion>
+		<InformationalVersion>0.1.4</InformationalVersion>
+		<ApplicationIcon>Assets/Branding/vortex-icon-v1.ico</ApplicationIcon>
 		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<Compile Remove="Tests/**/*.cs" />
+		<AvaloniaResource Include="Assets/Branding/vortex-icon-v1.ico" />
+		<AvaloniaResource Include="Assets/Branding/vortex-icon-v1.png" />
 		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-26.3-fabric-0.1.21.jar" LogicalName="VortexLauncher.Client.vortex-client-26.3-fabric-0.1.21.jar" />
 	</ItemGroup>
 

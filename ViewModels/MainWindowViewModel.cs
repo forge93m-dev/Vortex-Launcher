@@ -694,7 +694,7 @@ public partial class MainWindowViewModel : ObservableObject
         DebugLogWindow? logWindow = null;
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            logWindow = new DebugLogWindow();
+            logWindow = new DebugLogWindow { InstancePath = target.InstancePath };
             logWindow.Show();
         });
 

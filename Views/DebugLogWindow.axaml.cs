@@ -14,6 +14,15 @@ public partial class DebugLogWindow : Window
     public ObservableCollection<LogLine> Lines { get; } = new();
     private readonly List<string> _rawLines = new();
     private readonly object _rawLinesLock = new();
+    public string? InstancePath { get; set; }
+    private async void OnExportReportClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button) return;
+        button.IsEnabled = false;
+        try { ReportStatus.Text = await DiagnosticReportExport.SaveAsync(this, InstancePath, GetLogSnapshot()); }
+        catch (Exception ex) { ReportStatus.Text = "Could not save report: " + ex.Message; }
+        finally { button.IsEnabled = true; }
+    }
 
     public DebugLogWindow()
     {
@@ -33,6 +42,7 @@ public partial class DebugLogWindow : Window
         Dispatcher.UIThread.Post(() =>
         {
             Lines.Add(new LogLine(text, GetColor(text)));
+            if (Lines.Count > 5000) for (int i = 0; i < 500; i++) Lines.RemoveAt(0);
             LogScrollViewer.ScrollToEnd();
         });
     }
