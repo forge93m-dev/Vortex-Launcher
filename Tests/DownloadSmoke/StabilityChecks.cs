@@ -39,6 +39,13 @@ static class StabilityChecks
         File.WriteAllText(Path.Combine(unknown, "instance.json"), "bad");
         var invalid = manager.LoadInstances().Single(i => i.Name == "Unknown pack");
         Check(invalid.Version == "Unknown" && !invalid.CanChangeFiles && !invalid.CanLaunch, "unknown/corrupt metadata cannot be launched or silently assigned Minecraft 1.20.1");
+        var legacy = manager.CreateInstance("Legacy install", "26.3", "Fabric");
+        File.WriteAllText(Path.Combine(legacy.InstancePath, ".vortex-installation-pending"), "Installing");
+        var recoveredLegacy = manager.LoadInstances().Single(i => i.Name == legacy.Name);
+        Check(OperationJournal.Discover(recoveredLegacy) is { Kind: "Install", CanResume: true }, "an old interrupted install with valid version metadata migrates to a resumable journal");
+        File.WriteAllText(Path.Combine(legacy.InstancePath, OperationJournal.FileName), "bad journal");
+        var damagedJournal = OperationJournal.Discover(recoveredLegacy);
+        Check(damagedJournal is { CanResume: false }, "an unreadable journal is shown for inspection rather than overwritten with a guessed operation");
 
         string zipPath = Path.Combine(root, "recovery-source.zip");
         using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))

@@ -38,7 +38,7 @@ if (args.Contains("--benchmark"))
     window.Close(); return;
 }
 Pump(600);
-var output = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "vortex-sidebar-smoke-" + Guid.NewGuid().ToString("N"))).FullName;
+var output = Directory.CreateDirectory(Path.Combine(FixturePaths.TempRoot(), "vortex-sidebar-smoke-" + Guid.NewGuid().ToString("N"))).FullName;
 
 try
 {

@@ -65,7 +65,13 @@ internal static class OperationJournal
     }
     internal static InterruptedOperation? Inspect(string target, string name, bool metadataAvailable)
     {
+        if (!Directory.Exists(target) || (File.GetAttributes(target) & FileAttributes.ReparsePoint) != 0) throw new IOException("Recovery will not follow linked instance folders.");
         var stored = Read(target);
+        // Older launchers recorded installs with a marker but no journal. Their
+        // validated instance metadata is sufficient; import/copy sources are not.
+        if (stored == null && metadataAvailable && File.Exists(Path.Combine(target, ".vortex-installation-pending"))
+            && !File.Exists(Path.Combine(target, FileName)) && !File.Exists(Path.Combine(target, FileName + ".bak")))
+            stored = Begin(target, File.Exists(Path.Combine(target, ".vortex-installation-complete")) ? "Repair" : "Install");
         if (stored == null && !HasMarker(target) && !File.Exists(Path.Combine(target, FileName))
             && !File.Exists(Path.Combine(target, FileName + ".bak"))) return null;
         stored ??= new InterruptedOperation { Kind = "Legacy task (source not recorded)" };
