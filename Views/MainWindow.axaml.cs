@@ -18,6 +18,7 @@ namespace VortexLauncher.Views;
 public partial class MainWindow : Window
 {
     private readonly Dictionary<Control, CancellationTokenSource> _cardMotions = new();
+    private MainWindowViewModel? _observedViewModel;
 
     private async void OnCardAttached(object? sender, VisualTreeAttachmentEventArgs e)
     {
@@ -50,6 +51,7 @@ public partial class MainWindow : Window
 
     private void OnWindowOpened(object? sender, EventArgs e)
     {
+        if (DataContext is MainWindowViewModel startup) _ = startup.InitializeAsync();
         mainShell.Opacity = 0;
         mainShell.RenderTransform = new TranslateTransform(0, 16);
         Dispatcher.UIThread.Post(() =>
@@ -63,9 +65,10 @@ public partial class MainWindow : Window
 
     private async Task HideStartupGreetingAsync()
     {
-        await Task.Delay(1200);
+        if (DataContext is MainWindowViewModel startup) await startup.InitializeAsync();
+        await Task.Delay(120);
         startupOverlay.Opacity = 0;
-        await Task.Delay(500);
+        await Task.Delay(250);
         if (DataContext is MainWindowViewModel viewModel)
             viewModel.IsStartupGreetingVisible = false;
     }
@@ -73,12 +76,21 @@ public partial class MainWindow : Window
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
+        if (_observedViewModel != null) _observedViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        _observedViewModel = DataContext as MainWindowViewModel;
 
         if (DataContext is MainWindowViewModel viewModel)
         {
             viewModel.PropertyChanged += OnViewModelPropertyChanged;
             AnimatePage(viewModel.ActiveTab, false);
         }
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm) { vm.CancelStartup(); vm.PropertyChanged -= OnViewModelPropertyChanged; vm.Library.Dispose(); }
+        foreach (var motion in System.Linq.Enumerable.ToArray(_cardMotions.Values)) motion.Cancel();
+        base.OnClosed(e);
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)

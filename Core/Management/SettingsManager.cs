@@ -24,15 +24,24 @@ public class SettingsManager
 {
     private readonly string _configPath;
 
-    public SettingsManager()
+    public string LoadNotice { get; private set; } = "";
+    public bool HasLoadError { get; private set; }
+    public SettingsManager(string? configDirectory = null)
     {
-        string dir = Path.Combine(PlatformSupport.DataRoot, "config");
-        Directory.CreateDirectory(dir);
+        string dir = configDirectory ?? Path.Combine(PlatformSupport.DataRoot, "config");
         _configPath = Path.Combine(dir, "settings.json");
     }
 
     public LauncherSettings LoadSettings()
     {
+        var stored = SafeJsonStore.Read<LauncherSettings>(_configPath);
+        LoadNotice = stored.Notice; HasLoadError = stored.Damaged;
+        if (stored.Value is { } recovered)
+        {
+            if (string.IsNullOrWhiteSpace(recovered.UpdateManifestUrl)) recovered.UpdateManifestUrl = LauncherSettings.DefaultUpdateManifestUrl;
+            return recovered;
+        }
+        if (stored.Damaged) return new LauncherSettings();
         if (!File.Exists(_configPath))
         {
             var defaultSettings = new LauncherSettings();
@@ -40,26 +49,11 @@ public class SettingsManager
             return defaultSettings;
         }
 
-        try
-        {
-            string json = File.ReadAllText(_configPath);
-            var settings = JsonSerializer.Deserialize<LauncherSettings>(json) ?? new LauncherSettings();
-            if (string.IsNullOrWhiteSpace(settings.UpdateManifestUrl))
-            {
-                settings.UpdateManifestUrl = LauncherSettings.DefaultUpdateManifestUrl;
-            }
-
-            return settings;
-        }
-        catch
-        {
-            return new LauncherSettings();
-        }
+        return new LauncherSettings();
     }
 
     public void SaveSettings(LauncherSettings settings)
     {
-        string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(_configPath, json);
+        SafeJsonStore.Write(_configPath, settings);
     }
 }

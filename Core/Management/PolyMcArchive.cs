@@ -133,7 +133,7 @@ internal sealed class PolyMcArchive
         return new PolyMcArchive(instance, files);
     }
 
-    public void Extract(string directory)
+    public void Extract(string directory, string? operationId = null, System.Threading.CancellationToken cancellationToken = default)
     {
         string root = Path.GetFullPath(directory) + Path.DirectorySeparatorChar;
         foreach (var (entry, relative) in _files)
@@ -142,7 +142,8 @@ internal sealed class PolyMcArchive
             if (!target.StartsWith(root, StringComparison.Ordinal))
                 throw new InvalidDataException("An archive path escapes the instance directory.");
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            entry.ExtractToFile(target, overwrite: false);
+            using var source = entry.Open();
+            VortexLauncher.Core.Management.VerifiedCopy.FileAsync(source, target, operationId ?? Guid.NewGuid().ToString("N"), cancellationToken, directory).GetAwaiter().GetResult();
         }
     }
 

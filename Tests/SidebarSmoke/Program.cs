@@ -22,9 +22,21 @@ AppBuilder.Configure<VortexLauncher.App>().UseSkia()
     .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
     .SetupWithoutStarting();
 ThemeManager.SetTheme("Test", "#F5C2E7", "#11111B", "#181825", "#1E1E2E", "#313244", "#CDD6F4", "#A6ADC8");
-var fixture = new SidebarFixture();
+var fixture = new SidebarFixture(args.Contains("--benchmark") ? 500 : 0);
+var benchmarkClock = Stopwatch.StartNew();
 var window = new MainWindow { DataContext = fixture };
 window.Show();
+if (args.Contains("--benchmark"))
+{
+    Dispatcher.UIThread.RunJobs();
+    AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+    benchmarkClock.Stop();
+    Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new { instances = fixture.Instances.Count,
+        constructionAndLayoutMs = benchmarkClock.Elapsed.TotalMilliseconds,
+        realizedCards = window.GetVisualDescendants().OfType<Border>().Count(c => c.Classes.Contains("InstanceCard")),
+        managedBytes = GC.GetTotalMemory(false), processBytes = Process.GetCurrentProcess().WorkingSet64 }));
+    window.Close(); return;
+}
 Pump(600);
 var output = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "vortex-sidebar-smoke-" + Guid.NewGuid().ToString("N"))).FullName;
 
@@ -151,7 +163,7 @@ try
     var play = cards[0].GetVisualDescendants().OfType<Button>().Single(b => b.Classes.Contains("PlayButton"));
     Click(window, play); Pump(40);
     Check(fixture.LaunchCount == 1, "new Play button preserves the launch command");
-    var favorite = cards[0].GetVisualDescendants().OfType<Button>().Single(b => AutomationProperties.GetName(b) == "Toggle favorite");
+    var favorite = cards.Single(c => ReferenceEquals(c.DataContext, source[0])).GetVisualDescendants().OfType<Button>().Single(b => AutomationProperties.GetName(b) == "Toggle favorite");
     Click(window, favorite); Pump(40);
     Check(!source[0].IsFavorite, "card favorite action still works");
     window.MouseMove(new Point(1100, 700)); Pump(250);
@@ -392,6 +404,7 @@ try
     window.CaptureRenderedFrame()!.Save(Path.Combine(output, "launcher-updates.png"));
     fixture.UpdateAvailable = false; fixture.Notify("UpdateAvailable");
     Console.WriteLine("LAUNCHER_UPDATE_UI_OK");
+    StabilityUiChecks.Run(Pump, output);
     Console.WriteLine("MAINTENANCE_UI_OK");
     Console.WriteLine("REDESIGN_UI_OK");
     Console.WriteLine("Rendered previews: " + output);
@@ -436,6 +449,13 @@ static void Pump(int milliseconds)
 
 sealed class SidebarFixture : INotifyPropertyChanged
 {
+    public VortexLauncher.Core.Management.ResettableCollection<VortexLauncher.Core.Management.InterruptedOperation> InterruptedOperations { get; } = new();
+    public bool HasInterruptedOperations => InterruptedOperations.Count > 0;
+    public int ResumeCount { get; private set; }
+    public int CancelCount { get; private set; }
+    public ICommand ResumeInterruptedCommand => new FixtureCommand(_ => ResumeCount++);
+    public ICommand CancelInterruptedCommand => new FixtureCommand(_ => CancelCount++);
+    public ICommand OpenInterruptedFolderCommand => new FixtureCommand(_ => { });
     public event PropertyChangedEventHandler? PropertyChanged;
     public string ActiveTab { get; private set; } = "Instances";
     public bool IsInstancesTab => ActiveTab == "Instances";
@@ -443,6 +463,7 @@ sealed class SidebarFixture : INotifyPropertyChanged
     public bool IsAccountsTab => ActiveTab == "Accounts";
     public bool IsSettingsTab => ActiveTab == "Settings";
     public bool IsStartupGreetingVisible => false;
+    public bool IsInitializing => false;
     public bool IsGlobalLoading => false;
     public bool CanCancelInstallation => false;
     public bool UpdateAvailable { get; set; }
@@ -492,8 +513,9 @@ sealed class SidebarFixture : INotifyPropertyChanged
     public ICommand SelectAccountCommand => new FixtureCommand(_ => { });
     public ICommand DeleteAccountCommand => new FixtureCommand(_ => { });
     public ICommand AddAccountCommand => new FixtureCommand(_ => { });
-    public SidebarFixture()
+    public SidebarFixture(int count = 0)
     {
+        if (count > 0) { Instances.Clear(); for (int i = 0; i < count; i++) Instances.Add(new() { Name = "Instance " + i, Version = "26.3", Loader = "Fabric", IsInstalled = true }); }
         SelectTabCommand = new FixtureCommand(parameter => Select((string)parameter!));
         Library = new(Instances);
         Accounts.Add(ActiveAccount);

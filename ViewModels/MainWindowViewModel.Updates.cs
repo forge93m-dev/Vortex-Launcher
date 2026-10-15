@@ -16,7 +16,7 @@ namespace VortexLauncher.ViewModels;
 public partial class MainWindowViewModel
 {
     public string LauncherVersionLabel => $"Vortex Launcher {_updateService.CurrentVersion} · {PlatformSupport.RuntimeId}";
-    public string UpdateSource => _settingsManager.LoadSettings().UpdateManifestUrl;
+    public string UpdateSource => _currentSettings.UpdateManifestUrl;
     public string LastLauncherUpdateResult { get; } = VortexLauncher.Core.Network.LauncherUpdateInstaller.ReadResultMessage(Environment.GetCommandLineArgs());
     [ObservableProperty] private bool _isCheckingUpdates;
     [ObservableProperty] private string _launcherUpdateStatus = "Updates have not been checked yet.";

@@ -1,6 +1,5 @@
 <Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:VortexLauncher.ViewModels" xmlns:conv="using:VortexLauncher.Converters" x:Class="VortexLauncher.Views.MainWindow" x:DataType="vm:MainWindowViewModel" x:Name="root" Opened="OnWindowOpened" Title="Vortex Launcher" Width="1280" Height="800" MinWidth="960" MinHeight="600" WindowStartupLocation="CenterScreen" Background="{DynamicResource ThemeBackgroundBrush}">
     <Window.Resources>
-        <conv:BitmapAssetValueConverter x:Key="LocalBitmapConverter" />
     </Window.Resources>
     <Window.Styles>
         <Style Selector="ScrollBar">
@@ -187,12 +186,12 @@
                         </Grid>
                     </Border>
                     <Panel Grid.Row="2">
-                        <Grid x:Name="instancesPage" Classes="PagePanel" RowDefinitions="Auto,Auto,*" IsVisible="{Binding IsInstancesTab}">
+                        <Grid x:Name="instancesPage" Classes="PagePanel" RowDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding IsInstancesTab}">
                             <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,18">
                                 <TextBox x:Name="librarySearch" Text="{Binding Library.SearchQuery, Mode=TwoWay}" Watermark="Search your instances..." Width="400" HorizontalAlignment="Left" Margin="0,0,20,0" AutomationProperties.Name="Search instances" />
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                                    <Button Classes="SecondaryBtn" Content="Import pack" Click="OnImportPackClick" />
-                                    <Button Classes="PrimaryBtn" Content="+  Create instance" Click="OnAddInstanceClick" />
+                                    <Button Classes="SecondaryBtn" Content="Import pack" Click="OnImportPackClick" IsEnabled="{Binding !IsInitializing}" />
+                                    <Button Classes="PrimaryBtn" Content="+  Create instance" Click="OnAddInstanceClick" IsEnabled="{Binding !IsInitializing}" />
                                 </StackPanel>
                             </Grid>
                             <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,0,0,20">
@@ -204,28 +203,43 @@
                                     </StackPanel>
                                 </Border>
                             </Grid>
-                            <Panel Grid.Row="2">
-                                <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                                    <ItemsControl x:Name="instanceCards" ItemsSource="{Binding Library.VisibleInstances}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <WrapPanel />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
+                            <Border Grid.Row="2" IsVisible="{Binding HasInterruptedOperations}" Background="{DynamicResource ThemePanelBrush}" CornerRadius="12" Padding="12" Margin="0,0,0,12">
+                                <ScrollViewer MaxHeight="140">
+                                    <ItemsControl ItemsSource="{Binding InterruptedOperations}">
                                         <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,4">
+                                                    <TextBlock Text="{Binding Description}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                                    <Button Grid.Column="1" Classes="SecondaryBtn" Content="Folder" Command="{Binding #root.DataContext.OpenInterruptedFolderCommand}" CommandParameter="{Binding}" Margin="4,0" />
+                                                    <Button Grid.Column="2" Classes="SecondaryBtn" Content="Cancel (keep files)" IsEnabled="{Binding CanCancel}" Command="{Binding #root.DataContext.CancelInterruptedCommand}" CommandParameter="{Binding}" Margin="4,0" />
+                                                    <Button Grid.Column="3" Classes="PrimaryBtn" Content="Resume" IsEnabled="{Binding CanResume}" Command="{Binding #root.DataContext.ResumeInterruptedCommand}" CommandParameter="{Binding}" Margin="4,0" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Border>
+                            <Panel Grid.Row="3">
+                                <TextBlock Text="Loading library…" IsVisible="{Binding IsInitializing}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                                    <ItemsRepeater x:Name="instanceCards" ItemsSource="{Binding Library.VisibleInstances}">
+                                        <ItemsRepeater.Layout>
+                                            <UniformGridLayout MinItemWidth="284" MinItemHeight="166" ItemsJustification="Start" />
+                                        </ItemsRepeater.Layout>
+                                        <ItemsRepeater.ItemTemplate>
                                             <DataTemplate>
                                                 <Border AttachedToVisualTree="OnCardAttached" DetachedFromVisualTree="OnCardDetached" Margin="0,0,12,12">
                                                     <Border Classes="VortexCard InstanceCard" Width="272" Height="154" Opacity="{Binding CardOpacity}" PointerPressed="OnInstanceCardPointerPressed">
                                                         <Panel>
                                                             <Border IsVisible="{Binding HasCover}" CornerRadius="12" ClipToBounds="True" Opacity="0.14" IsHitTestVisible="False">
-                                                                <Image Source="{Binding CoverImagePath, Converter={StaticResource LocalBitmapConverter}}" Stretch="UniformToFill" />
+                                                                <conv:AsyncImage SourcePath="{Binding CoverImagePath}" DecodeWidth="544" Stretch="UniformToFill" />
                                                             </Border>
                                                             <Grid RowDefinitions="44,*,32" Margin="14">
                                                                 <Grid ColumnDefinitions="Auto,*,Auto">
                                                                     <Border Width="34" Height="34" CornerRadius="10" Background="{DynamicResource AccentSoftBrush}" Margin="0,0,10,0" ClipToBounds="True" VerticalAlignment="Center">
                                                                         <Panel>
                                                                             <PathIcon Data="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" Foreground="{DynamicResource AccentBrush}" Width="13" Height="13" IsVisible="{Binding !HasIcon}" />
-                                                                            <Image Source="{Binding IconPath, Converter={StaticResource LocalBitmapConverter}}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}" />
+                                                                            <conv:AsyncImage SourcePath="{Binding IconPath}" DecodeWidth="96" Stretch="UniformToFill" IsVisible="{Binding HasIcon}" />
                                                                         </Panel>
                                                                     </Border>
                                                                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
@@ -244,15 +258,15 @@
                                                                 <Button Grid.Column="2" Classes="IconButton" Width="26" Margin="0,0,6,0" Click="OnExportInstanceCardClick" Tag="{Binding}" ToolTip.Tip="Export instance" AutomationProperties.Name="Export instance">
                                                                     <PathIcon Width="14" Height="14" Data="M11 3h2v10l3-3 1.4 1.4L12 17l-5.4-5.6L8 10l3 3V3zM4 18h2v2h12v-2h2v4H4z" />
                                                                 </Button>
-                                                                <Button Grid.Column="3" Classes="PrimaryBtn PlayButton" Width="72" Content="{Binding LaunchButtonText}" Command="{Binding #root.DataContext.LaunchSpecificInstanceCommand}" CommandParameter="{Binding}" IsEnabled="{Binding CanChangeFiles}" Padding="6,4" ToolTip.Tip="{Binding StatusText}" />
+                                                                <Button Grid.Column="3" Classes="PrimaryBtn PlayButton" Width="72" Content="{Binding LaunchButtonText}" Command="{Binding #root.DataContext.LaunchSpecificInstanceCommand}" CommandParameter="{Binding}" IsEnabled="{Binding CanLaunch}" Padding="6,4" ToolTip.Tip="{Binding StatusText}" />
                                                             </Grid>
                                                         </Grid>
                                                         </Panel>
                                                     </Border>
                                                 </Border>
                                             </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                        </ItemsRepeater.ItemTemplate>
+                                    </ItemsRepeater>
                                 </ScrollViewer>
                                 <StackPanel x:Name="libraryEmptyState" IsVisible="{Binding Library.IsEmpty}" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="390" Spacing="12">
                                     <Border Width="72" Height="72" CornerRadius="24" Background="{DynamicResource AccentSoftBrush}" HorizontalAlignment="Center" Margin="0,0,0,8">

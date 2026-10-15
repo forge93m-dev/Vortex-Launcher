@@ -8,6 +8,7 @@ using System.Text.Json;
 using VortexLauncher.Core.Launch;
 
 string testRoot = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "vortex-download-smoke-" + Guid.NewGuid().ToString("N"))).FullName;
+PlatformSupport.DataRootOverride = Directory.CreateDirectory(Path.Combine(testRoot, "data")).FullName;
 string cache = Path.Combine(testRoot, "cache");
 var handler = new FixtureHandler();
 using var client = new HttpClient(handler);
@@ -94,15 +95,18 @@ for (int i = 0; i < 8; i++)
     handler.Files[libUrl] = bytes;
     libraries.Add(new { name = $"fixture:lib{i}:1", downloads = new { artifact = new { url = libUrl, path = $"fixture/lib{i}/1/lib{i}-1.jar", sha1 = Sha(bytes), size = bytes.Length } } });
 }
+string fixtureNativeName = OperatingSystem.IsWindows() ? "fixture.dll" : OperatingSystem.IsMacOS() ? "libfixture.dylib" : "libfixture.so";
+string fixtureClassifier = PlatformSupport.MinecraftOs == "osx" ? "macos" : PlatformSupport.MinecraftOs;
+if (System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture == System.Runtime.InteropServices.Architecture.Arm64) fixtureClassifier += "-arm64";
 using (var archiveStream = new MemoryStream())
 {
     using (var zip = new ZipArchive(archiveStream, ZipArchiveMode.Create, true))
-    using (var writer = new StreamWriter(zip.CreateEntry("fixture.dll").Open())) writer.Write("native fixture");
+    using (var writer = new StreamWriter(zip.CreateEntry(fixtureNativeName).Open())) writer.Write("native fixture");
     byte[] bytes = archiveStream.ToArray();
     string nativeUrl = "https://fixture.test/native.jar";
     handler.Files[nativeUrl] = bytes;
     libraries.Add(new { name = "org.lwjgl:lwjgl:3", downloads = new { artifact = new { url = nativeUrl,
-        path = "org/lwjgl/lwjgl/3/lwjgl-3-natives-windows.jar", sha1 = Sha(bytes), size = bytes.Length } } });
+        path = $"org/lwjgl/lwjgl/3/lwjgl-3-natives-{fixtureClassifier}.jar", sha1 = Sha(bytes), size = bytes.Length } } });
 }
 string manifestUrl = "https://fixture.test/version.json";
 handler.Files[manifestUrl] = JsonSerializer.SerializeToUtf8Bytes(new {
@@ -120,7 +124,7 @@ string instance = Path.Combine(PlatformSupport.DataRoot, "instances", instanceNa
 Check(handler.Peak > 16 && handler.Peak <= 24, "one bounded queue overlaps independent file transfers");
 Check(Directory.GetFiles(Path.Combine(instance, "assets", "objects"), "*", SearchOption.AllDirectories).Length == 32,
     "assets and libraries are materialized in the existing portable layout");
-Check(File.Exists(Path.Combine(instance, "natives", "fixture.dll")) && File.Exists(Path.Combine(instance, "versions", "fixture", "fixture.jar")),
+Check(File.Exists(Path.Combine(instance, "natives", fixtureNativeName)) && File.Exists(Path.Combine(instance, "versions", "fixture", "fixture.jar")),
     "native extraction and Forge-compatible vanilla copy still work");
 Check(progress.Last().Percent == 100 && !progress.Any(p => p.Percent < 0 || p.Percent > 100), "aggregate progress finishes at 100 percent");
 requests = handler.Requests;
@@ -139,6 +143,7 @@ await downloader.DownloadGameAsync(instanceName, "fixture", manifestUrl, (_, _) 
 Check(File.ReadAllText(Path.Combine(instance, "saves", "World", "level.dat")) == "world" && File.ReadAllText(Path.Combine(instance, "mods", "user.jar")) == "user mod", "managed game repair preserves worlds and user mods");
 await MaintenanceChecks.RunAsync(testRoot, handler, client);
 await UpdateChecks.RunAsync(testRoot, handler, client);
+await StabilityChecks.RunAsync(testRoot);
 if (args.Length == 2 && args[0] == "--verify-release") await UpdateChecks.VerifyPublishedZipAsync(Path.GetFullPath(args[1]), testRoot);
 if (args.Length == 3 && args[0] == "--verify-release")
 {

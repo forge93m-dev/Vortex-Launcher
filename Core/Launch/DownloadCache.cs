@@ -44,58 +44,11 @@ internal static class DownloadCache
             string root = cacheRoot ?? Root;
             Directory.CreateDirectory(root);
             string cached = Path.Combine(root, key);
+            await using var processLease = await AcquireProcessLockAsync(cached + ".download-lock", token);
             if (!await IsValidAsync(cached, sha1, size, token, validateArchive))
             {
-                for (int attempt = 0; ; attempt++)
-                {
-                    string temporary = cached + "." + Guid.NewGuid().ToString("N") + ".part";
-                    long attemptBytes = 0;
-                    try
-                    {
-                        using var response = await (httpClient ?? Client).GetAsync(url, HttpCompletionOption.ResponseHeadersRead, token);
-                        response.EnsureSuccessStatusCode();
-                        long? expectedLength = size ?? response.Content.Headers.ContentLength;
-                        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA1);
-                        await using (var input = await response.Content.ReadAsStreamAsync(token))
-                        await using (var output = new FileStream(temporary, FileMode.CreateNew,
-                            FileAccess.Write, FileShare.None, 81920, true))
-                        {
-                            byte[] buffer = ArrayPool<byte>.Shared.Rent(256 * 1024);
-                            try
-                            {
-                                int count;
-                                while ((count = await input.ReadAsync(buffer.AsMemory(), token)) > 0)
-                                {
-                                    hash.AppendData(buffer, 0, count);
-                                    await output.WriteAsync(buffer.AsMemory(0, count), token);
-                                    attemptBytes += count;
-                                    received?.Invoke(count);
-                                }
-                            }
-                            finally { ArrayPool<byte>.Shared.Return(buffer); }
-                        }
-                        string actualHash = Convert.ToHexString(hash.GetHashAndReset());
-                        if (attemptBytes == 0 || (expectedLength.HasValue && attemptBytes != expectedLength.Value) ||
-                            (!string.IsNullOrEmpty(sha1) && !actualHash.Equals(sha1, StringComparison.OrdinalIgnoreCase)))
-                            throw new IOException("Downloaded file failed verification: " + url);
-                        token.ThrowIfCancellationRequested();
-                        if (validateArchive && !await IsValidAsync(temporary, null, null, token, true))
-                            throw new IOException("Downloaded library is not a readable JAR archive.");
-                        File.Move(temporary, cached, true);
-                        Remember(cached, actualHash);
-                        break;
-                    }
-                    catch (Exception ex) when (attempt < 2 && !token.IsCancellationRequested &&
-                        (ex is HttpRequestException || ex is IOException || ex is TaskCanceledException))
-                    {
-                        received?.Invoke(-attemptBytes);
-                        await Task.Delay(300 * (attempt + 1), token);
-                    }
-                    finally
-                    {
-                        if (File.Exists(temporary)) File.Delete(temporary);
-                    }
-                }
+                string actualHash = await ResumableTransfer.DownloadAsync(httpClient ?? Client, url, cached, sha1, size, validateArchive, received, token);
+                Remember(cached, actualHash);
             }
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             token.ThrowIfCancellationRequested();
@@ -147,6 +100,17 @@ internal static class DownloadCache
         bool valid = hash.Equals(sha1, StringComparison.OrdinalIgnoreCase);
         if (valid) Remember(path, hash);
         return valid;
+    }
+
+    private static async Task<FileStream> AcquireProcessLockAsync(string path, CancellationToken token)
+    {
+        for (int attempt = 0; ; attempt++)
+        {
+            token.ThrowIfCancellationRequested();
+            if (File.Exists(path) && (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0) throw new IOException("Download lock is a link.");
+            try { return new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); }
+            catch (IOException) when (attempt < 3000) { await Task.Delay(100, token); }
+        }
     }
 
     private static void Remember(string path, string hash)

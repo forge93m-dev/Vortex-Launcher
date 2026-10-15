@@ -1,6 +1,5 @@
 <Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:VortexLauncher.ViewModels" xmlns:conv="using:VortexLauncher.Converters" x:Class="VortexLauncher.Views.InstanceDetailsWindow" x:DataType="vm:InstanceDetailsViewModel" Title="Instance Manager" Opened="OnWindowOpened" Width="1080" Height="720" MinWidth="860" MinHeight="600" WindowStartupLocation="CenterOwner" SystemDecorations="None" Background="{DynamicResource ThemeBackgroundBrush}">
     <Window.Resources>
-        <conv:BitmapAssetValueConverter x:Key="LocalBitmapConverter" />
     </Window.Resources>
     <Window.Styles>
         <Style Selector="Button.CaptionButton">
@@ -206,7 +205,7 @@
                                     <Border Classes="ContentCard" Width="210" Height="170" Margin="0,0,12,12" Padding="8">
                                         <Grid RowDefinitions="*,Auto,Auto">
                                             <Border Grid.Row="0" Background="{DynamicResource ThemeBackgroundBrush}" CornerRadius="7" ClipToBounds="True">
-                                                <Image Source="{Binding Path, Converter={StaticResource LocalBitmapConverter}}" Stretch="UniformToFill" />
+                                                <conv:AsyncImage SourcePath="{Binding Path}" DecodeWidth="544" Stretch="UniformToFill" />
                                             </Border>
                                             <TextBlock Grid.Row="1" Text="{Binding Name}" Foreground="{DynamicResource ThemeTextBrush}" FontSize="11" TextTrimming="CharacterEllipsis" Margin="2,8,2,5" />
                                             <Button Grid.Row="2" Classes="ActionButton" Content="Open image" Command="{Binding $parent[Window].DataContext.OpenItemCommand}" CommandParameter="{Binding}" />

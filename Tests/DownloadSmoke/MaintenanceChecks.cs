@@ -19,7 +19,7 @@ static class MaintenanceChecks
             ("shaderpacks/a.zip", "shader"), ("saves/World/level.dat", "world"), ("saves/World/region/r.dat", "region"));
         var preview = ArchivePreview.Inspect(zip);
         Check(preview.Loader == "Fabric" && preview.LoaderVersion == "0.19.5" && preview.Mods == 1 && preview.Worlds == 1 && preview.ResourcePacks == 1 && preview.ShaderPacks == 1, "preview counts content and preserves exact loader metadata");
-        Check(!Directory.EnumerateDirectories(Path.Combine(work, "instances")).Any(), "preview does not extract or create instances");
+        Check(!Directory.Exists(Path.Combine(work, "instances")) || !Directory.EnumerateDirectories(Path.Combine(work, "instances")).Any(), "preview does not extract or create instances");
         var imported = await manager.ImportArchiveAsync(zip, preview.Fingerprint);
         Check(imported.LoaderVersion == "0.19.5" && File.ReadAllText(Path.Combine(imported.InstancePath, "saves/World/level.dat")) == "world", "confirmed Vortex import preserves game content and Fabric version");
         int directories = Directory.GetDirectories(Path.Combine(work, "instances")).Length;

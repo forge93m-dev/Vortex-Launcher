@@ -10,11 +10,12 @@ namespace VortexLauncher.Core.Launch;
 
 public static class PlatformSupport
 {
+    internal static string? DataRootOverride { get; set; }
     // Keep the existing Windows portable layout. macOS bundles may be read-only
     // and must never contain worlds, accounts or downloaded runtimes.
-    public static string DataRoot => OperatingSystem.IsMacOS()
+    public static string DataRoot => DataRootOverride ?? (OperatingSystem.IsMacOS()
         ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Application Support", "VortexLauncher")
-        : AppDomain.CurrentDomain.BaseDirectory;
+        : AppDomain.CurrentDomain.BaseDirectory);
 
     public static string MinecraftOs => OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsMacOS() ? "osx" : "linux";
     public static string JavaExecutable => OperatingSystem.IsWindows() ? "javaw.exe" : "java";

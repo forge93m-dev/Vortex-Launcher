@@ -28,8 +28,11 @@ public partial class MainWindowViewModel : ObservableObject
 
     private readonly GameLauncher _launcher = new();
     private readonly GameDownloader _downloader = new();
-    private readonly InstanceManager _instanceManager = new();
-    private readonly SettingsManager _settingsManager = new();
+    private readonly InstanceManager _instanceManager;
+    private readonly SettingsManager _settingsManager;
+    private readonly AccountManager _accountManager;
+    private LauncherSettings _currentSettings = new();
+    private readonly bool _checkUpdatesOnStartup;
     private readonly UpdateService _updateService = new();
     private CancellationTokenSource? _installationCancellation;
     private Avalonia.Controls.WindowState _previousWindowState;
@@ -56,9 +59,9 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private void ToggleFavorite(InstanceModel? instance)
     {
-        if (instance == null) return;
+        if (IsInitializing || instance == null || instance.MetadataProblem.Length > 0) return;
         instance.IsFavorite = !instance.IsFavorite;
-        _instanceManager.SaveInstance(instance);
+        SaveInstanceMetadata(instance);
         SortInstances();
     }
 
@@ -71,7 +74,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     public void RenameInstance(InstanceModel instance, string name)
     {
-        if (string.IsNullOrWhiteSpace(name)) return;
+        if (IsInitializing || instance.MetadataProblem.Length > 0 || string.IsNullOrWhiteSpace(name)) return;
         instance.Name = name.Trim();
         SaveInstanceMetadata(instance);
     }
@@ -79,20 +82,26 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private async Task CloneInstanceAsync(InstanceModel? instance)
     {
-        if (instance == null || !instance.CanChangeFiles || IsGlobalLoading || IsDownloading) return;
+        if (IsInitializing || instance == null || !instance.CanChangeFiles || IsGlobalLoading || IsDownloading) return;
         IsGlobalLoading = true;
         LoadingTitle = $"Copying {instance.Name}";
         TransferDetails = "Copying worlds, mods and settings to an independent instance...";
+        using var cancellation = new CancellationTokenSource();
+        using var operation = DownloadCenter.Begin("Copy: " + instance.Name, cancellation.Cancel);
+        _installationCancellation = cancellation; CanCancelInstallation = true;
         try
         {
-            var clone = await Task.Run(() => _instanceManager.CloneAsync(instance));
+            var transfer = new TransferProgress(s => { operation.Report(s); UpdateTransferProgress(s); });
+            var clone = await Task.Run(() => _instanceManager.CloneAsync(instance, cancellationToken: cancellation.Token, transfer: transfer));
             Instances.Add(clone);
             SortInstances();
             SelectedInstance = clone;
             StatusMessage = $"Created {clone.Name}";
+            operation.Complete();
         }
-        catch (Exception ex) { StatusMessage = $"Copy failed: {ex.Message}"; }
-        finally { IsGlobalLoading = false; TransferDetails = string.Empty; }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { operation.Cancelled(); StatusMessage = "Copy stopped safely. Resume it from the recovery banner."; }
+        catch (Exception ex) { operation.Fail(ex); StatusMessage = $"Copy failed: {ex.Message}"; }
+        finally { IsGlobalLoading = false; TransferDetails = string.Empty; _installationCancellation = null; CanCancelInstallation = false; await RefreshRecoveriesAsync(); }
     }
 
     [ObservableProperty]
@@ -182,8 +191,11 @@ public partial class MainWindowViewModel : ObservableObject
     public ModpacksViewModel ModpacksVm { get; }
     public InstanceLibraryViewModel Library { get; }
 
-    public MainWindowViewModel()
+    public MainWindowViewModel() : this(new InstanceManager(), new SettingsManager(), new AccountManager()) { }
+    internal MainWindowViewModel(InstanceManager instances, SettingsManager settings, AccountManager accounts, bool checkUpdates = true)
     {
+        _checkUpdatesOnStartup = checkUpdates;
+        _instanceManager = instances; _settingsManager = settings; _accountManager = accounts;
         Library = new InstanceLibraryViewModel(Instances);
         Accounts.Add(ActiveAccount);
 
@@ -209,9 +221,7 @@ public partial class MainWindowViewModel : ObservableObject
         ThemePresets.Add(new ThemePresetViewModel("Cyber Neon", "#FF007F", "#090A12", "#111225", "#171A32", "#30365C", "#FFFFFF", "#9CA8D7"));
         ThemePresets.Add(new ThemePresetViewModel("Emerald", "#50FA7B", "#07110D", "#0C1B14", "#10251A", "#1B4930", "#F0FFF4", "#91B7A0"));
 
-        LoadSettings();
-        LoadInstances();
-        _ = CheckForUpdatesAsync();
+        Library.IsLoading = true;
     }
 
     private Task CheckForUpdatesAsync() => CheckLauncherUpdatesAsync();
@@ -241,6 +251,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     public async Task ImportInstanceArchive(string archivePath)
     {
+        if (IsInitializing) return;
         if (_isImportingArchive || IsGlobalLoading || IsDownloading) return;
         _isImportingArchive = true;
         DownloadOperation? operation = null;
@@ -279,6 +290,7 @@ public partial class MainWindowViewModel : ObservableObject
             operation?.Dispose();
             if (operation != null) { IsGlobalLoading = false; CanCancelInstallation = false; _installationCancellation = null; TransferDetails = ""; }
             _isImportingArchive = false;
+            if (operation != null) await RefreshRecoveriesAsync();
         }
     }
 
@@ -301,12 +313,11 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    private void LoadSettings()
+    private void ApplySettings(LauncherSettings settings)
     {
-        var settings = _settingsManager.LoadSettings();
+        _currentSettings = settings;
         StartupGreeting = settings.HasLaunchedBefore ? "Welcome Back" : "Welcome";
         settings.HasLaunchedBefore = true;
-        _settingsManager.SaveSettings(settings);
         RamGb = settings.RamAllocationGb;
         MinimizeOnGameLaunch = settings.MinimizeOnGameLaunch;
         CustomJavaPath = settings.CustomJavaPath;
@@ -339,70 +350,56 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private void AddAccount()
     {
-        if (string.IsNullOrWhiteSpace(NewAccountUsername)) return;
+        if (IsInitializing || string.IsNullOrWhiteSpace(NewAccountUsername)) return;
 
         var acc = new AccountModel(NewAccountUsername);
         Accounts.Add(acc);
         ActiveAccount = acc;
         NewAccountUsername = string.Empty;
+        PersistAccounts();
     }
 
     [RelayCommand]
     private void SelectAccount(AccountModel? account)
     {
-        if (account != null)
+        if (!IsInitializing && account != null)
         {
             ActiveAccount = account;
+            PersistAccounts();
         }
     }
 
     [RelayCommand]
     private void DeleteAccount(AccountModel? account)
     {
-        if (account == null) return;
+        if (IsInitializing || account == null) return;
         Accounts.Remove(account);
 
         if (ActiveAccount == account)
         {
             ActiveAccount = Accounts.FirstOrDefault() ?? new AccountModel("Steve");
         }
+        PersistAccounts();
     }
 
     [RelayCommand]
-    private void SaveSettings()
+    private async Task SaveSettingsAsync()
     {
-        var settings = _settingsManager.LoadSettings();
+        if (IsInitializing) return;
+        var settings = _currentSettings;
         settings.RamAllocationGb = RamGb;
         settings.CustomJavaPath = CustomJavaPath;
         settings.JvmArguments = JvmArgs;
         settings.AccentColor = AccentColor;
         settings.ThemeName = ThemeName;
         settings.MinimizeOnGameLaunch = MinimizeOnGameLaunch;
-        _settingsManager.SaveSettings(settings);
-        ThemeManager.SetAccentColor(AccentColor);
-        StatusMessage = "Settings saved!";
-    }
-
-    private void LoadInstances()
-    {
-        Instances.Clear();
-        var loaded = _instanceManager.LoadInstances();
-        foreach (var inst in loaded)
-        {
-            inst.IsInstalled = IsInstanceReady(inst);
-            Instances.Add(inst);
-        }
-
-        SortInstances();
-
-        if (Instances.Count > 0)
-        {
-            SelectedInstance = Instances[0];
-        }
+        try { await Task.Run(() => _settingsManager.SaveSettings(settings)); ThemeManager.SetAccentColor(AccentColor); StatusMessage = "Settings saved!"; }
+        catch (Exception ex) { StatusMessage = "Settings were not saved: " + ex.Message; }
     }
 
     public async Task AddInstanceAsync(string name, string version, string loader, bool vortexClientEnabled = false)
     {
+        if (IsInitializing) return;
         if (vortexClientEnabled && !VortexClientService.IsCompatible(version, loader))
         {
             StatusMessage = "Vortex Client is available for Minecraft 26.3 with Fabric only.";
@@ -425,11 +422,13 @@ public partial class MainWindowViewModel : ObservableObject
 
     public void SaveInstanceMetadata(InstanceModel instance)
     {
-        _instanceManager.SaveInstance(instance);
+        try { _instanceManager.SaveInstance(instance); }
+        catch (Exception ex) { StatusMessage = "Instance metadata was not saved: " + ex.Message; }
     }
 
     private static bool IsInstanceReady(InstanceModel instance)
     {
+        if (instance.MetadataProblem.Length > 0 || instance.HasInterruptedOperation) return false;
         string markerPath = Path.Combine(instance.InstancePath, InstallationMarkerFileName);
         if (File.Exists(Path.Combine(instance.InstancePath, ".vortex-installation-pending"))) return false;
         if (File.Exists(markerPath)) return true;
@@ -441,7 +440,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     private async Task InstallInstanceAsync(InstanceModel instance, bool repair = false)
     {
-        if (!instance.CanChangeFiles || (!repair && instance.IsInstalled) || IsDownloading || IsGlobalLoading) return;
+        if (IsInitializing || !instance.CanChangeFiles || (!repair && instance.IsInstalled) || IsDownloading || IsGlobalLoading) return;
 
         using var cancellation = new CancellationTokenSource();
         using var operation = DownloadCenter.Begin($"{(repair ? "Repair" : "Install")}: {instance.Name}", cancellation.Cancel);
@@ -460,6 +459,7 @@ public partial class MainWindowViewModel : ObservableObject
             await Task.Run(async () =>
             {
                 if (repair) { InstanceRepair.ValidateTarget(instance); DownloadCache.ForgetVerification(instance.InstancePath); }
+                OperationJournal.Begin(instance.InstancePath, repair ? "Repair" : "Install");
                 await File.WriteAllTextAsync(Path.Combine(instance.InstancePath, ".vortex-installation-pending"), "Installing", cancellation.Token);
                 string instanceFolderName = Path.GetFileName(instance.InstancePath);
                 var minecraftService = new MinecraftService();
@@ -560,7 +560,8 @@ public partial class MainWindowViewModel : ObservableObject
                 await File.WriteAllTextAsync(
                     Path.Combine(instance.InstancePath, InstallationMarkerFileName),
                     DateTimeOffset.UtcNow.ToString("O"), cancellation.Token);
-                File.Delete(Path.Combine(instance.InstancePath, ".vortex-installation-pending"));
+                _instanceManager.SaveInstance(instance);
+                OperationJournal.Complete(instance.InstancePath);
             });
 
             instance.IsInstalled = true;
@@ -587,6 +588,7 @@ public partial class MainWindowViewModel : ObservableObject
             IsGlobalLoading = false;
             CanCancelInstallation = false;
             _installationCancellation = null;
+            await RefreshRecoveriesAsync();
         }
     }
 
@@ -676,7 +678,7 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
 
-        if (IsDownloading || IsGlobalLoading || !target.CanChangeFiles) return;
+        if (IsInitializing || IsDownloading || IsGlobalLoading || !target.CanChangeFiles) return;
 
         using var cancellation = new CancellationTokenSource();
         _installationCancellation = cancellation;

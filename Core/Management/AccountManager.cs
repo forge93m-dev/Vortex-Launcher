@@ -12,15 +12,24 @@ public class AccountManager
 {
     private readonly string _configPath;
 
-    public AccountManager()
+    public string LoadNotice { get; private set; } = "";
+    public AccountManager(string? configDirectory = null)
     {
-        string dir = Path.Combine(PlatformSupport.DataRoot, "config");
-        Directory.CreateDirectory(dir);
+        string dir = configDirectory ?? Path.Combine(PlatformSupport.DataRoot, "config");
         _configPath = Path.Combine(dir, "accounts.json");
     }
 
     public List<AccountModel> LoadAccounts()
     {
+        var stored = SafeJsonStore.Read<List<AccountModel>>(_configPath, list => list.All(a => a != null && !string.IsNullOrWhiteSpace(a.Username)));
+        LoadNotice = stored.Notice;
+        if (stored.Value != null)
+        {
+            foreach (var account in stored.Value)
+                if (!Guid.TryParse(account.Uuid, out _)) account.Uuid = AccountModel.GenerateOfflineUuid(account.Username);
+            return stored.Value;
+        }
+        if (stored.Damaged) return new List<AccountModel> { new("Steve") { IsActive = true } };
         if (!File.Exists(_configPath))
         {
             var defaultAcc = new AccountModel("Steve") { IsActive = true };
@@ -29,21 +38,12 @@ public class AccountManager
             return list;
         }
 
-        try
-        {
-            string json = File.ReadAllText(_configPath);
-            return JsonSerializer.Deserialize<List<AccountModel>>(json) ?? new List<AccountModel>();
-        }
-        catch
-        {
-            return new List<AccountModel> { new AccountModel("Steve") { IsActive = true } };
-        }
+        return new List<AccountModel> { new("Steve") { IsActive = true } };
     }
 
     public void SaveAccounts(List<AccountModel> accounts)
     {
-        string json = JsonSerializer.Serialize(accounts, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(_configPath, json);
+        SafeJsonStore.Write(_configPath, accounts);
     }
 
     public AccountModel GetActiveAccount(List<AccountModel> accounts)

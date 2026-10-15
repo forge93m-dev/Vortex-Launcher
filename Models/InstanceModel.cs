@@ -6,6 +6,16 @@ namespace VortexLauncher.Models;
 public partial class InstanceModel : ObservableObject
 {
     [ObservableProperty]
+    [property: System.Text.Json.Serialization.JsonIgnore]
+    private string _metadataProblem = "";
+    [ObservableProperty]
+    [property: System.Text.Json.Serialization.JsonIgnore]
+    private bool _hasInterruptedOperation;
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool CanLaunch => CanChangeFiles && !HasInterruptedOperation;
+    partial void OnMetadataProblemChanged(string value) { OnPropertyChanged(nameof(StatusText)); OnPropertyChanged(nameof(CanChangeFiles)); OnPropertyChanged(nameof(CanLaunch)); OnPropertyChanged(nameof(CanManageMods)); }
+    partial void OnHasInterruptedOperationChanged(bool value) { OnPropertyChanged(nameof(StatusText)); OnPropertyChanged(nameof(CanLaunch)); OnPropertyChanged(nameof(CanChangeFiles)); OnPropertyChanged(nameof(CanManageMods)); }
+    [ObservableProperty]
     private string _name = string.Empty;
 
     [ObservableProperty]
@@ -46,16 +56,18 @@ public partial class InstanceModel : ObservableObject
     public string LaunchButtonText => IsRunning ? "Running" : IsInstalled ? "Play" : "Resume";
 
     [System.Text.Json.Serialization.JsonIgnore]
-    public string StatusText => IsBeingDeleted ? "Removing…" : IsInstalling ? "Installing…"
+    public string StatusText => MetadataProblem.Length > 0 ? "Metadata needs recovery" : HasInterruptedOperation ? "Interrupted operation"
+        : IsBeingDeleted ? "Removing…" : IsInstalling ? "Installing…"
         : IsRunning ? "In game" : IsInstalled ? "Ready to play" : "Not installed";
 
     [System.Text.Json.Serialization.JsonIgnore]
-    public bool CanChangeFiles => !IsInstalling && !IsRunning && !IsBeingDeleted;
+    public bool CanChangeFiles => MetadataProblem.Length == 0 && !HasInterruptedOperation && !IsInstalling && !IsRunning && !IsBeingDeleted;
 
     partial void OnIsFavoriteChanged(bool value) => OnPropertyChanged(nameof(FavoriteSymbol));
 
     partial void OnIsRunningChanged(bool value)
     {
+        OnPropertyChanged(nameof(CanLaunch));
         OnPropertyChanged(nameof(StatusText));
         OnPropertyChanged(nameof(CanManageMods));
         OnPropertyChanged(nameof(LaunchButtonText));
@@ -78,7 +90,7 @@ public partial class InstanceModel : ObservableObject
     public double CardOpacity => IsBeingDeleted ? 0 : 1;
 
     [System.Text.Json.Serialization.JsonIgnore]
-    public bool CanManageMods => IsInstalled && !IsInstalling && !IsRunning;
+    public bool CanManageMods => IsInstalled && CanChangeFiles;
 
     public string SummaryText => $"{Version} ({Loader})";
     partial void OnVersionChanged(string value) => OnPropertyChanged(nameof(SummaryText));
@@ -111,6 +123,7 @@ public partial class InstanceModel : ObservableObject
 
     partial void OnIsInstallingChanged(bool value)
     {
+        OnPropertyChanged(nameof(CanLaunch));
         OnPropertyChanged(nameof(StatusText));
         OnPropertyChanged(nameof(CanManageMods));
         OnPropertyChanged(nameof(CanChangeFiles));
@@ -118,6 +131,7 @@ public partial class InstanceModel : ObservableObject
 
     partial void OnIsBeingDeletedChanged(bool value)
     {
+        OnPropertyChanged(nameof(CanLaunch));
         OnPropertyChanged(nameof(StatusText));
         OnPropertyChanged(nameof(CardOpacity));
         OnPropertyChanged(nameof(CanChangeFiles));

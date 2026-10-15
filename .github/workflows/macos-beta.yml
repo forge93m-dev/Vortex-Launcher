@@ -9,7 +9,10 @@ permissions:
   contents: read
 
 jobs:
+  checks:
+    uses: ./.github/workflows/verify-launcher.yml
   beta:
+    needs: checks
     name: Beta ${{ matrix.rid }}
     strategy:
       fail-fast: false
