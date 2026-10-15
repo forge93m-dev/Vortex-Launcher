@@ -42,7 +42,10 @@ internal static class ChromeAndHoverChecks
         window.Show(); pump(550);
         Check(window.Content is Border root && RoundedClip.GetIsEnabled(root) && root.Clip != null, "main window uses the rounded content clip");
         var scroller = window.FindControl<ScrollViewer>("instanceCardsScroll")!;
-        var card = Cards(window).OrderBy(c => c.TranslatePoint(default, scroller)!.Value.Y).First();
+        // ItemsRepeater may keep recycled containers parked at -10000. They are
+        // not on-screen cards and cannot be selected as hover targets.
+        var card = VisibleCards(window, scroller).OrderBy(c => c.TranslatePoint(default, scroller)!.Value.Y)
+            .ThenBy(c => c.TranslatePoint(default, scroller)!.Value.X).First();
         Hover(window, card, pump);
         var top = card.TranslatePoint(default, scroller)!.Value;
         Console.WriteLine($"Hover geometry: pointer={card.IsPointerOver}, top={top}, viewport={scroller.Viewport}, offset={scroller.Offset}, margin={((Border)card.Parent!).Margin}");
@@ -51,7 +54,7 @@ internal static class ChromeAndHoverChecks
         window.CaptureRenderedFrame()!.Save(Path.Combine(output, "library-hover-first-row.png"));
         window.MouseMove(new Point(700, 80)); pump(220);
         scroller.Offset = new Vector(0, scroller.Extent.Height); pump(250);
-        var last = Cards(window).Single(c => (c.DataContext as InstanceModel)?.Name == "Instance 35");
+        var last = VisibleCards(window, scroller).Single(c => (c.DataContext as InstanceModel)?.Name == "Instance 35");
         Hover(window, last, pump);
         var bottom = last.TranslatePoint(new Point(last.Bounds.Width, last.Bounds.Height), scroller)!.Value;
         Check(last.IsPointerOver && bottom.Y <= scroller.Viewport.Height + 0.5 && bottom.X <= scroller.Viewport.Width + 0.5, "last-row and right-edge card animations remain inside the viewport");
@@ -60,6 +63,11 @@ internal static class ChromeAndHoverChecks
         Console.WriteLine("CHROME_HOVER_CHECKS_OK");
     }
     private static IEnumerable<Border> Cards(Window window) => window.GetVisualDescendants().OfType<Border>().Where(c => c.Classes.Contains("InstanceCard"));
+    private static IEnumerable<Border> VisibleCards(Window window, ScrollViewer scroller) => Cards(window).Where(card =>
+    {
+        var point = card.TranslatePoint(default, scroller)!.Value;
+        return card.IsEffectivelyVisible && point.X >= -0.5 && point.Y >= -0.5 && point.X < scroller.Viewport.Width && point.Y < scroller.Viewport.Height;
+    });
     private static void Hover(Window window, Border card, Action<int> pump)
     {
         var point = card.TranslatePoint(new Point(24, 24), window)!.Value;
