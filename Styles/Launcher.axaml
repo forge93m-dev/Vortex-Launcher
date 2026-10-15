@@ -1,4 +1,4 @@
-<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:views="using:VortexLauncher.Views">
     <Style Selector="Window">
         <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
         <Setter Property="FontSize" Value="13" />
@@ -42,6 +42,8 @@
         <Setter Property="Padding" Value="8,4" />
     </Style>
     <Style Selector="Border.InstanceCard">
+        <Setter Property="views:RoundedClip.IsEnabled" Value="True" />
+        <Setter Property="ClipToBounds" Value="True" />
         <Setter Property="CornerRadius" Value="12" />
         <Setter Property="Background" Value="{DynamicResource ThemeSidebarBrush}" />
         <Setter Property="RenderTransform" Value="translate(0px,0px)" />
@@ -189,3 +191,4 @@
         <Setter Property="AllowAutoHide" Value="True" />
     </Style>
 </Styles>
+

@@ -47,6 +47,7 @@ public partial class InstanceDetailsWindow : Window
     public InstanceDetailsWindow(InstanceModel instance, Func<string, Task>? joinServerCallback)
     {
         InitializeComponent();
+        RoundedWindowChrome.Attach(this, detailsShell);
         sectionContent.AddHandler(DragDrop.DragOverEvent, OnFileDragOver);
         sectionContent.AddHandler(DragDrop.DragLeaveEvent, (_, _) => dropHint.IsVisible = false);
         sectionContent.AddHandler(DragDrop.DropEvent, OnFilesDropped);
@@ -165,3 +166,4 @@ public partial class InstanceDetailsWindow : Window
         }, DispatcherPriority.Render);
     }
 }
+

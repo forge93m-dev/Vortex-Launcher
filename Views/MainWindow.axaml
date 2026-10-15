@@ -221,14 +221,14 @@
                             </Border>
                             <Panel Grid.Row="3">
                                 <TextBlock Text="Loading library…" IsVisible="{Binding IsInitializing}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                                <ScrollViewer x:Name="instanceCardsScroll" HorizontalScrollBarVisibility="Disabled">
                                     <ItemsRepeater x:Name="instanceCards" ItemsSource="{Binding Library.VisibleInstances}">
                                         <ItemsRepeater.Layout>
                                             <UniformGridLayout MinItemWidth="284" MinItemHeight="166" ItemsJustification="Start" />
                                         </ItemsRepeater.Layout>
                                         <ItemsRepeater.ItemTemplate>
                                             <DataTemplate>
-                                                <Border AttachedToVisualTree="OnCardAttached" DetachedFromVisualTree="OnCardDetached" Margin="0,0,12,12">
+                                                <Border AttachedToVisualTree="OnCardAttached" DetachedFromVisualTree="OnCardDetached" Margin="0,4,12,8">
                                                     <Border Classes="VortexCard InstanceCard" Width="272" Height="154" Opacity="{Binding CardOpacity}" PointerPressed="OnInstanceCardPointerPressed">
                                                         <Panel>
                                                             <Border IsVisible="{Binding HasCover}" CornerRadius="12" ClipToBounds="True" Opacity="0.14" IsHitTestVisible="False">
@@ -560,3 +560,4 @@
         </Border>
     </Panel>
 </Window>
+

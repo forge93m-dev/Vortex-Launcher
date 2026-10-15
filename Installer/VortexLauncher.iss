@@ -3,7 +3,7 @@
 
 #define AppName "Vortex Launcher"
 #ifndef AppVersion
-#define AppVersion "0.1.4"
+#define AppVersion "0.1.5"
 #endif
 #define AppPublisher "Vortex Launcher"
 #define AppExeName "Vortex Launcher.exe"
@@ -39,3 +39,4 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 
 [Run]
 Filename: "{app}\\{#AppExeName}"; Description: "Launch {#AppName}"; Flags: nowait postinstall skipifsilent
+

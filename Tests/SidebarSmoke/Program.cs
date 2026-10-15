@@ -42,6 +42,12 @@ var output = Directory.CreateDirectory(Path.Combine(FixturePaths.TempRoot(), "vo
 
 try
 {
+    if (args.Contains("--chrome"))
+    {
+        ChromeAndHoverChecks.Run(Pump, output);
+        Console.WriteLine("Rendered previews: " + output);
+        return;
+    }
     var rail = window.FindControl<Border>("navigationRail")!;
     var player = window.FindControl<Border>("activePlayerCard")!;
     Check(rail.Background is ISolidColorBrush { Color.A: 0 } && rail.BorderThickness == new Thickness(0),
@@ -409,6 +415,7 @@ try
     Console.WriteLine("LAUNCHER_UPDATE_UI_OK");
     StabilityUiChecks.Run(Pump, output);
     ModManagementUiChecks.Run(Pump, output);
+    ChromeAndHoverChecks.Run(Pump, output);
     Console.WriteLine("MAINTENANCE_UI_OK");
     Console.WriteLine("REDESIGN_UI_OK");
     Console.WriteLine("Rendered previews: " + output);

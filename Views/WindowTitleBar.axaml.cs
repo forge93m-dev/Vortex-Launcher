@@ -33,11 +33,12 @@ public partial class WindowTitleBar : UserControl
         layout.Children.Add(new WindowTitleBar(window));
         Grid.SetRow(content, 1);
         layout.Children.Add(content);
-        var shell = new Border { Child = layout, CornerRadius = new CornerRadius(12),
+        var shell = new Border { Name = "windowChromeShell", Child = layout, CornerRadius = new CornerRadius(12),
             BorderThickness = new Thickness(1), ClipToBounds = true };
         shell.Bind(Border.BackgroundProperty, new DynamicResourceExtension("ThemeBackgroundBrush"));
         shell.Bind(Border.BorderBrushProperty, new DynamicResourceExtension("ThemeBorderBrush"));
         window.Content = shell;
+        RoundedWindowChrome.Attach(window, shell);
     }
 
     private void OnMinimize(object? sender, RoutedEventArgs e) { if (_window != null) _window.WindowState = WindowState.Minimized; }
@@ -57,3 +58,4 @@ public partial class WindowTitleBar : UserControl
         e.Handled = true;
     }
 }
+
