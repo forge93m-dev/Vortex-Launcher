@@ -25,6 +25,13 @@ public sealed class ModUpdateService
     private readonly string? _cache;
     public ModUpdateService(ModrinthService? api = null) => _api = api ?? new();
     internal ModUpdateService(ModrinthService api, HttpClient http, string cache) { _api = api; _http = http; _cache = cache; }
+    public async Task<string?> GetProjectUrlAsync(string root, string path, CancellationToken token)
+    {
+        ModFiles.Validate(root, path);
+        if (VortexClientService.HasClientId(path)) return null;
+        var version = await _api.IdentifyForUpdateAsync(await HashAsync(path, token), token);
+        return string.IsNullOrWhiteSpace(version?.ProjectId) ? null : "https://modrinth.com/mod/" + Uri.EscapeDataString(version.ProjectId);
+    }
     internal static async Task<string> HashAsync(string path, CancellationToken token)
     {
         await using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 131072, true);
@@ -210,3 +217,4 @@ public sealed class ModUpdateService
         }
     }
 }
+

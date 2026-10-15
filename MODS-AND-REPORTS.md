@@ -4,7 +4,9 @@
 
 Manage an instance → Mods → **Manage mods** opens a virtualized installed-mod
 list with search, All/Enabled/Disabled/Selected filters, selection and bulk
-enable/disable/remove. Removal requires approval and keeps files in
+enable/disable/remove. **Page** identifies the exact file by hash before opening
+its Modrinth page; unknown files do not open a guessed search result.
+Removal requires approval and keeps files in
 `.vortex-trash/mods`. Toggle names are `.jar` / `.jar.disabled`; old `.disabled`
 files remain supported. Existing target files are never overwritten by toggles.
 File changes are refused while the instance is running/busy.
@@ -61,3 +63,4 @@ No public release/auto-update manifest is published by this change.
 
 API references: [file-hash identification](https://docs.modrinth.com/api/operations/versionfromhash/),
 [version metadata](https://docs.modrinth.com/api/operations/getprojectversions/).
+

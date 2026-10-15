@@ -17,6 +17,9 @@ internal static class ModManagementUiChecks
         var window = new InstanceModsWindow { DataContext = vm, Width = 760, Height = 600 };
         window.Show(); pump(100);
         Check(vm.InstalledMods.Count == 3 && window.FindControl<ListBox>("InstalledModsList")!.ItemCount == 3, "mod manager shows a virtualized list bound to real installed files");
+        string? page = null; vm.OpenExternalUrl = url => page = url;
+        Wait(vm.OpenModPageCommand.ExecuteAsync(vm.InstalledMods.Single(m => m.Name == "alpha-old")), pump);
+        Check(page == "https://modrinth.com/mod/alpha", "mod page uses exact hash identity without opening a real browser in tests");
         vm.SearchQuery = "alpha"; pump(20);
         vm.SelectVisibleCommand.Execute(null);
         Check(vm.SelectedCount == 1 && vm.VisibleMods.Single().Name == "alpha-old", "search and select shown affect only visible mods");
@@ -73,3 +76,4 @@ internal static class ModManagementUiChecks
     }
     private static void Check(bool passed, string label) { if (!passed) throw new Exception("FAIL: " + label); Console.WriteLine("PASS: " + label); }
 }
+

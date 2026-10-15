@@ -28,6 +28,7 @@ public partial class InstanceModsViewModel : ObservableObject, IDisposable
     public Func<string, Task<bool>>? ConfirmRemovalAsync { get; set; }
     public Func<int, Task<bool>>? ConfirmUpdatesAsync { get; set; }
     public Func<Window>? DialogOwner { get; set; }
+    public Action<string>? OpenExternalUrl { get; set; } = Core.Launch.PlatformSupport.OpenPath;
     [ObservableProperty] private string _statusMessage = "";
     [ObservableProperty] private string _searchQuery = "";
     [ObservableProperty] private string _selectedFilter = "All";
@@ -94,6 +95,22 @@ public partial class InstanceModsViewModel : ObservableObject, IDisposable
     [RelayCommand] private void ShowInstalled() => IsPreviewVisible = false;
     [RelayCommand] private void ShowUpdates() => IsPreviewVisible = true;
     [RelayCommand] private void CancelOperation() => _cancellation?.Cancel();
+    [RelayCommand] private async Task OpenModPageAsync(ModModel? mod)
+    {
+        if (mod == null || !InstalledMods.Contains(mod) || IsBusy) return;
+        IsBusy = true;
+        using var cancellation = new CancellationTokenSource(); _cancellation = cancellation;
+        try
+        {
+            string? url = await Task.Run(() => _updates.GetProjectUrlAsync(_instancePath, mod.FilePath, cancellation.Token));
+            cancellation.Token.ThrowIfCancellationRequested();
+            if (url == null) StatusMessage = "This file has no verified Modrinth page (or is the bundled Vortex Client). No page was guessed.";
+            else OpenExternalUrl?.Invoke(url);
+        }
+        catch (OperationCanceledException) { StatusMessage = "Page lookup cancelled."; }
+        catch (Exception ex) { StatusMessage = "Could not identify mod page: " + ex.Message; }
+        finally { _cancellation = null; IsBusy = false; }
+    }
     private void InvalidatePreview()
     {
         _preview = null;
@@ -203,5 +220,6 @@ public partial class InstanceModsViewModel : ObservableObject, IDisposable
     }
     [RelayCommand] private void OpenModsFolder() { try { if (Directory.Exists(_modsDir)) Core.Launch.PlatformSupport.OpenPath(_modsDir); } catch (Exception ex) { StatusMessage = ex.Message; } }
     [RelayCommand] private void OpenBackupsFolder() { try { string path = Path.Combine(_instancePath, ".vortex-mod-updates"); if (Directory.Exists(path)) Core.Launch.PlatformSupport.OpenPath(path); } catch (Exception ex) { StatusMessage = ex.Message; } }
-    public void Dispose() { _cancellation?.Cancel(); foreach (var mod in InstalledMods) mod.PropertyChanged -= OnModChanged; foreach (var update in AvailableUpdates) update.PropertyChanged -= OnUpdateChanged; ConfirmRemovalAsync = null; ConfirmUpdatesAsync = null; DialogOwner = null; }
+    public void Dispose() { _cancellation?.Cancel(); foreach (var mod in InstalledMods) mod.PropertyChanged -= OnModChanged; foreach (var update in AvailableUpdates) update.PropertyChanged -= OnUpdateChanged; ConfirmRemovalAsync = null; ConfirmUpdatesAsync = null; DialogOwner = null; OpenExternalUrl = null; }
 }
+
