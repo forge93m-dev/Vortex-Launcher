@@ -17,6 +17,12 @@ using VortexLauncher.ViewModels;
 using VortexLauncher.Core.Network;
 using VortexLauncher.Views;
 
+if (args.Contains("--native-preview"))
+{
+    AppBuilder.Configure<GameLibraryPreview>().UsePlatformDetect().WithInterFont().StartWithClassicDesktopLifetime(args);
+    return;
+}
+
 // Headless platform + fixture data: no real accounts, settings, instances or network calls.
 AppBuilder.Configure<VortexLauncher.App>().UseSkia()
     .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
@@ -40,6 +46,8 @@ if (args.Contains("--benchmark"))
 Pump(600);
 var output = Directory.CreateDirectory(Path.Combine(FixturePaths.TempRoot(), "vortex-sidebar-smoke-" + Guid.NewGuid().ToString("N"))).FullName;
 
+VortexLauncher.Core.Media.ArtworkCache.DiskRoot = Path.Combine(output, "artwork-cache");
+
 try
 {
     if (args.Contains("--chrome"))
@@ -48,150 +56,8 @@ try
         Console.WriteLine("Rendered previews: " + output);
         return;
     }
-    var rail = window.FindControl<Border>("navigationRail")!;
-    var player = window.FindControl<Border>("activePlayerCard")!;
-    Check(rail.Background is ISolidColorBrush { Color.A: 0 } && rail.BorderThickness == new Thickness(0),
-        "navigation has no separate background or dividing border");
-    Check(player.Height == 56 && player.CornerRadius == new CornerRadius(28), "player card is fully rounded on all corners");
-    Check(player.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Steve" && t.IsEffectivelyVisible),
-        "active player name remains visible");
-    var pages = new[] { "libraryNav", "modpacksNav", "profilesNav", "settingsNav" };
-    var commands = new[] { "Instances", "Modpacks", "Accounts", "Settings" };
-    var labels = new[] { "Library", "Modpacks", "Profiles", "Settings" };
-    var contentBounds = window.FindControl<Grid>("instancesPage")!.Bounds;
-    window.CaptureRenderedFrame()!.Save(Path.Combine(output, "collapsed.png"));
-
-    for (int i = 0; i < pages.Length; i++)
-    {
-        var button = window.FindControl<Button>(pages[i])!;
-        var label = button.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Classes.Contains("NavLabel"));
-        var icon = button.GetVisualDescendants().OfType<PathIcon>().Single();
-        Check(Near(button.Width, 52) && Near(label.Opacity, 0), labels[i] + " starts icon-only");
-        Check(button.Focusable && AutomationProperties.GetName(button) == labels[i], labels[i] + " retains keyboard access and an accessible name");
-        Check(button.Transitions!.OfType<DoubleTransition>().Any(t => t.Property == Button.WidthProperty), labels[i] + " animates width");
-        var center = button.TranslatePoint(new Point(26, 24), window)!.Value;
-        var originalIcon = icon.TranslatePoint(new Point(0, 0), window)!.Value;
-        window.MouseMove(center);
-        // A loaded runner may spend >180 ms rendering one frame. Inspect the
-        // transition configuration, not a wall-clock sample
-        // that can legitimately arrive after the complete animation.
-        Check(button.Transitions!.OfType<DoubleTransition>().Any(t => t.Property == Button.WidthProperty && t.Duration > TimeSpan.Zero) &&
-            label.Transitions!.OfType<DoubleTransition>().Any(t => t.Property == TextBlock.OpacityProperty && t.Duration > TimeSpan.Zero),
-            labels[i] + " uses non-zero duration width and opacity transitions");
-        Pump(390);
-        Check(Near(button.Width, 190) && Near(label.Opacity, 1), labels[i] + " shows its full label on hover");
-        var expandedIcon = icon.TranslatePoint(new Point(0, 0), window)!.Value;
-        Check(Near(originalIcon.X, expandedIcon.X) && Near(originalIcon.Y, expandedIcon.Y), labels[i] + " keeps its icon stationary");
-        Check(window.FindControl<Grid>("instancesPage")!.Bounds == contentBounds, labels[i] + " does not shift main content");
-        Check(button.Bounds.Right <= rail.Bounds.Width - rail.Padding.Right, labels[i] + " fits inside the reserved navigation space");
-        window.CaptureRenderedFrame()!.Save(Path.Combine(output, labels[i].ToLowerInvariant() + "-hover.png"));
-        window.MouseDown(center, MouseButton.Left);
-        window.MouseUp(center, MouseButton.Left);
-        Pump(40);
-        Check(fixture.ActiveTab == commands[i] && button.Classes.Contains("active"), labels[i] + " still navigates and marks the selected tab");
-        window.MouseMove(new Point(700, 550));
-        Pump(340);
-        Check(Near(button.Width, 52) && Near(label.Opacity, 0), labels[i] + " collapses smoothly after pointer leaves");
-        // Keep the same visible page for stable geometric comparisons; tab routing was checked above.
-        fixture.Select("Instances");
-        Pump(40);
-    }
-
-    var profiles = window.FindControl<Button>("profilesNav")!;
-    profiles.Focus(NavigationMethod.Tab);
-    Pump(340);
-    Check(Near(profiles.Width, 190) && profiles.GetVisualDescendants().OfType<TextBlock>().Single().Opacity == 1,
-        "keyboard focus reveals the tab name without mouse hover");
-    window.KeyPress(Key.Return, RawInputModifiers.None, PhysicalKey.Enter, "\r");
-    window.KeyRelease(Key.Return, RawInputModifiers.None, PhysicalKey.Enter, "\r");
-    Pump(40);
-    Check(fixture.ActiveTab == "Accounts", "Enter activates the keyboard-focused tab");
-    window.FindControl<Button>("libraryNav")!.Focus(NavigationMethod.Pointer);
-    fixture.Select("Instances");
-    Pump(340);
-
-    foreach (var dimensions in new[] { new Size(960, 600), new Size(1280, 800), new Size(1600, 1000) })
-    {
-        window.Width = dimensions.Width; window.Height = dimensions.Height;
-        Pump(60);
-        var button = window.FindControl<Button>("settingsNav")!;
-        var center = button.TranslatePoint(new Point(26, 24), window)!.Value;
-        window.MouseMove(center); Pump(340);
-        Check(button.Bounds.Right <= rail.Bounds.Width - rail.Padding.Right && player.Bounds.Bottom <= rail.Bounds.Height - rail.Padding.Bottom,
-            "buttons and player card fit at " + dimensions);
-        window.MouseMove(new Point(700, 450)); Pump(340);
-    }
-    // Reversing a running transition must not leave stale width/label state.
-    var library = window.FindControl<Button>("libraryNav")!;
-    var libraryCenter = library.TranslatePoint(new Point(26, 24), window)!.Value;
-    for (int i = 0; i < 3; i++)
-    {
-        window.MouseMove(libraryCenter); Pump(45);
-        window.MouseMove(new Point(700, 450)); Pump(45);
-    }
-    Pump(340);
-    Check(Near(library.Width, 52) && library.GetVisualDescendants().OfType<TextBlock>().Single().Opacity == 0,
-        "rapid hover reversals settle back to the collapsed state");
-    Console.WriteLine("SIDEBAR_SMOKE_OK");
-    window.Width = 1280; window.Height = 800;
-    fixture.Select("Instances"); Pump(300);
-    var source = fixture.Instances;
-    var model = fixture.Library;
-    var filteredSource = new ObservableCollection<InstanceModel>();
-    using (var filtered = new InstanceLibraryViewModel(filteredSource))
-    {
-        var a = new InstanceModel { Name = "A", Version = "26.3", Loader = "Fabric" };
-        var b = new InstanceModel { Name = "B", Version = "1.21.11", Loader = "Quilt", IsFavorite = true };
-        filteredSource.Add(a); filteredSource.Add(b);
-        Check(filtered.VisibleInstances[0] == b, "favorites stay above normal instances");
-        filtered.SearchQuery = "quilt"; b.Loader = "Fabric";
-        Check(filtered.IsEmpty, "loader changes update live search");
-        filtered.ClearFiltersCommand.Execute(null);
-        filteredSource.Remove(a);
-        Check(filtered.VisibleInstances.Count == 1 && filtered.VisibleInstances[0] == b, "removed instances leave the filtered list");
-        filteredSource.Clear();
-        Check(filtered.IsEmpty && !filtered.HasInstances, "clearing the source restores the fresh-library state");
-    }
-    model.SearchQuery = "fabric";
-    Check(model.VisibleInstances.Count == 1 && model.VisibleInstances[0].Loader == "Fabric", "library filters by loader");
-    model.SearchQuery = "1.20.1";
-    Check(model.VisibleInstances.Count == 1 && model.VisibleInstances[0].Loader == "Forge", "library filters by version");
-    source[0].IsFavorite = true;
-    model.ClearFiltersCommand.Execute(null);
-    Click(window, window.FindControl<Button>("favoritesFilter")!); Pump(50);
-    Check(model.FavoritesOnly && model.VisibleInstances.Count == 1, "favorites button filters the real library view");
-    source[0].Name = "Renamed survival";
-    model.SearchQuery = "renamed";
-    Check(model.VisibleInstances.Count == 1, "renaming updates live search");
-    model.SearchQuery = "no matches at all"; Pump(50);
-    Check(window.FindControl<StackPanel>("libraryEmptyState")!.IsEffectivelyVisible, "no-result placeholder is visible");
-    window.CaptureRenderedFrame()!.Save(Path.Combine(output, "library-no-results.png"));
-    model.ClearFiltersCommand.Execute(null); Pump(100);
-    var cards = window.GetVisualDescendants().OfType<Border>().Where(c => c.Classes.Contains("InstanceCard")).ToArray();
-    Check(cards.Length == 3 && cards.All(c => c.Bounds.Width == 272 && c.Bounds.Height == 154), "compact cards are 272 by 154 without wasted space");
-    var play = cards[0].GetVisualDescendants().OfType<Button>().Single(b => b.Classes.Contains("PlayButton"));
-    Click(window, play); Pump(40);
-    Check(fixture.LaunchCount == 1, "new Play button preserves the launch command");
-    var favorite = cards.Single(c => ReferenceEquals(c.DataContext, source[0])).GetVisualDescendants().OfType<Button>().Single(b => AutomationProperties.GetName(b) == "Toggle favorite");
-    Click(window, favorite); Pump(40);
-    Check(!source[0].IsFavorite, "card favorite action still works");
-    window.MouseMove(new Point(1100, 700)); Pump(250);
-    window.CaptureRenderedFrame()!.Save(Path.Combine(output, "library-redesigned.png"));
-    foreach (var card in cards)
-        foreach (var button in card.GetVisualDescendants().OfType<Button>())
-        {
-            var point = button.TranslatePoint(new Point(0, 0), card)!.Value;
-            Check(point.X >= 0 && point.Y >= 0 && point.X + button.Bounds.Width <= card.Bounds.Width &&
-                point.Y + button.Bounds.Height <= card.Bounds.Height, "compact card actions stay inside its bounds");
-        }
-    source[0].CoverImagePath = Path.Combine(output, "library-redesigned.png");
-    source[0].VortexClientEnabled = true;
-    Pump(100);
-    Check(cards.All(c => c.Bounds.Height == 154), "custom covers do not make cards taller");
-    window.CaptureRenderedFrame()!.Save(Path.Combine(output, "library-compact-cover.png"));
-    source[0].CoverImagePath = string.Empty;
-    source[0].VortexClientEnabled = false;
-    Pump(50);
+    GameLibraryChecks.Run(window, fixture, Pump, output);
+    if (args.Contains("--library")) { Console.WriteLine("Rendered previews: " + output); return; }
     foreach (var tab in new[] { "Modpacks", "Accounts", "Settings" })
     {
         fixture.Select(tab); Pump(250);
@@ -440,7 +306,6 @@ static void CheckFits(Window window, Control control, string label)
     Check(point.X >= 0 && point.Y >= 0 && point.X + control.Bounds.Width <= window.ClientSize.Width + 1
         && point.Y + control.Bounds.Height <= window.ClientSize.Height + 1, label);
 }
-static bool Near(double a, double b) => Math.Abs(a - b) < .1;
 static void Check(bool passed, string description)
 {
     if (!passed) throw new InvalidOperationException("FAIL: " + description);
@@ -489,6 +354,8 @@ sealed class SidebarFixture : INotifyPropertyChanged
     public int UpdateInstallCount { get; private set; }
     public ICommand CheckLauncherUpdatesCommand => new FixtureCommand(_ => UpdateCheckCount++);
     public ICommand InstallLauncherUpdateCommand => new FixtureCommand(_ => UpdateInstallCount++);
+    public int DownloadsOpenCount { get; private set; }
+    public ICommand ShowDownloadsCommand => new FixtureCommand(_ => DownloadsOpenCount++);
     public bool HasSelectedInstance => false;
     public string StatusMessage => "Ready";
     public AccountModel ActiveAccount { get; } = new() { Username = "Steve" };
@@ -519,7 +386,8 @@ sealed class SidebarFixture : INotifyPropertyChanged
     public CatalogFixture ModpacksVm { get; } = new();
     public ICommand ToggleFavoriteCommand => new FixtureCommand(p => { if (p is InstanceModel item) item.IsFavorite = !item.IsFavorite; });
     public int LaunchCount { get; private set; }
-    public ICommand LaunchSpecificInstanceCommand => new FixtureCommand(_ => LaunchCount++);
+    public InstanceModel? LastLaunched { get; private set; }
+    public ICommand LaunchSpecificInstanceCommand => new FixtureCommand(p => { LaunchCount++; LastLaunched = p as InstanceModel; });
     public ICommand SaveSettingsCommand => new FixtureCommand(_ => { });
     public ICommand SelectAccountCommand => new FixtureCommand(_ => { });
     public ICommand DeleteAccountCommand => new FixtureCommand(_ => { });
@@ -621,4 +489,3 @@ sealed class CreateFixture
     public string ConfigurationSummary => "Minecraft 26.3 · Fabric";
     public CreateFixture() => SelectedLoaderOption = AvailableLoaders[1];
 }
-

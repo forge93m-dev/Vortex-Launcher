@@ -1,283 +1,167 @@
-<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:VortexLauncher.ViewModels" xmlns:conv="using:VortexLauncher.Converters" x:Class="VortexLauncher.Views.MainWindow" x:DataType="vm:MainWindowViewModel" x:Name="root" Opened="OnWindowOpened" Title="Vortex Launcher" Icon="/Assets/Branding/vortex-icon-v1.ico" Width="1280" Height="800" MinWidth="960" MinHeight="600" WindowStartupLocation="CenterScreen" Background="{DynamicResource ThemeBackgroundBrush}">
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:VortexLauncher.ViewModels" xmlns:models="using:VortexLauncher.Models" xmlns:views="using:VortexLauncher.Views" xmlns:conv="using:VortexLauncher.Converters" x:Class="VortexLauncher.Views.MainWindow" x:DataType="vm:MainWindowViewModel" x:Name="root" Opened="OnWindowOpened" Title="Vortex Launcher" Icon="/Assets/Branding/vortex-icon-v1.ico" Width="1280" Height="800" MinWidth="960" MinHeight="600" WindowStartupLocation="CenterScreen" Background="{DynamicResource ThemeBackgroundBrush}">
     <Window.Resources>
+        <SolidColorBrush x:Key="LibraryPlayBrush" Color="#D7F36A"/>
+        <SolidColorBrush x:Key="LibraryPlayHoverBrush" Color="#E6FF91"/>
     </Window.Resources>
-    <Window.Styles>
-        <Style Selector="ScrollBar">
-            <Setter Property="AllowAutoHide" Value="True" />
-        </Style>
-        <Style Selector="Button.NavButton">
-            <Setter Property="Background" Value="{DynamicResource ThemePanelBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource ThemeSubtextBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="18" />
-            <Setter Property="Width" Value="52" />
-            <Setter Property="Height" Value="48" />
-            <Setter Property="Margin" Value="0,4" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="HorizontalAlignment" Value="Left" />
-            <Setter Property="HorizontalContentAlignment" Value="Left" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Focusable" Value="True" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="ClipToBounds" Value="True" />
-            <Setter Property="RenderTransform" Value="scale(1)" />
-            <Setter Property="RenderTransformOrigin" Value="0%,50%" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <DoubleTransition Property="Width" Duration="0:0:0.26" Easing="CubicEaseOut" />
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" Easing="CubicEaseOut" />
-                </Transitions>
-            </Setter>
-            <Setter Property="Template">
-                <ControlTemplate>
-                    <Border x:Name="NavChrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True">
-                        <Border.Transitions>
-                            <Transitions>
-                                <BrushTransition Property="Background" Duration="0:0:0.18" />
-                                <BrushTransition Property="BorderBrush" Duration="0:0:0.18" />
-                            </Transitions>
-                        </Border.Transitions>
-                        <ContentPresenter x:Name="PART_ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
-                    </Border>
-                </ControlTemplate>
-            </Setter>
-        </Style>
-        <Style Selector="Button.NavButton:pointerover">
-            <Setter Property="Width" Value="190" />
-            <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-            <Setter Property="RenderTransform" Value="scale(1)" />
-        </Style>
-        <Style Selector="Button.NavButton:focus-visible">
-            <Setter Property="Width" Value="190" />
-            <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-        </Style>
-        <Style Selector="Button.NavButton.active">
-            <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-        </Style>
-        <Style Selector="Button.NavButton:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.98)" />
-        </Style>
-        <Style Selector="Button.NavButton TextBlock.NavLabel">
-            <Setter Property="Opacity" Value="0" />
-            <Setter Property="RenderTransform" Value="translate(8px,0px)" />
-            <Setter Property="IsHitTestVisible" Value="False" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="CubicEaseOut" />
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22" Easing="CubicEaseOut" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.NavButton:pointerover TextBlock.NavLabel">
-            <Setter Property="Opacity" Value="1" />
-            <Setter Property="RenderTransform" Value="translate(0px,0px)" />
-        </Style>
-        <Style Selector="Button.NavButton:focus-visible TextBlock.NavLabel">
-            <Setter Property="Opacity" Value="1" />
-            <Setter Property="RenderTransform" Value="translate(0px,0px)" />
-        </Style>
-        <Style Selector="Grid.PagePanel">
-            <Setter Property="Opacity" Value="1" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.StartupShell">
-            <Setter Property="Transitions">
-                <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.42" />
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.48" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.StartupOverlay">
-            <Setter Property="Transitions">
-                <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.45" />
-                </Transitions>
-            </Setter>
-        </Style>
-    </Window.Styles>
+    <Window.Styles><StyleInclude Source="avares://Vortex Launcher/Styles/GameLibrary.axaml"/></Window.Styles>
     <Panel>
         <Border x:Name="mainShell" Classes="StartupShell" Background="{DynamicResource ThemeBackgroundBrush}">
-            <Grid ColumnDefinitions="208,*">
-                <Border x:Name="navigationRail" Grid.Column="0" Background="Transparent" BorderThickness="0" Padding="18,24,0,18">
-                    <Grid RowDefinitions="Auto, *, Auto">
-                        <StackPanel Grid.Row="0" Spacing="14" Margin="0,0,0,32">
-                            <Grid ColumnDefinitions="Auto, *">
-                                <Border Grid.Column="0" Width="34" Height="34" CornerRadius="8" Background="{DynamicResource ThemeSidebarBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="1">
-                                    <Image Source="/Assets/Branding/vortex-icon-v1.png" Width="26" Height="26" Stretch="Uniform" />
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
-                                    <TextBlock Text="VORTEX" FontWeight="Black" FontSize="15" Foreground="{DynamicResource ThemeTextBrush}" LetterSpacing="1" />
-                                    <TextBlock Text="LAUNCHER" FontSize="9" Foreground="{DynamicResource ThemeSubtextBrush}" FontWeight="Bold" />
-                                </StackPanel>
-                            </Grid>
+            <Grid RowDefinitions="72,*,42">
+                <Border x:Name="navigationRail" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,0,0,1" Padding="28,0">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="0,0,28,0">
+                            <Image Source="/Assets/Branding/vortex-icon-v1.png" Width="32" Height="32" Stretch="Uniform"/>
+                            <TextBlock Text="VORTEX" FontSize="17" FontWeight="Bold" LetterSpacing="2" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <StackPanel Grid.Row="1" Spacing="2">
-                            <Button x:Name="libraryNav" Classes="NavButton" Classes.active="{Binding IsInstancesTab}" Command="{Binding SelectTabCommand}" CommandParameter="Instances" AutomationProperties.Name="Library">
-                                <Grid Width="188" Height="46" ColumnDefinitions="50,*" HorizontalAlignment="Left">
-                                    <PathIcon Grid.Column="0" Data="M 3 13 L 11 13 L 11 3 L 3 3 Z M 3 21 L 11 21 L 11 15 L 3 15 Z M 13 21 L 21 21 L 21 11 L 13 11 Z M 13 3 L 13 9 L 21 9 L 21 3 Z" Width="18" Height="18" />
-                                    <TextBlock Grid.Column="1" Classes="NavLabel" Text="Library" FontWeight="SemiBold" FontSize="13" Margin="4,0,12,0" VerticalAlignment="Center" />
-                                </Grid>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                            <Button x:Name="libraryNav" Classes="LibraryNav" Classes.active="{Binding IsInstancesTab}" Command="{Binding SelectTabCommand}" CommandParameter="Instances" AutomationProperties.Name="Library">
+                                <StackPanel Orientation="Horizontal" Spacing="8"><PathIcon Data="M3,3 L10,3 L10,10 L3,10 Z M14,3 L21,3 L21,10 L14,10 Z M3,14 L10,14 L10,21 L3,21 Z M14,14 L21,14 L21,21 L14,21 Z" Width="15" Height="15"/><TextBlock Classes="NavLabel" Text="Library" VerticalAlignment="Center"/></StackPanel>
                             </Button>
-                            <Button x:Name="modpacksNav" Classes="NavButton" Classes.active="{Binding IsModpacksTab}" Command="{Binding SelectTabCommand}" CommandParameter="Modpacks" AutomationProperties.Name="Modpacks">
-                                <Grid Width="188" Height="46" ColumnDefinitions="50,*" HorizontalAlignment="Left">
-                                    <PathIcon Grid.Column="0" Data="M 12 2 L 2 7 L 12 12 L 22 7 Z M 2 17 L 12 22 L 22 17 M 2 12 L 12 17 L 22 12" Width="18" Height="18" />
-                                    <TextBlock Grid.Column="1" Classes="NavLabel" Text="Modpacks" FontWeight="SemiBold" FontSize="13" Margin="4,0,12,0" VerticalAlignment="Center" />
-                                </Grid>
+                            <Button x:Name="modpacksNav" Classes="LibraryNav" Classes.active="{Binding IsModpacksTab}" Command="{Binding SelectTabCommand}" CommandParameter="Modpacks" AutomationProperties.Name="Modpacks">
+                                <StackPanel Orientation="Horizontal" Spacing="8"><PathIcon Data="M12,2 L22,7 L12,12 L2,7 Z M2,12 L12,17 L22,12 M2,17 L12,22 L22,17" Width="15" Height="15"/><TextBlock Classes="NavLabel" Text="Discover" VerticalAlignment="Center"/></StackPanel>
                             </Button>
-                            <Button x:Name="profilesNav" Classes="NavButton" Classes.active="{Binding IsAccountsTab}" Command="{Binding SelectTabCommand}" CommandParameter="Accounts" AutomationProperties.Name="Profiles">
-                                <Grid Width="188" Height="46" ColumnDefinitions="50,*" HorizontalAlignment="Left">
-                                    <PathIcon Grid.Column="0" Data="M 12 12 C 14.21 12 16 10.21 16 8 C 16 5.79 14.21 4 12 4 C 9.79 4 8 5.79 8 8 C 8 10.21 9.79 12 12 12 Z M 12 14 C 9.33 14 4 15.34 4 18 L 4 20 L 20 20 L 20 18 C 20 15.34 14.67 14 12 14 Z" Width="18" Height="18" />
-                                    <TextBlock Grid.Column="1" Classes="NavLabel" Text="Profiles" FontWeight="SemiBold" FontSize="13" Margin="4,0,12,0" VerticalAlignment="Center" />
-                                </Grid>
+                            <Button x:Name="profilesNav" Classes="LibraryNav" Classes.active="{Binding IsAccountsTab}" Command="{Binding SelectTabCommand}" CommandParameter="Accounts" AutomationProperties.Name="Profiles">
+                                <StackPanel Orientation="Horizontal" Spacing="8"><PathIcon Data="M12,12 A4,4 0 1 0 12,4 A4,4 0 1 0 12,12 M4,21 L4,18 C4,13 20,13 20,18 L20,21 Z" Width="15" Height="15"/><TextBlock Classes="NavLabel" Text="Profiles" VerticalAlignment="Center"/></StackPanel>
                             </Button>
-                            <Button x:Name="settingsNav" Classes="NavButton" Classes.active="{Binding IsSettingsTab}" Command="{Binding SelectTabCommand}" CommandParameter="Settings" AutomationProperties.Name="Settings">
-                                <Grid Width="188" Height="46" ColumnDefinitions="50,*" HorizontalAlignment="Left">
-                                    <PathIcon Grid.Column="0" Data="M 19.14 12.94 C 19.18 12.64 19.2 12.33 19.2 12 C 19.2 11.68 19.18 11.36 19.13 11.06 L 21.16 9.48 C 21.34 9.34 21.39 9.07 21.28 8.87 L 19.36 5.55 C 19.24 5.33 18.99 5.26 18.77 5.33 L 16.38 6.29 C 15.88 5.91 15.35 5.59 14.76 5.35 L 14.4 2.81 C 14.36 2.57 14.16 2.4 13.92 2.4 L 10.08 2.4 C 9.84 2.4 9.65 2.57 9.61 2.81 L 9.25 5.35 C 8.66 5.59 8.12 5.92 7.63 6.29 L 5.24 5.33 C 5.02 5.25 4.77 5.33 4.65 5.55 L 2.73 8.87 C 2.61 9.08 2.65 9.34 2.85 9.48 L 4.88 11.06 C 4.83 11.36 4.79 11.69 4.79 12 C 4.79 12.31 4.81 12.64 4.86 12.94 L 2.83 14.52 C 2.65 14.66 2.6 14.93 2.71 15.13 L 4.63 18.45 C 4.75 18.67 5 18.74 5.22 18.67 L 7.61 17.71 C 8.11 18.09 8.64 18.41 9.23 18.65 L 9.59 21.19 C 9.64 21.43 9.83 21.6 10.07 21.6 L 13.91 21.6 C 14.15 21.6 14.35 21.43 14.74 18.65 C 15.33 18.41 15.87 18.09 16.36 17.71 L 18.75 18.67 C 18.97 18.75 19.22 18.67 19.34 18.45 L 21.26 15.13 C 21.38 14.91 21.33 14.66 21.14 14.52 Z M 12 15.6 C 10.02 15.6 8.4 13.98 8.4 12 C 8.4 10.02 10.02 8.4 12 8.4 C 13.98 8.4 15.6 10.02 15.6 12 C 15.6 13.98 13.98 15.6 12 15.6 Z" Width="18" Height="18" />
-                                    <TextBlock Grid.Column="1" Classes="NavLabel" Text="Settings" FontWeight="SemiBold" FontSize="13" Margin="4,0,12,0" VerticalAlignment="Center" />
-                                </Grid>
+                            <Button x:Name="settingsNav" Classes="LibraryNav" Classes.active="{Binding IsSettingsTab}" Command="{Binding SelectTabCommand}" CommandParameter="Settings" AutomationProperties.Name="Settings">
+                                <StackPanel Orientation="Horizontal" Spacing="8"><PathIcon Data="M3,5 L21,5 L21,7 L3,7 Z M3,11 L21,11 L21,13 L3,13 Z M3,17 L21,17 L21,19 L3,19 Z M6,3 L9,3 L9,9 L6,9 Z M15,9 L18,9 L18,15 L15,15 Z M9,15 L12,15 L12,21 L9,21 Z" Width="15" Height="15"/><TextBlock Classes="NavLabel" Text="Settings" VerticalAlignment="Center"/></StackPanel>
                             </Button>
                         </StackPanel>
-                        <Border x:Name="activePlayerCard" Grid.Row="2" Background="{DynamicResource ThemePanelBrush}" Height="56" CornerRadius="28" Padding="12,9" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="1" ClipToBounds="True">
-                            <Grid ColumnDefinitions="Auto, *">
-                                <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16" Background="{DynamicResource AccentSoftBrush}" ClipToBounds="True">
-                                    <TextBlock Text="{Binding ActiveAccount.Username[0]}" Foreground="{DynamicResource ThemeTextBrush}" FontWeight="Bold" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,0,0">
-                                    <TextBlock Text="{Binding ActiveAccount.Username}" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextBrush}" FontSize="12" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Text="Active profile" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" />
+                        <Button Grid.Column="2" Classes="ProfileButton" Command="{Binding SelectTabCommand}" CommandParameter="Accounts" AutomationProperties.Name="Active player profile" Padding="0" VerticalAlignment="Center">
+                            <Border x:Name="activePlayerCard" Height="40" Padding="7,4" CornerRadius="8">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Border Width="30" Height="30" Background="{DynamicResource AccentSoftBrush}" CornerRadius="7"><TextBlock Text="{Binding ActiveAccount.Username[0]}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                    <StackPanel VerticalAlignment="Center" MaxWidth="105"><TextBlock Text="{Binding ActiveAccount.Username}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="Active profile" Classes="Muted" FontSize="10" LineHeight="13"/></StackPanel>
+                                    <TextBlock Text="⌄" Classes="Muted" VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </Grid>
-                        </Border>
+                            </Border>
+                        </Button>
                     </Grid>
                 </Border>
-                <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*" Margin="28,24,28,24">
-                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,26">
-                        <StackPanel Spacing="6" Margin="0,0,14,0">
-                            <TextBlock Classes="Eyebrow" Text="{Binding PageEyebrow}" />
-                            <TextBlock Classes="PageTitle" Text="{Binding PageTitle}" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Classes="Muted" Text="{Binding PageDescription}" />
-                        </StackPanel>
-                        <Border Grid.Column="1" Classes="VortexCard" Padding="12,8" CornerRadius="12" VerticalAlignment="Top" Margin="0,6,0,0">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button Content="Downloads" Command="{Binding ShowDownloadsCommand}" Classes="SecondaryBtn" Padding="10,6" />
-                                <Ellipse Width="6" Height="6" Fill="#34D399" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding StatusMessage}" Classes="Muted" FontSize="11" MaxWidth="180" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" VerticalAlignment="Center" ToolTip.Tip="{Binding StatusMessage}" />
-                                <Button Content="Install update" Command="{Binding InstallLauncherUpdateCommand}" Classes="PrimaryBtn" IsVisible="{Binding UpdateAvailable}" IsEnabled="{Binding !IsInstallingUpdate}" Padding="10,6" />
-                            </StackPanel>
-                        </Border>
+                <Grid Grid.Row="1" RowDefinitions="Auto,Auto,*" Margin="28,22,28,18">
+                    <Grid IsVisible="{Binding !IsInstancesTab}" Margin="0,0,0,20">
+                        <StackPanel Spacing="5"><TextBlock Text="{Binding PageTitle}" FontSize="27" FontWeight="SemiBold" LetterSpacing="-0.6"/><TextBlock Text="{Binding PageDescription}" Classes="Muted" FontSize="12"/></StackPanel>
                     </Grid>
-                    <Border Grid.Row="1" Classes="VortexCard" Padding="16" Margin="0,0,0,18" IsVisible="{Binding CanCancelInstallation}">
+                    <Border Grid.Row="1" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,14" Margin="0,0,0,14" IsVisible="{Binding CanCancelInstallation}">
                         <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                            <TextBlock Text="{Binding TransferDetails}" Classes="Muted" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Margin="0,0,14,8" />
-                            <ProgressBar Grid.Row="1" Value="{Binding DownloadProgress}" Maximum="100" Height="5" Margin="0,0,14,0" />
-                            <Button Grid.Column="1" Grid.RowSpan="2" Content="Cancel" Command="{Binding CancelInstallationCommand}" Classes="SecondaryBtn" />
+                            <TextBlock Text="{Binding TransferDetails}" Classes="Muted" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Margin="0,0,14,8"/>
+                            <ProgressBar Grid.Row="1" Value="{Binding DownloadProgress}" Maximum="100" Height="4" Margin="0,0,14,0"/>
+                            <Button Grid.Column="1" Grid.RowSpan="2" Content="Cancel" Command="{Binding CancelInstallationCommand}" Classes="SecondaryBtn"/>
                         </Grid>
                     </Border>
                     <Panel Grid.Row="2">
-                        <Grid x:Name="instancesPage" Classes="PagePanel" RowDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding IsInstancesTab}">
-                            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,18">
-                                <TextBox x:Name="librarySearch" Text="{Binding Library.SearchQuery, Mode=TwoWay}" Watermark="Search your instances..." Width="400" HorizontalAlignment="Left" Margin="0,0,20,0" AutomationProperties.Name="Search instances" />
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                                    <Button Classes="SecondaryBtn" Content="Import pack" Click="OnImportPackClick" IsEnabled="{Binding !IsInitializing}" />
-                                    <Button Classes="PrimaryBtn" Content="+  Create instance" Click="OnAddInstanceClick" IsEnabled="{Binding !IsInitializing}" />
-                                </StackPanel>
+                        <Grid x:Name="instancesPage" Classes="PagePanel" RowDefinitions="Auto,Auto,*" IsVisible="{Binding IsInstancesTab}">
+                            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,22">
+                                <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center"><TextBlock Text="Library" FontSize="27" FontWeight="SemiBold" LetterSpacing="-0.8"/><TextBlock Text="{Binding Library.CountLabel}" Classes="Muted" FontSize="11" VerticalAlignment="Center"/></StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10"><Button Classes="SecondaryBtn" Content="Import pack" Click="OnImportPackClick" IsEnabled="{Binding !IsInitializing}"/><Button Classes="PrimaryBtn" Content="+  New instance" Click="OnAddInstanceClick" IsEnabled="{Binding !IsInitializing}"/></StackPanel>
                             </Grid>
-                            <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,0,0,20">
-                                <TextBlock Grid.Column="1" Text="{Binding Library.CountLabel}" Classes="Muted" VerticalAlignment="Center"/>
-                                <Border HorizontalAlignment="Left" Background="{DynamicResource ThemePanelBrush}" CornerRadius="12" Padding="4">
-                                    <StackPanel Orientation="Horizontal" Spacing="2">
-                                        <Button x:Name="allInstancesFilter" Classes="FilterBtn" Classes.active="{Binding Library.IsAllSelected}" Content="All instances" Command="{Binding Library.ShowAllCommand}" />
-                                        <Button x:Name="favoritesFilter" Classes="FilterBtn" Classes.active="{Binding Library.FavoritesOnly}" Content="★  Favorites" Command="{Binding Library.ShowFavoritesCommand}" />
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-                            <Border Grid.Row="2" IsVisible="{Binding HasInterruptedOperations}" Background="{DynamicResource ThemePanelBrush}" CornerRadius="12" Padding="12" Margin="0,0,0,12">
-                                <ScrollViewer MaxHeight="140">
-                                    <ItemsControl ItemsSource="{Binding InterruptedOperations}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,4">
-                                                    <TextBlock Text="{Binding Description}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0" />
-                                                    <Button Grid.Column="1" Classes="SecondaryBtn" Content="Folder" Command="{Binding #root.DataContext.OpenInterruptedFolderCommand}" CommandParameter="{Binding}" Margin="4,0" />
-                                                    <Button Grid.Column="2" Classes="SecondaryBtn" Content="Cancel (keep files)" IsEnabled="{Binding CanCancel}" Command="{Binding #root.DataContext.CancelInterruptedCommand}" CommandParameter="{Binding}" Margin="4,0" />
-                                                    <Button Grid.Column="3" Classes="PrimaryBtn" Content="Resume" IsEnabled="{Binding CanResume}" Command="{Binding #root.DataContext.ResumeInterruptedCommand}" CommandParameter="{Binding}" Margin="4,0" />
-                                                </Grid>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </ScrollViewer>
+                            <Border Grid.Row="1" IsVisible="{Binding HasInterruptedOperations}" Background="{DynamicResource ThemePanelBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,12">
+                                <ScrollViewer MaxHeight="96"><ItemsControl ItemsSource="{Binding InterruptedOperations}"><ItemsControl.ItemTemplate><DataTemplate>
+                                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,4">
+                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                        <Button Grid.Column="1" Classes="SecondaryBtn" Content="Folder" Command="{Binding #root.DataContext.OpenInterruptedFolderCommand}" CommandParameter="{Binding}" Margin="4,0"/>
+                                        <Button Grid.Column="2" Classes="SecondaryBtn" Content="Cancel (keep files)" IsEnabled="{Binding CanCancel}" Command="{Binding #root.DataContext.CancelInterruptedCommand}" CommandParameter="{Binding}" Margin="4,0"/>
+                                        <Button Grid.Column="3" Classes="PrimaryBtn" Content="Resume" IsEnabled="{Binding CanResume}" Command="{Binding #root.DataContext.ResumeInterruptedCommand}" CommandParameter="{Binding}" Margin="4,0"/>
+                                    </Grid>
+                                </DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
                             </Border>
-                            <Panel Grid.Row="3">
-                                <TextBlock Text="Loading library…" IsVisible="{Binding IsInitializing}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                <ScrollViewer x:Name="instanceCardsScroll" HorizontalScrollBarVisibility="Disabled">
-                                    <ItemsRepeater x:Name="instanceCards" ItemsSource="{Binding Library.VisibleInstances}">
-                                        <ItemsRepeater.Layout>
-                                            <UniformGridLayout MinItemWidth="284" MinItemHeight="166" ItemsJustification="Start" />
-                                        </ItemsRepeater.Layout>
-                                        <ItemsRepeater.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border AttachedToVisualTree="OnCardAttached" DetachedFromVisualTree="OnCardDetached" Margin="0,4,12,8">
-                                                    <Border Classes="VortexCard InstanceCard" Width="272" Height="154" Opacity="{Binding CardOpacity}" PointerPressed="OnInstanceCardPointerPressed">
-                                                        <Panel>
-                                                            <Border IsVisible="{Binding HasCover}" CornerRadius="12" ClipToBounds="True" Opacity="0.14" IsHitTestVisible="False">
-                                                                <conv:AsyncImage SourcePath="{Binding CoverImagePath}" DecodeWidth="544" Stretch="UniformToFill" />
-                                                            </Border>
-                                                            <Grid RowDefinitions="44,*,32" Margin="14">
-                                                                <Grid ColumnDefinitions="Auto,*,Auto">
-                                                                    <Border Width="34" Height="34" CornerRadius="10" Background="{DynamicResource AccentSoftBrush}" Margin="0,0,10,0" ClipToBounds="True" VerticalAlignment="Center">
-                                                                        <Panel>
-                                                                            <PathIcon Data="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" Foreground="{DynamicResource AccentBrush}" Width="13" Height="13" IsVisible="{Binding !HasIcon}" />
-                                                                            <conv:AsyncImage SourcePath="{Binding IconPath}" DecodeWidth="96" Stretch="UniformToFill" IsVisible="{Binding HasIcon}" />
-                                                                        </Panel>
-                                                                    </Border>
-                                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-                                                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" />
-                                                                        <TextBlock Text="{Binding SummaryText}" Classes="Muted" FontSize="10" LineHeight="14" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
-                                                                    </StackPanel>
-                                                                    <Button Grid.Column="2" Classes="IconButton" Width="24" Content="···" FontSize="18" Click="OnOpenInstanceMenuClick" Tag="{Binding}" ToolTip.Tip="Instance actions" AutomationProperties.Name="Instance actions" />
-                                                                </Grid>
-                                                                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-                                                                    <TextBlock Text="{Binding PlayTimeText}" Classes="Muted" FontSize="10" LineHeight="14" ToolTip.Tip="{Binding StatusText}" />
-                                                                    <TextBlock Grid.Column="1" Text="Vortex Client" IsVisible="{Binding VortexClientEnabled}" Foreground="{DynamicResource AccentBrush}" FontSize="10" />
-                                                                </Grid>
-                                                            <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto,Auto">
-                                                                <Button Classes="SecondaryBtn" Content="Manage" Click="OnManageInstanceClick" Tag="{Binding}" HorizontalAlignment="Left" HorizontalContentAlignment="Center" Padding="10,4" />
-                                                                <Button Grid.Column="1" Classes="IconButton" Width="26" Margin="4,0" Foreground="{DynamicResource AccentBrush}" Content="{Binding FavoriteSymbol}" Command="{Binding #root.DataContext.ToggleFavoriteCommand}" CommandParameter="{Binding}" ToolTip.Tip="Pin / unpin favorite" AutomationProperties.Name="Toggle favorite" />
-                                                                <Button Grid.Column="2" Classes="IconButton" Width="26" Margin="0,0,6,0" Click="OnExportInstanceCardClick" Tag="{Binding}" ToolTip.Tip="Export instance" AutomationProperties.Name="Export instance">
-                                                                    <PathIcon Width="14" Height="14" Data="M11 3h2v10l3-3 1.4 1.4L12 17l-5.4-5.6L8 10l3 3V3zM4 18h2v2h12v-2h2v4H4z" />
-                                                                </Button>
-                                                                <Button Grid.Column="3" Classes="PrimaryBtn PlayButton" Width="72" Content="{Binding LaunchButtonText}" Command="{Binding #root.DataContext.LaunchSpecificInstanceCommand}" CommandParameter="{Binding}" IsEnabled="{Binding CanLaunch}" Padding="6,4" ToolTip.Tip="{Binding StatusText}" />
-                                                            </Grid>
-                                                        </Grid>
-                                                        </Panel>
-                                                    </Border>
+                            <Grid Grid.Row="2" ColumnDefinitions="252,24,*">
+                                <Grid x:Name="libraryCollection" RowDefinitions="Auto,Auto,*">
+                                    <TextBox x:Name="librarySearch" Text="{Binding Library.SearchQuery, Mode=TwoWay}" Watermark="Search your library" Margin="0,0,0,12" AutomationProperties.Name="Search instances"/>
+                                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,0,0,12">
+                                        <Button x:Name="allInstancesFilter" Classes="LibraryFilter" Classes.active="{Binding Library.IsAllSelected}" Content="All games" Command="{Binding Library.ShowAllCommand}"/>
+                                        <Button x:Name="favoritesFilter" Classes="LibraryFilter" Classes.active="{Binding Library.FavoritesOnly}" Content="★  Favorites" Command="{Binding Library.ShowFavoritesCommand}"/>
+                                    </StackPanel>
+                                    <Panel Grid.Row="2">
+                                        <ListBox x:Name="instanceCards" Classes="LibraryList" ItemsSource="{Binding Library.VisibleInstances}" SelectedItem="{Binding Library.SelectedInstance, Mode=TwoWay}" SelectionMode="Single" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Installed instances">
+                                            <ListBox.ItemTemplate><DataTemplate DataType="models:InstanceModel">
+                                                <Border Classes="InstanceCard LibraryRow" Height="88" Padding="7" PointerPressed="OnInstanceCardPointerPressed" Opacity="{Binding CardOpacity}">
+                                                    <Grid ColumnDefinitions="64,*,24">
+                                                        <Border CornerRadius="5" ClipToBounds="True" views:RoundedClip.IsEnabled="True" Margin="0,0,10,0">
+                                                            <Panel>
+                                                                <views:WorldCover Seed="{Binding Name}"/>
+                                                                <conv:AsyncImage SourcePath="{Binding CoverImagePath}" DecodeWidth="160" Stretch="UniformToFill"/>
+                                                                <Border Background="#20000000"/>
+                                                                <Border Width="26" Height="26" CornerRadius="5" Background="#99131518" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="5" IsVisible="{Binding HasIcon}" ClipToBounds="True"><conv:AsyncImage SourcePath="{Binding IconPath}" DecodeWidth="64" Stretch="UniformToFill"/></Border>
+                                                            </Panel>
+                                                        </Border>
+                                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="5" Margin="0,0,4,0">
+                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}"/>
+                                                            <TextBlock Text="{Binding SummaryText}" Classes="Muted" FontSize="10" LineHeight="14" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Text="{Binding StatusText}" Classes="Muted" FontSize="10" LineHeight="14" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="7">
+                                                            <Button Classes="IconButton" Content="···" FontSize="17" Width="24" Height="26" Padding="0" Click="OnOpenInstanceMenuClick" Tag="{Binding}" ToolTip.Tip="Instance actions" AutomationProperties.Name="Instance actions"/>
+                                                            <TextBlock Text="★" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsFavorite}" HorizontalAlignment="Center" FontSize="11"/>
+                                                        </StackPanel>
+                                                    </Grid>
                                                 </Border>
-                                            </DataTemplate>
-                                        </ItemsRepeater.ItemTemplate>
-                                    </ItemsRepeater>
-                                </ScrollViewer>
-                                <StackPanel x:Name="libraryEmptyState" IsVisible="{Binding Library.IsEmpty}" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="390" Spacing="12">
-                                    <Border Width="72" Height="72" CornerRadius="24" Background="{DynamicResource AccentSoftBrush}" HorizontalAlignment="Center" Margin="0,0,0,8">
-                                        <PathIcon Data="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" Foreground="{DynamicResource AccentBrush}" Width="28" Height="28" />
+                                            </DataTemplate></ListBox.ItemTemplate>
+                                        </ListBox>
+                                        <TextBlock Text="Loading library…" IsVisible="{Binding IsInitializing}" Classes="Muted" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Nothing here yet." Classes="Muted" IsVisible="{Binding Library.IsEmpty}" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,24"/>
+                                    </Panel>
+                                </Grid>
+                                <Panel Grid.Column="2">
+                                    <ContentControl x:Name="librarySelection" Content="{Binding Library.SelectedInstance}" IsVisible="{Binding Library.HasSelection}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+                                        <ContentControl.ContentTemplate><DataTemplate DataType="models:InstanceModel">
+                                            <Grid RowDefinitions="*,Auto,Auto">
+                                                <Border x:Name="libraryHero" CornerRadius="10" ClipToBounds="True" views:RoundedClip.IsEnabled="True" MinHeight="150">
+                                                    <Panel>
+                                                        <views:WorldCover Seed="{Binding Name}"/>
+                                                        <conv:AsyncImage SourcePath="{Binding CoverImagePath}" DecodeWidth="1600" Stretch="UniformToFill"/>
+                                                        <Border><Border.Background><LinearGradientBrush StartPoint="0%,0%" EndPoint="70%,100%"><GradientStop Offset="0" Color="#14101316"/><GradientStop Offset="0.6" Color="#55101316"/><GradientStop Offset="1" Color="#EE101316"/></LinearGradientBrush></Border.Background></Border>
+                                                        <Grid Margin="26" RowDefinitions="Auto,*,Auto" ColumnDefinitions="*,Auto">
+                                                            <TextBlock Text="MINECRAFT  /  JAVA EDITION" Foreground="#E6EFEB" FontSize="10" FontWeight="SemiBold" LetterSpacing="2" VerticalAlignment="Top"/>
+                                                            <Button Grid.Column="1" Classes="HeroFavorite" Content="{Binding FavoriteSymbol}" Command="{Binding #root.DataContext.ToggleFavoriteCommand}" CommandParameter="{Binding}" ToolTip.Tip="Pin / unpin favorite" AutomationProperties.Name="Toggle favorite"/>
+                                                            <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Spacing="8">
+                                                                <TextBlock Text="{Binding Name}" Foreground="White" FontSize="32" FontWeight="Bold" LetterSpacing="-0.9" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="82" ToolTip.Tip="{Binding Name}"/>
+                                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                                    <Border Background="#660D1518" CornerRadius="4" Padding="8,4"><TextBlock Foreground="#E5EEEA" FontSize="10" Text="{Binding Version}"/></Border>
+                                                                    <Border Background="#660D1518" CornerRadius="4" Padding="8,4"><TextBlock Foreground="#E5EEEA" FontSize="10" Text="{Binding Loader}"/></Border>
+                                                                    <Border Background="#D7F36A" CornerRadius="4" Padding="8,4" IsVisible="{Binding VortexClientEnabled}"><TextBlock Foreground="#18200B" FontSize="10" Text="VORTEX CLIENT" FontWeight="SemiBold"/></Border>
+                                                                </StackPanel>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Panel>
+                                                </Border>
+                                                <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="0,18,0,0">
+                                                    <Button x:Name="featuredPlayButton" Classes="PlayButton LibraryPlay" Command="{Binding #root.DataContext.LaunchSpecificInstanceCommand}" CommandParameter="{Binding}" IsEnabled="{Binding CanLaunch}" AutomationProperties.Name="Play selected instance">
+                                                        <StackPanel Orientation="Horizontal" Spacing="12"><PathIcon Width="13" Height="13" Data="M4,2 L21,12 L4,22 Z"/><TextBlock Text="{Binding LaunchButtonText}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/></StackPanel>
+                                                    </Button>
+                                                    <StackPanel Grid.Column="1" Spacing="3" Margin="16,0,8,0" VerticalAlignment="Center"><TextBlock Text="{Binding StatusText}" FontSize="12" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding PlayTimeText}" Classes="Muted" FontSize="10" LineHeight="14" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/></StackPanel>
+                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                        <Button Classes="SecondaryBtn" Content="Manage" Click="OnManageInstanceClick" Tag="{Binding}" AutomationProperties.Name="Manage selected instance"/>
+                                                        <Button Classes="IconButton" Content="···" FontSize="20" Click="OnOpenInstanceMenuClick" Tag="{Binding}" ToolTip.Tip="Instance actions" AutomationProperties.Name="Selected instance actions"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                                <Border Grid.Row="2" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,1,0,0" Margin="0,20,0,0" Padding="0,15,0,2">
+                                                    <Grid ColumnDefinitions="*,*,Auto">
+                                                        <StackPanel Spacing="5"><TextBlock Text="MINECRAFT" Classes="LibraryMetaLabel"/><TextBlock Text="{Binding Version}" FontSize="14" FontWeight="Medium" TextTrimming="CharacterEllipsis"/></StackPanel>
+                                                        <StackPanel Grid.Column="1" Spacing="5"><TextBlock Text="MOD LOADER" Classes="LibraryMetaLabel"/><TextBlock Text="{Binding Loader}" FontSize="14" FontWeight="Medium" TextTrimming="CharacterEllipsis"/></StackPanel>
+                                                        <Button Grid.Column="2" Classes="LibraryTextButton" Click="OnSetCoverClick" VerticalAlignment="Center" AutomationProperties.Name="Change selected cover">
+                                                            <StackPanel Orientation="Horizontal" Spacing="7"><TextBlock Text="Change cover" FontSize="11" VerticalAlignment="Center"/><PathIcon Width="11" Height="11" Data="M5,2 L20,2 L20,17 L18,17 L18,6 L4,20 L2,18 L16,4 L5,4 Z"/></StackPanel>
+                                                        </Button>
+                                                    </Grid>
+                                                </Border>
+                                            </Grid>
+                                        </DataTemplate></ContentControl.ContentTemplate>
+                                    </ContentControl>
+                                    <Border IsVisible="{Binding !Library.HasSelection}" CornerRadius="10" ClipToBounds="True" views:RoundedClip.IsEnabled="True">
+                                        <Panel>
+                                            <views:WorldCover Seed="A new world"/>
+                                            <Border Background="#C9101316"/>
+                                            <StackPanel x:Name="libraryEmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="360" Margin="24" Spacing="14">
+                                                <TextBlock Text="MAKE ROOM FOR ADVENTURE" Foreground="#D7F36A" FontSize="10" LetterSpacing="2" TextWrapping="Wrap" TextAlignment="Center"/>
+                                                <TextBlock Text="{Binding Library.EmptyTitle}" FontSize="28" FontWeight="SemiBold" Foreground="White" TextWrapping="Wrap" TextAlignment="Center"/>
+                                                <TextBlock Text="{Binding Library.EmptyDescription}" Foreground="#BBC8C2" FontSize="12" LineHeight="19" TextWrapping="Wrap" TextAlignment="Center"/>
+                                                <Button Content="Clear filters" Command="{Binding Library.ClearFiltersCommand}" Classes="SecondaryBtn" IsVisible="{Binding Library.HasInstances}" HorizontalAlignment="Center"/>
+                                                <Button Content="+  Create your first instance" Click="OnAddInstanceClick" Classes="PrimaryBtn" IsVisible="{Binding !Library.HasInstances}" IsEnabled="{Binding !IsInitializing}" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Panel>
                                     </Border>
-                                    <TextBlock Text="{Binding Library.EmptyTitle}" Classes="SectionTitle" TextAlignment="Center" />
-                                    <TextBlock Text="{Binding Library.EmptyDescription}" Classes="Muted" TextAlignment="Center" />
-                                    <Button Classes="SecondaryBtn" Content="Clear filters" Command="{Binding Library.ClearFiltersCommand}" IsVisible="{Binding Library.HasInstances}" HorizontalAlignment="Center" Margin="0,8,0,0" />
-                                    <Button Classes="PrimaryBtn" Content="Create your first instance" Click="OnAddInstanceClick" IsVisible="{Binding !Library.HasInstances}" HorizontalAlignment="Center" Margin="0,8,0,0" />
-                                </StackPanel>
-                            </Panel>
+                                </Panel>
+                            </Grid>
                         </Grid>
                         <Grid x:Name="modpacksPage" Classes="PagePanel" RowDefinitions="*" IsVisible="{Binding IsModpacksTab}">
                             <Grid Grid.Row="0" x:Name="modpacksContentGrid" DataContext="{Binding ModpacksVm}" RowDefinitions="Auto, *">
@@ -535,6 +419,16 @@
                         </Grid>
                     </Panel>
                 </Grid>
+                <Border Grid.Row="2" Background="{DynamicResource ThemeSidebarBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,1,0,0" Padding="24,0">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                        <Button x:Name="downloadCenterButton" Classes="LibraryTextButton" Command="{Binding ShowDownloadsCommand}" AutomationProperties.Name="Downloads" Padding="4,0" Margin="0,0,18,0">
+                            <StackPanel Orientation="Horizontal" Spacing="9"><PathIcon Width="14" Height="14" Data="M12,2 L12,15 M6,9 L12,15 L18,9 M3,16 L3,21 L21,21 L21,16"/><TextBlock Text="Downloads" FontSize="11" VerticalAlignment="Center"/></StackPanel>
+                        </Button>
+                        <TextBlock Grid.Column="1" Text="{Binding StatusMessage}" Classes="Muted" FontSize="10" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,16,0" ToolTip.Tip="{Binding StatusMessage}"/>
+                        <Button Grid.Column="2" Content="Install update" Command="{Binding InstallLauncherUpdateCommand}" Classes="LibraryTextButton" IsVisible="{Binding UpdateAvailable}" IsEnabled="{Binding !IsInstallingUpdate}" Margin="0,0,16,0" Padding="6,0" FontSize="11"/>
+                        <TextBlock Grid.Column="3" Text="VORTEX LAUNCHER" FontSize="9" LetterSpacing="1.5" Foreground="{DynamicResource ThemeSubtextBrush}" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
             </Grid>
         </Border>
         <Border Background="#BB080B12" IsVisible="{Binding IsGlobalLoading}">
@@ -560,4 +454,3 @@
         </Border>
     </Panel>
 </Window>
-

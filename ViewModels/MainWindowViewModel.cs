@@ -165,10 +165,10 @@ public partial class MainWindowViewModel : ObservableObject
     private string _jvmArgs = "-XX:+UseG1GC -XX:+UnlockExperimentalVMOptions";
 
     [ObservableProperty]
-    private string _accentColor = "#7AA2F7";
+    private string _accentColor = "#D7F36A";
 
     [ObservableProperty]
-    private string _themeName = "Tokyo Night";
+    private string _themeName = "Graphite";
 
     [ObservableProperty]
     private bool _isStartupGreetingVisible = true;
@@ -197,6 +197,11 @@ public partial class MainWindowViewModel : ObservableObject
         _checkUpdatesOnStartup = checkUpdates;
         _instanceManager = instances; _settingsManager = settings; _accountManager = accounts;
         Library = new InstanceLibraryViewModel(Instances);
+        Library.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(InstanceLibraryViewModel.SelectedInstance))
+                SelectedInstance = Library.SelectedInstance;
+        };
         Accounts.Add(ActiveAccount);
 
         ModpacksVm = new ModpacksViewModel(
@@ -213,6 +218,7 @@ public partial class MainWindowViewModel : ObservableObject
                 else Dispatcher.UIThread.Post(ApplyLoadingState);
             });
 
+        ThemePresets.Add(new ThemePresetViewModel("Graphite", "#D7F36A", "#101214", "#15181B", "#1D2125", "#2E3439", "#F0F2EE", "#9BA49E"));
         ThemePresets.Add(new ThemePresetViewModel("Soft Slate", "#8BA8D8", "#181C24", "#1E232D", "#252B36", "#394353", "#E2E6EF", "#A4AFC2"));
         ThemePresets.Add(new ThemePresetViewModel("Tokyo Night", "#7AA2F7", "#131722", "#191E2B", "#202636", "#344059", "#DFE6F3", "#A0ADC4"));
         ThemePresets.Add(new ThemePresetViewModel("Catppuccin", "#F5C2E7", "#11111B", "#181825", "#1E1E2E", "#313244", "#CDD6F4", "#A6ADC8"));
@@ -244,6 +250,9 @@ public partial class MainWindowViewModel : ObservableObject
 
     partial void OnSelectedInstanceChanged(InstanceModel? value)
     {
+        if (value != null && Instances.Contains(value) && !Library.VisibleInstances.Contains(value))
+            Library.ClearFiltersCommand.Execute(null);
+        if (!ReferenceEquals(Library.SelectedInstance, value)) Library.SelectedInstance = value;
         OnPropertyChanged(nameof(HasSelectedInstance));
     }
 
@@ -324,7 +333,7 @@ public partial class MainWindowViewModel : ObservableObject
         CustomJavaPath = settings.CustomJavaPath;
         JvmArgs = settings.JvmArguments;
         ThemeName = settings.ThemeName;
-        AccentColor = string.IsNullOrWhiteSpace(settings.AccentColor) ? "#7AA2F7" : settings.AccentColor;
+        AccentColor = string.IsNullOrWhiteSpace(settings.AccentColor) ? "#D7F36A" : settings.AccentColor;
         var preset = ThemePresets.FirstOrDefault(x => x.Name == ThemeName) ?? ThemePresets[0];
         ThemeManager.SetTheme(preset.Name, AccentColor, preset.Background, preset.Sidebar,
             preset.Panel, preset.Border, preset.Text, preset.Subtext);

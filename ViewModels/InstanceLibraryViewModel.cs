@@ -27,6 +27,9 @@ public partial class InstanceLibraryViewModel : ObservableObject, IDisposable
 
     [ObservableProperty] private string _searchQuery = string.Empty;
     [ObservableProperty] private bool _favoritesOnly;
+    [ObservableProperty] private InstanceModel? _selectedInstance;
+    public bool HasSelection => SelectedInstance != null;
+    partial void OnSelectedInstanceChanged(InstanceModel? value) => OnPropertyChanged(nameof(HasSelection));
 
     public ResettableCollection<InstanceModel> VisibleInstances { get; } = new();
     public bool IsAllSelected => !FavoritesOnly;
@@ -77,6 +80,7 @@ public partial class InstanceLibraryViewModel : ObservableObject, IDisposable
     private void Refresh()
     {
         if (_deferred > 0) return;
+        var selection = SelectedInstance;
         string query = (SearchQuery ?? string.Empty).Trim();
         var matches = _source.Where(item => (!FavoritesOnly || item.IsFavorite)
             && (query.Length == 0 || item.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
@@ -93,6 +97,7 @@ public partial class InstanceLibraryViewModel : ObservableObject, IDisposable
             if (current < 0) VisibleInstances.Insert(i, matches[i]);
             else if (current != i) VisibleInstances.Move(current, i);
         }
+        SelectedInstance = selection != null && matches.Contains(selection) ? selection : matches.FirstOrDefault();
         OnPropertyChanged(nameof(IsEmpty)); OnPropertyChanged(nameof(HasInstances));
         OnPropertyChanged(nameof(CountLabel)); OnPropertyChanged(nameof(EmptyTitle));
         OnPropertyChanged(nameof(EmptyDescription));

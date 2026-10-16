@@ -13,8 +13,8 @@ public class LauncherSettings
     public int RamAllocationGb { get; set; } = 4;
     public string CustomJavaPath { get; set; } = string.Empty;
     public string JvmArguments { get; set; } = "-XX:+UseG1GC -XX:+UnlockExperimentalVMOptions";
-    public string AccentColor { get; set; } = "#7AA2F7";
-    public string ThemeName { get; set; } = "Tokyo Night";
+    public string AccentColor { get; set; } = "#D7F36A";
+    public string ThemeName { get; set; } = "Graphite";
     public bool HasLaunchedBefore { get; set; }
     public string UpdateManifestUrl { get; set; } = DefaultUpdateManifestUrl;
     public bool MinimizeOnGameLaunch { get; set; } = true;

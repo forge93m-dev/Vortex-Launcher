@@ -22,7 +22,7 @@ static class StabilityUiChecks
         var window = new MainWindow { DataContext = large }; window.Show(); pump(100);
         int realized = window.GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("InstanceCard"));
         Check(realized is > 0 and < 60, "500 instances realize only a bounded viewport of cards");
-        var scroller = window.FindControl<ItemsRepeater>("instanceCards")!.GetVisualAncestors().OfType<ScrollViewer>().First();
+        var scroller = window.FindControl<ListBox>("instanceCards")!.GetVisualDescendants().OfType<ScrollViewer>().First();
         scroller.Offset = new Vector(0, scroller.Extent.Height); pump(300);
         Check(window.GetVisualDescendants().OfType<Border>().Any(b => b.Classes.Contains("InstanceCard") && (b.DataContext as InstanceModel)?.Name == "Instance 499"), "virtualized scrolling reaches the final instance");
         window.CaptureRenderedFrame()!.Save(Path.Combine(output, "virtualized-library.png"));
@@ -54,6 +54,11 @@ static class StabilityUiChecks
         Check(!vm.IsInitializing && vm.Instances.Count == 30 && vm.RamGb == 7 && vm.ActiveAccount.Username == "FixturePlayer", "background startup applies saved profiles/settings and the complete library");
         Check(ReferenceEquals(initialized, vm.InitializeAsync()), "repeated window initialization shares one startup task");
         Check(vm.StartupTiming.Contains("30 instances"), "startup reports measured library load time");
+        vm.Library.SelectedInstance=vm.Instances[10];
+        Check(vm.SelectedInstance==vm.Instances[10], "library selection updates the production selected instance");
+        vm.Library.SearchQuery="Pack 2";
+        vm.SelectedInstance=vm.Instances[10];
+        Check(vm.Library.SelectedInstance==vm.Instances[10] && vm.Library.VisibleInstances.Contains(vm.Instances[10]), "explicit instance selection clears conflicting filters and keeps the preview in sync");
         vm.CancelStartup(); vm.Library.Dispose();
 
         ArtworkCache.DiskRoot = Path.Combine(root, "artwork-cache");

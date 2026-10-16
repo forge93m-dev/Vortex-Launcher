@@ -34,7 +34,7 @@
         <Setter Property="Background" Value="{DynamicResource ThemePanelBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="18" />
+        <Setter Property="CornerRadius" Value="8" />
     </Style>
     <Style Selector="Border.Chip">
         <Setter Property="Background" Value="{DynamicResource ThemeSidebarBrush}" />
@@ -73,7 +73,7 @@
         <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="CornerRadius" Value="6" />
         <Setter Property="Padding" Value="14,10" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="Medium" />
@@ -191,4 +191,3 @@
         <Setter Property="AllowAutoHide" Value="True" />
     </Style>
 </Styles>
-

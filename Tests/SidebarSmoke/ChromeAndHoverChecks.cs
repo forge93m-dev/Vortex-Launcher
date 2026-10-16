@@ -41,23 +41,20 @@ internal static class ChromeAndHoverChecks
         var window = new MainWindow { DataContext = fixture, Width = 960, Height = 600 };
         window.Show(); pump(550);
         Check(window.Content is Border root && RoundedClip.GetIsEnabled(root) && root.Clip != null, "main window uses the rounded content clip");
-        var scroller = window.FindControl<ScrollViewer>("instanceCardsScroll")!;
-        // ItemsRepeater may keep recycled containers parked at -10000. They are
-        // not on-screen cards and cannot be selected as hover targets.
-        var card = VisibleCards(window, scroller).OrderBy(c => c.TranslatePoint(default, scroller)!.Value.Y)
-            .ThenBy(c => c.TranslatePoint(default, scroller)!.Value.X).First();
+        var scroller = window.FindControl<ListBox>("instanceCards")!.GetVisualDescendants().OfType<ScrollViewer>().First();
+        var card = VisibleCards(window, scroller).OrderBy(c => c.TranslatePoint(default, scroller)!.Value.Y).First();
+        var before = card.TranslatePoint(default, scroller)!.Value;
         Hover(window, card, pump);
         var top = card.TranslatePoint(default, scroller)!.Value;
-        Console.WriteLine($"Hover geometry: pointer={card.IsPointerOver}, top={top}, viewport={scroller.Viewport}, offset={scroller.Offset}, margin={((Border)card.Parent!).Margin}");
-        Check(card.IsPointerOver && top.Y >= 1.5 && top.X >= -0.5, $"first-row hover lift stays below the scroll viewport edge (pointer={card.IsPointerOver}, top={top})");
-        Check(card.Bounds.Size == new Size(272, 154) && RoundedClip.GetIsEnabled(card) && card.Clip != null, "card dimensions stay compact and opaque covers share the rounded clip");
+        Check(card.IsPointerOver && Math.Abs(before.Y-top.Y)<.1 && top.Y>=-.5, "row hover never lifts or clips the top of the collection");
+        Check(card.Bounds.Height==88 && card.GetVisualDescendants().OfType<Border>().Any(b=>RoundedClip.GetIsEnabled(b) && b.Clip!=null), "compact cover thumbnails retain an explicit rounded clip");
         window.CaptureRenderedFrame()!.Save(Path.Combine(output, "library-hover-first-row.png"));
-        window.MouseMove(new Point(700, 80)); pump(220);
+        window.MouseMove(new Point(700, 80)); pump(120);
         scroller.Offset = new Vector(0, scroller.Extent.Height); pump(250);
         var last = VisibleCards(window, scroller).Single(c => (c.DataContext as InstanceModel)?.Name == "Instance 35");
         Hover(window, last, pump);
         var bottom = last.TranslatePoint(new Point(last.Bounds.Width, last.Bounds.Height), scroller)!.Value;
-        Check(last.IsPointerOver && bottom.Y <= scroller.Viewport.Height + 0.5 && bottom.X <= scroller.Viewport.Width + 0.5, "last-row and right-edge card animations remain inside the viewport");
+        Check(last.IsPointerOver && bottom.Y <= scroller.Viewport.Height + .5 && bottom.X <= scroller.Viewport.Width + .5, "last-row hover stays inside the scroll viewport");
         window.CaptureRenderedFrame()!.Save(Path.Combine(output, "library-hover-last-row.png"));
         window.Close(); fixture.Library.Dispose();
         Console.WriteLine("CHROME_HOVER_CHECKS_OK");
@@ -83,4 +80,3 @@ internal static class ChromeAndHoverChecks
     }
     private static void Check(bool condition, string message) { if (!condition) throw new Exception("FAIL: " + message); Console.WriteLine("PASS: " + message); }
 }
-

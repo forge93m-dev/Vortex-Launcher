@@ -117,17 +117,17 @@
         <StyleInclude Source="avares://Vortex Launcher/Styles/Launcher.axaml" />
     </Application.Styles>
     <Application.Resources>
-        <Color x:Key="AccentColor">#10B981</Color>
+        <Color x:Key="AccentColor">#D7F36A</Color>
         <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
-        <SolidColorBrush x:Key="AccentHoverBrush" Color="#34D399" />
-        <SolidColorBrush x:Key="AccentSoftBrush" Color="#4810B981" />
-        <SolidColorBrush x:Key="AccentForegroundBrush" Color="#071018" />
-        <SolidColorBrush x:Key="ThemeBackgroundBrush" Color="#0A0D14" />
-        <SolidColorBrush x:Key="ThemeSidebarBrush" Color="#0E121B" />
-        <SolidColorBrush x:Key="ThemePanelBrush" Color="#121722" />
-        <SolidColorBrush x:Key="ThemeBorderBrush" Color="#1C2433" />
-        <SolidColorBrush x:Key="ThemeTextBrush" Color="#F8FAFC" />
-        <SolidColorBrush x:Key="ThemeSubtextBrush" Color="#64748B" />
+        <SolidColorBrush x:Key="AccentHoverBrush" Color="#E6FF91" />
+        <SolidColorBrush x:Key="AccentSoftBrush" Color="#26D7F36A" />
+        <SolidColorBrush x:Key="AccentForegroundBrush" Color="#18200B" />
+        <SolidColorBrush x:Key="ThemeBackgroundBrush" Color="#101214" />
+        <SolidColorBrush x:Key="ThemeSidebarBrush" Color="#15181B" />
+        <SolidColorBrush x:Key="ThemePanelBrush" Color="#1D2125" />
+        <SolidColorBrush x:Key="ThemeBorderBrush" Color="#2E3439" />
+        <SolidColorBrush x:Key="ThemeTextBrush" Color="#F0F2EE" />
+        <SolidColorBrush x:Key="ThemeSubtextBrush" Color="#9BA49E" />
         <SolidColorBrush x:Key="ModrinthBg" Color="#111217" />
         <SolidColorBrush x:Key="ModrinthPanel" Color="#161822" />
         <SolidColorBrush x:Key="ModrinthBorder" Color="#222636" />
