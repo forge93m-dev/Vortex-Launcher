@@ -15,6 +15,7 @@ internal static class WorkspaceMotionChecks
         fixture.Select("Settings"); pump(300);
         var tabs=window.FindControl<TabControl>("SettingsTabs")!;
         Check(tabs.TabStripPlacement==Avalonia.Controls.Dock.Left && tabs.ItemCount==4, "settings use separate appearance, game, Java and update workspaces");
+        Check(tabs.GetVisualDescendants().OfType<TabItem>().All(t=>t.FontSize==12),"settings navigation uses compact header typography rather than the theme's title size");
         foreach(var dimensions in new[]{new Size(960,600), new Size(1280,800)})
         {
             window.Width=dimensions.Width;window.Height=dimensions.Height;

@@ -29,10 +29,11 @@
     <Style Selector="Border.DialogHeading"><Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}"/><Setter Property="BorderThickness" Value="0,0,0,1"/><Setter Property="Padding" Value="0,0,0,18"/><Setter Property="Margin" Value="0,0,0,20"/></Style>
     <Style Selector="TabControl.WorkspaceTabs TabItem">
         <Setter Property="Width" Value="158"/><Setter Property="MinHeight" Value="44"/><Setter Property="Margin" Value="0,0,0,7"/>
+        <Setter Property="FontSize" Value="12"/><Setter Property="FontWeight" Value="Medium"/><Setter Property="Foreground" Value="{DynamicResource ThemeSubtextBrush}"/>
         <Setter Property="Template"><ControlTemplate>
             <Border x:Name="WorkspaceTabChrome" CornerRadius="6" BorderBrush="Transparent" BorderThickness="2,0,0,0" Padding="14,12">
                 <Border.Transitions><Transitions><BrushTransition Property="Background" Duration="0:0:0.16"/><BrushTransition Property="BorderBrush" Duration="0:0:0.16"/></Transitions></Border.Transitions>
-                <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Header}" ContentTemplate="{TemplateBinding HeaderTemplate}" HorizontalContentAlignment="Left" VerticalContentAlignment="Center"/>
+                <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Header}" ContentTemplate="{TemplateBinding HeaderTemplate}" FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}" Foreground="{TemplateBinding Foreground}" HorizontalContentAlignment="Left" VerticalContentAlignment="Center"/>
             </Border>
         </ControlTemplate></Setter>
     </Style>
