@@ -39,6 +39,7 @@ public partial class InstanceDetailsViewModel : ObservableObject, IDisposable
     private string _selectedSection = "Mods";
 
     public string InstanceTitle => _instance.Name;
+    public string InstanceArtworkPath => _instance.CoverImagePath;
     public string InstanceSubtitle => $"{_instance.Version} • {_instance.Loader}";
     public bool IsInstallableSection => SelectedSection is "Mods" or "Resource packs" or "Shader packs";
     public bool IsModsSection => SelectedSection == "Mods";

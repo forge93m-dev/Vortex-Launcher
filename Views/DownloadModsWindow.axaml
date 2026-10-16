@@ -1,9 +1,9 @@
-<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:VortexLauncher.ViewModels" x:Class="VortexLauncher.Views.DownloadModsWindow" x:DataType="vm:DownloadModsViewModel" x:Name="root" Title="Download Content" Width="1000" Height="720" MinWidth="780" MinHeight="520" WindowStartupLocation="CenterOwner" Background="{DynamicResource ThemeBackgroundBrush}">
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:VortexLauncher.ViewModels" xmlns:views="using:VortexLauncher.Views" x:Class="VortexLauncher.Views.DownloadModsWindow" x:DataType="vm:DownloadModsViewModel" x:Name="root" Title="Download Content" Width="1000" Height="720" MinWidth="780" MinHeight="520" WindowStartupLocation="CenterOwner" Background="{DynamicResource ThemeBackgroundBrush}">
     <Border x:Name="dialogContent" Background="{DynamicResource ThemeBackgroundBrush}" CornerRadius="0" Padding="28" BorderThickness="0">
         <Grid RowDefinitions="Auto,Auto,*,Auto">
             <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,18">
                 <StackPanel Spacing="6">
-                    <TextBlock Classes="Eyebrow" Text="DISCOVER CONTENT" />
+                    <TextBlock Classes="Eyebrow" Text="INSTANCE / CONTENT CATALOG" />
                     <TextBlock Classes="PageTitle" Text="{Binding ContentTitle}" FontSize="25" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
@@ -42,12 +42,12 @@
                     <Button Grid.Column="2" Classes="SecondaryBtn" Content="Reset" Command="{Binding ResetFiltersCommand}" VerticalAlignment="Bottom" />
                 </Grid>
             </StackPanel>
-            <Grid Grid.Row="2" ColumnDefinitions="*, 300" IsEnabled="{Binding !IsInstalling}">
+            <Grid Grid.Row="2" ColumnDefinitions="*, 320" IsEnabled="{Binding !IsInstalling}">
                 <ScrollViewer Grid.Column="0" Margin="0,0,14,0" HorizontalScrollBarVisibility="Disabled" ScrollChanged="OnScrollChanged">
                     <ListBox ItemsSource="{Binding SearchResults}" SelectedItem="{Binding SelectedMod}" Background="Transparent" BorderThickness="0" Padding="0">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Border Classes="VortexCard" Padding="14" CornerRadius="14">
+                                <Border Classes="WorkspaceRow" Padding="8,16" Margin="0,0,0,4">
                                     <Grid ColumnDefinitions="Auto, Auto, *">
                                         <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="4,0,10,0" />
                                         <Border Grid.Column="1" Width="44" Height="44" CornerRadius="10" ClipToBounds="True" Background="{DynamicResource ThemeBorderBrush}" Margin="0,0,10,0" VerticalAlignment="Center">
@@ -63,23 +63,19 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
                 </ScrollViewer>
-                <Border Grid.Column="1" Background="{DynamicResource ThemePanelBrush}" CornerRadius="18" Padding="20" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="1">
+                <Border Grid.Column="1" Classes="WorkspaceAside" Padding="20">
                     <Panel>
                         <TextBlock Text="Select content to explore details and choose a version." Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" IsVisible="{Binding SelectedMod, Converter={x:Static ObjectConverters.IsNull}}" />
                         <ContentControl Content="{Binding SelectedMod}">
                             <ContentControl.ContentTemplate>
                                 <DataTemplate DataType="vm:ModrinthModItemViewModel">
                                     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                                        <StackPanel Spacing="14">
-                                            <Grid ColumnDefinitions="Auto,*">
-                                                <Border Width="40" Height="40" CornerRadius="12" Background="{DynamicResource ThemeSidebarBrush}" Margin="0,0,12,0" ClipToBounds="True">
-                                                    <Image Source="{Binding IconBitmap}" Stretch="UniformToFill" />
-                                                </Border>
-                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-                                                    <TextBlock Text="{Binding Item.Title}" FontWeight="SemiBold" FontSize="15" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Item.Title}" />
-                                                    <TextBlock Text="{Binding Item.Author, StringFormat='by {0}'}" Classes="Muted" FontSize="11" />
-                                                </StackPanel>
-                                            </Grid>
+                                        <StackPanel Spacing="14" views:SurfaceMotion.Kind="Content">
+                                            <StackPanel Spacing="12">
+                                                <Border Height="92" CornerRadius="6" ClipToBounds="True" views:RoundedClip.IsEnabled="True"><Panel><views:WorldCover Seed="{Binding Item.Title}"/><Border Background="#33000000"/><Image Source="{Binding IconBitmap}" Width="48" Height="48" Stretch="Uniform"/></Panel></Border>
+                                                <TextBlock Text="{Binding Item.Title}" FontWeight="SemiBold" FontSize="20" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Item.Title}"/>
+                                                <TextBlock Text="{Binding Item.Author, StringFormat='by {0}'}" Classes="Muted" FontSize="11"/>
+                                            </StackPanel>
                                             <StackPanel Spacing="6">
                                                 <TextBlock Text="Version to install" Classes="FieldLabel" />
                                                 <ComboBox ItemsSource="{Binding AvailableVersions}" SelectedItem="{Binding SelectedVersion, Mode=TwoWay}" IsEnabled="{Binding !IsLoadingVersions}" MaxDropDownHeight="260" HorizontalAlignment="Stretch" AutomationProperties.Name="Content version">

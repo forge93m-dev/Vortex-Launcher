@@ -18,6 +18,7 @@ public class LauncherSettings
     public bool HasLaunchedBefore { get; set; }
     public string UpdateManifestUrl { get; set; } = DefaultUpdateManifestUrl;
     public bool MinimizeOnGameLaunch { get; set; } = true;
+    public bool InterfaceAnimationsEnabled { get; set; } = true;
 }
 
 public class SettingsManager

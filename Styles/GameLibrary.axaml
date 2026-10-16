@@ -5,8 +5,8 @@
         <Setter Property="RenderTransform" Value="scale(1)"/>
         <Setter Property="MinHeight" Value="36"/>
     </Style>
-    <Style Selector="Button:pointerover"><Setter Property="RenderTransform" Value="scale(1)"/></Style>
-    <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="scale(1)"/></Style>
+    
+    
     <Style Selector="Border.VortexCard"><Setter Property="CornerRadius" Value="8"/></Style>
     <Style Selector="TextBox"><Setter Property="CornerRadius" Value="6"/><Setter Property="FontSize" Value="12"/></Style>
     <Style Selector="ComboBox"><Setter Property="CornerRadius" Value="6"/></Style>

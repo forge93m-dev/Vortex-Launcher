@@ -39,6 +39,7 @@ public partial class WindowTitleBar : UserControl
         shell.Bind(Border.BorderBrushProperty, new DynamicResourceExtension("ThemeBorderBrush"));
         window.Content = shell;
         RoundedWindowChrome.Attach(window, shell);
+        if (window is not MainWindow) UiMotion.AttachDialog(window, content);
     }
 
     private void OnMinimize(object? sender, RoutedEventArgs e) { if (_window != null) _window.WindowState = WindowState.Minimized; }
@@ -58,4 +59,3 @@ public partial class WindowTitleBar : UserControl
         e.Handled = true;
     }
 }
-

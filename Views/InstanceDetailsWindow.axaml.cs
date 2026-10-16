@@ -157,13 +157,6 @@ public partial class InstanceDetailsWindow : Window
     private void OnWindowOpened(object? sender, EventArgs e)
     {
         UpdateSectionNavigation();
-        detailsShell.Opacity = 0;
-        detailsShell.RenderTransform = new TranslateTransform(0, 12);
-        Dispatcher.UIThread.Post(() =>
-        {
-            detailsShell.Opacity = 1;
-            detailsShell.RenderTransform = new TranslateTransform(0, 0);
-        }, DispatcherPriority.Render);
+        UiMotion.Reveal(sectionContent);
     }
 }
-

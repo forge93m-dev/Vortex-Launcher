@@ -58,6 +58,8 @@ try
     }
     GameLibraryChecks.Run(window, fixture, Pump, output);
     if (args.Contains("--library")) { Console.WriteLine("Rendered previews: " + output); return; }
+    WorkspaceMotionChecks.Run(window, fixture, Pump, output);
+    if (args.Contains("--workspace")) { Console.WriteLine("Rendered previews: " + output); return; }
     foreach (var tab in new[] { "Modpacks", "Accounts", "Settings" })
     {
         fixture.Select(tab); Pump(250);
@@ -267,6 +269,7 @@ try
     Check(issueDialog.GetVisualDescendants().OfType<WindowTitleBar>().Any(), "new diagnostic windows share the custom title bar");
     issueDialog.Close();
     fixture.SelectTabCommand.Execute("Settings"); Pump(60);
+    window.FindControl<TabControl>("SettingsTabs")!.SelectedIndex = 3; Pump(280);
     var updateCheckButton = window.FindControl<Button>("CheckLauncherUpdatesButton")!;
     Check(updateCheckButton.Command != null, "manual update check is bound to a real command");
     Click(window, updateCheckButton); Pump(20);
@@ -375,6 +378,7 @@ sealed class SidebarFixture : INotifyPropertyChanged
     public string CustomJavaPath { get; set; } = "";
     public string JvmArgs { get; set; } = "-XX:+UseG1GC -XX:+UnlockExperimentalVMOptions";
     public bool MinimizeOnGameLaunch { get; set; } = true;
+    public bool InterfaceAnimationsEnabled { get; set; } = true;
     public string AccentColor { get; set; } = "#F5C2E7";
     public string NewAccountUsername { get; set; } = "";
     public ObservableCollection<ThemePresetViewModel> ThemePresets { get; } = new()

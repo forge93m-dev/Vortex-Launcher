@@ -47,6 +47,8 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _minimizeOnGameLaunch = true;
+    [ObservableProperty] private bool _interfaceAnimationsEnabled = true;
+    partial void OnInterfaceAnimationsEnabledChanged(bool value) => UiMotion.Enabled = value;
 
     [RelayCommand]
     private void CancelInstallation()
@@ -330,6 +332,8 @@ public partial class MainWindowViewModel : ObservableObject
         settings.HasLaunchedBefore = true;
         RamGb = settings.RamAllocationGb;
         MinimizeOnGameLaunch = settings.MinimizeOnGameLaunch;
+        InterfaceAnimationsEnabled = settings.InterfaceAnimationsEnabled;
+        UiMotion.Enabled = InterfaceAnimationsEnabled;
         CustomJavaPath = settings.CustomJavaPath;
         JvmArgs = settings.JvmArguments;
         ThemeName = settings.ThemeName;
@@ -402,6 +406,7 @@ public partial class MainWindowViewModel : ObservableObject
         settings.JvmArguments = JvmArgs;
         settings.AccentColor = AccentColor;
         settings.ThemeName = ThemeName;
+        settings.InterfaceAnimationsEnabled = InterfaceAnimationsEnabled;
         settings.MinimizeOnGameLaunch = MinimizeOnGameLaunch;
         try { await Task.Run(() => _settingsManager.SaveSettings(settings)); ThemeManager.SetAccentColor(AccentColor); StatusMessage = "Settings saved!"; }
         catch (Exception ex) { StatusMessage = "Settings were not saved: " + ex.Message; }

@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:VortexLauncher.ViewModels" xmlns:conv="using:VortexLauncher.Converters" x:Class="VortexLauncher.Views.InstanceDetailsWindow" x:DataType="vm:InstanceDetailsViewModel" Title="Instance Manager" Opened="OnWindowOpened" Width="1080" Height="720" MinWidth="860" MinHeight="600" WindowStartupLocation="CenterOwner" SystemDecorations="None" Background="{DynamicResource ThemeBackgroundBrush}">
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:VortexLauncher.ViewModels" xmlns:conv="using:VortexLauncher.Converters" xmlns:views="using:VortexLauncher.Views" x:Class="VortexLauncher.Views.InstanceDetailsWindow" x:DataType="vm:InstanceDetailsViewModel" Title="Instance Manager" Opened="OnWindowOpened" Width="1080" Height="720" MinWidth="860" MinHeight="600" WindowStartupLocation="CenterOwner" SystemDecorations="None" Background="{DynamicResource ThemeBackgroundBrush}">
     <Window.Resources>
     </Window.Resources>
     <Window.Styles>
@@ -31,18 +31,19 @@
         </Style>
         <Style Selector="Button.SideButton">
             <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="BorderThickness" Value="2,0,0,0" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{DynamicResource ThemeSubtextBrush}" />
             <Setter Property="HorizontalContentAlignment" Value="Left" />
-            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Padding" Value="14,11" />
-            <Setter Property="Margin" Value="0,4" />
+            <Setter Property="Margin" Value="0,2" />
         </Style>
         <Style Selector="Button.SideButton:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource ThemeSidebarBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
         </Style>
+        <Style Selector="Button.SideButton.active"><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/></Style>
         <Style Selector="Button.SideButton.active /template/ ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
@@ -51,7 +52,7 @@
             <Setter Property="Background" Value="{DynamicResource ThemePanelBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="CornerRadius" Value="6" />
         </Style>
         <Style Selector="Button.ActionButton">
             <Setter Property="FontSize" Value="12" />
@@ -103,16 +104,14 @@
                     </StackPanel>
                 </Grid>
             </Border>
-            <Border Grid.Row="1" Background="{DynamicResource ThemeBackgroundBrush}" Padding="28,18,28,22" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,0,0,1">
-                <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel>
-                        <TextBlock Text="{Binding InstanceTitle}" Foreground="{DynamicResource ThemeTextBrush}" FontSize="26" FontWeight="SemiBold" />
-                        <TextBlock Text="{Binding InstanceSubtitle}" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" Margin="0,3,0,0" />
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"><Button Classes="ActionButton" Content="Save error report" Command="{Binding SaveErrorReportCommand}"/><Button Classes="ActionButton" Content="Refresh" Command="{Binding RefreshCommand}" Padding="16,8"/></StackPanel>
+            <Border Grid.Row="1" Background="{DynamicResource ThemeSidebarBrush}" Padding="24,16" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,0,0,1">
+                <Grid ColumnDefinitions="88,*,Auto">
+                    <Border Width="68" Height="68" HorizontalAlignment="Left" CornerRadius="7" ClipToBounds="True" views:RoundedClip.IsEnabled="True"><Panel><views:WorldCover Seed="{Binding InstanceTitle}"/><conv:AsyncImage SourcePath="{Binding InstanceArtworkPath}" DecodeWidth="192" Stretch="UniformToFill"/></Panel></Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="5" Margin="0,0,20,0"><TextBlock Text="INSTANCE WORKSPACE" Classes="LibraryMetaLabel"/><TextBlock Text="{Binding InstanceTitle}" FontSize="24" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding InstanceTitle}"/><TextBlock Text="{Binding InstanceSubtitle}" Classes="Muted" FontSize="12"/></StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"><Button Classes="ActionButton" Content="Save error report" Command="{Binding SaveErrorReportCommand}"/><Button Classes="ActionButton" Content="Refresh" Command="{Binding RefreshCommand}" Padding="16,8"/></StackPanel>
                 </Grid>
             </Border>
-            <Grid Grid.Row="2" ColumnDefinitions="180,*,204">
+            <Grid Grid.Row="2" ColumnDefinitions="164,*,198">
                 <Border Grid.Column="0" Background="Transparent" Padding="14,22">
                     <StackPanel>
                         <TextBlock Text="INSTANCE" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="10" FontWeight="Bold" Margin="10,0,0,10" />
@@ -142,7 +141,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Classes="ContentCard" MinHeight="68" Margin="0,0,0,8" Padding="14,12">
+                                    <Border Classes="ContentCard WorkspaceRow" MinHeight="68" Margin="0,0,4,6" Padding="12,14" Background="Transparent" BorderThickness="0,0,0,1" CornerRadius="4">
                                         <Grid ColumnDefinitions="Auto,*,Auto,Auto" VerticalAlignment="Center">
                                             <Ellipse Grid.Column="0" Width="8" Height="8" Fill="#50FA7B" IsVisible="{Binding IsEnabled}" Margin="3,0,10,0" />
                                             <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center" Margin="0,0,10,0">
@@ -217,7 +216,7 @@
                     </ScrollViewer>
                     <Border Grid.Row="1" IsVisible="{Binding IsEmpty}" Margin="{Binding EmptyStateMargin}" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="340" Padding="24">
                         <StackPanel Spacing="14" HorizontalAlignment="Center">
-                            <Border Width="64" Height="64" CornerRadius="20" Background="{DynamicResource AccentSoftBrush}" HorizontalAlignment="Center">
+                            <Border Width="64" Height="64" CornerRadius="8" Background="{DynamicResource AccentSoftBrush}" HorizontalAlignment="Center">
                                 <PathIcon Width="26" Height="26" Foreground="{DynamicResource AccentBrush}" Data="M2,4 L10,4 L13,7 L26,7 L26,23 L2,23 Z M4,9 L4,21 L24,21 L24,9 Z" />
                             </Border>
                             <TextBlock Text="{Binding EmptyTitle}" Foreground="{DynamicResource ThemeTextBrush}" FontSize="18" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
@@ -228,7 +227,7 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
-                    <Border x:Name="dropHint" Grid.Row="1" IsVisible="False" IsHitTestVisible="False" CornerRadius="14" Background="{DynamicResource ThemePanelBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="2" Padding="24">
+                    <Border x:Name="dropHint" Grid.Row="1" IsVisible="False" IsHitTestVisible="False" CornerRadius="8" Background="{DynamicResource ThemePanelBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="2" Padding="24">
                         <StackPanel VerticalAlignment="Center" Spacing="12">
                             <TextBlock Text="Drop files to add them" FontSize="21" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextBrush}" HorizontalAlignment="Center" />
                             <TextBlock Text="{Binding SelectedSection}" FontSize="13" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" />
@@ -236,7 +235,7 @@
                         </StackPanel>
                     </Border>
                 </Grid>
-                <Border Grid.Column="2" Background="Transparent" Padding="8,22,20,22">
+                <Border Grid.Column="2" Background="{DynamicResource ThemeSidebarBrush}" Padding="14,22,16,22" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="1,0,0,0">
                     <Grid RowDefinitions="*,Auto,Auto" HorizontalAlignment="Stretch">
                         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="10">
                             <TextBlock Text="ACTIONS" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="10" FontWeight="Bold" Margin="4,0,0,6" />

@@ -115,6 +115,8 @@
             </Setter>
         </Style>
         <StyleInclude Source="avares://Vortex Launcher/Styles/Launcher.axaml" />
+        <StyleInclude Source="avares://Vortex Launcher/Styles/GameLibrary.axaml" />
+        <StyleInclude Source="avares://Vortex Launcher/Styles/Workspace.axaml" />
     </Application.Styles>
     <Application.Resources>
         <Color x:Key="AccentColor">#D7F36A</Color>

@@ -18,7 +18,6 @@ namespace VortexLauncher.Views;
 public partial class MainWindow : Window
 {
     private readonly Dictionary<Control, CancellationTokenSource> _cardMotions = new();
-    private MainWindowViewModel? _observedViewModel;
 
     private async void OnCardAttached(object? sender, VisualTreeAttachmentEventArgs e)
     {
@@ -52,13 +51,7 @@ public partial class MainWindow : Window
     private void OnWindowOpened(object? sender, EventArgs e)
     {
         if (DataContext is MainWindowViewModel startup) _ = startup.InitializeAsync();
-        mainShell.Opacity = 0;
-        mainShell.RenderTransform = new TranslateTransform(0, 16);
-        Dispatcher.UIThread.Post(() =>
-        {
-            mainShell.Opacity = 1;
-            mainShell.RenderTransform = new TranslateTransform(0, 0);
-        }, DispatcherPriority.Render);
+        UiMotion.Reveal(mainShell);
 
         _ = HideStartupGreetingAsync();
     }
@@ -73,68 +66,12 @@ public partial class MainWindow : Window
             viewModel.IsStartupGreetingVisible = false;
     }
 
-    protected override void OnDataContextChanged(EventArgs e)
-    {
-        base.OnDataContextChanged(e);
-        if (_observedViewModel != null) _observedViewModel.PropertyChanged -= OnViewModelPropertyChanged;
-        _observedViewModel = DataContext as MainWindowViewModel;
-
-        if (DataContext is MainWindowViewModel viewModel)
-        {
-            viewModel.PropertyChanged += OnViewModelPropertyChanged;
-            AnimatePage(viewModel.ActiveTab, false);
-        }
-    }
-
     protected override void OnClosed(EventArgs e)
     {
-        if (DataContext is MainWindowViewModel vm) { vm.CancelStartup(); vm.PropertyChanged -= OnViewModelPropertyChanged; vm.Library.Dispose(); }
+        if (DataContext is MainWindowViewModel vm) { vm.CancelStartup(); vm.Library.Dispose(); }
+        UiMotion.Cancel(mainShell);
         foreach (var motion in System.Linq.Enumerable.ToArray(_cardMotions.Values)) motion.Cancel();
         base.OnClosed(e);
-    }
-
-    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(MainWindowViewModel.ActiveTab) &&
-            sender is MainWindowViewModel viewModel)
-        {
-            AnimatePage(viewModel.ActiveTab, true);
-        }
-    }
-
-    private void AnimatePage(string tab, bool animate)
-    {
-        var selectedPage = tab switch
-        {
-            "Modpacks" => modpacksPage,
-            "Accounts" => accountsPage,
-            "Settings" => settingsPage,
-            _ => instancesPage
-        };
-
-        foreach (var page in new[] { instancesPage, modpacksPage, accountsPage, settingsPage })
-        {
-            if (page != selectedPage)
-            {
-                page.Opacity = 1;
-                page.RenderTransform = new TranslateTransform(0, 0);
-            }
-        }
-
-        if (!animate)
-        {
-            selectedPage.Opacity = 1;
-            selectedPage.RenderTransform = new TranslateTransform(0, 0);
-            return;
-        }
-
-        selectedPage.Opacity = 0;
-        selectedPage.RenderTransform = new TranslateTransform(18, 0);
-        Dispatcher.UIThread.Post(() =>
-        {
-            selectedPage.Opacity = 1;
-            selectedPage.RenderTransform = new TranslateTransform(0, 0);
-        }, DispatcherPriority.Render);
     }
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)

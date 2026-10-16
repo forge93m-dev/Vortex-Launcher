@@ -2,10 +2,10 @@
   <Window.Styles><Style Selector="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style></Window.Styles>
   <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="24">
     <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,18">
-      <StackPanel Spacing="3"><TextBlock Text="INSTANCE CONTENT" Classes="Eyebrow"/><TextBlock Text="Manage mods" Classes="SectionTitle" FontSize="25"/><TextBlock Text="{Binding CompatibilityLabel}" Classes="Muted" FontSize="12"/></StackPanel>
+      <StackPanel Spacing="3"><TextBlock Text="WORKSPACE / MODS" Classes="Eyebrow"/><TextBlock Text="Manage mods" Classes="SectionTitle" FontSize="24"/><TextBlock Text="{Binding CompatibilityLabel}" Classes="Muted" FontSize="12"/></StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-        <Button Content="Installed" Command="{Binding ShowInstalledCommand}" Classes="SecondaryBtn"/>
-        <Button Content="Updates" Command="{Binding ShowUpdatesCommand}" Classes="SecondaryBtn"/>
+        <Button Content="Installed" Command="{Binding ShowInstalledCommand}" Classes="WorkspaceMode" Classes.active="{Binding !IsPreviewVisible}"/>
+        <Button Content="Updates" Command="{Binding ShowUpdatesCommand}" Classes="WorkspaceMode" Classes.active="{Binding IsPreviewVisible}"/>
         <Button Content="+ Add mods" Command="{Binding OpenDownloadModsCommand}" IsEnabled="{Binding CanMutate}" Classes="PrimaryBtn"/>
       </StackPanel>
     </Grid>
@@ -24,7 +24,7 @@
       <Grid Grid.Row="1">
         <ListBox x:Name="InstalledModsList" ItemsSource="{Binding VisibleMods}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
           <ListBox.ItemTemplate><DataTemplate>
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="4,7">
+            <Border Classes="WorkspaceRow" Padding="8,12"><Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="4,2">
               <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,12,0" AutomationProperties.Name="Select mod"/>
               <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3" Margin="0,0,12,0">
                 <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FileName}" FontSize="13" Foreground="{DynamicResource ThemeTextBrush}"/>
@@ -33,7 +33,7 @@
               <ToggleSwitch Grid.Column="2" IsChecked="{Binding IsEnabled,Mode=OneWay}" Command="{Binding #root.DataContext.ToggleModCommand}" CommandParameter="{Binding}" IsEnabled="{Binding #root.DataContext.CanMutate}" OnContent="" OffContent="" VerticalAlignment="Center"/>
               <Button Grid.Column="3" Content="Page" Command="{Binding #root.DataContext.OpenModPageCommand}" CommandParameter="{Binding}" IsEnabled="{Binding !#root.DataContext.IsBusy}" Classes="SecondaryBtn" Margin="8,0,0,0" VerticalAlignment="Center" ToolTip.Tip="Open the exact mod's verified Modrinth page"/>
               <Button Grid.Column="4" Content="Remove" Command="{Binding #root.DataContext.RemoveModCommand}" CommandParameter="{Binding}" IsEnabled="{Binding #root.DataContext.CanMutate}" Classes="SecondaryBtn" Margin="8,0,0,0" VerticalAlignment="Center"/>
-            </Grid>
+            </Grid></Border>
           </DataTemplate></ListBox.ItemTemplate>
         </ListBox>
         <StackPanel IsVisible="{Binding IsEmpty}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12"><TextBlock Text="No mods yet" Classes="SectionTitle"/><TextBlock Text="Browse mods to customize this instance." Classes="Muted"/></StackPanel>
@@ -80,4 +80,3 @@
     </Grid>
   </Grid>
 </Window>
-

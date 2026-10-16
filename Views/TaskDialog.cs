@@ -51,8 +51,13 @@ public sealed class TaskDialog : Window
         }
         DockPanel.SetDock(actions, Dock.Bottom); panel.Children.Add(actions);
         var content = new StackPanel { Spacing = 16 };
-        content.Children.Add(new TextBlock { Text = title, FontSize = 22, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap });
-        content.Children.Add(new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap });
+        var heading = new StackPanel { Spacing = 8 };
+        var category = new TextBlock { Text = details != null ? "WORKSPACE / DIAGNOSTICS" : "WORKSPACE / REVIEW" };
+        category.Classes.Add("LibraryMetaLabel"); heading.Children.Add(category);
+        heading.Children.Add(new TextBlock { Text = title, FontSize = 24, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap });
+        var header = new Border { Child = heading }; header.Classes.Add("DialogHeading"); content.Children.Add(header);
+        var description = new TextBlock { Text = message, FontSize = 13, LineHeight = 21, TextWrapping = TextWrapping.Wrap };
+        description.Classes.Add("Muted"); content.Children.Add(description);
         if (details != null) content.Children.Add(new Expander { Header = "Technical details", Content = new TextBox { Text = details, IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MaxHeight = 240 } });
         panel.Children.Add(new ScrollViewer { Content = content }); Content = panel;
         KeyDown += (_, e) => { if (e.Key == Avalonia.Input.Key.Escape) Close(false); };

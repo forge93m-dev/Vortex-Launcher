@@ -3,7 +3,7 @@
         <SolidColorBrush x:Key="LibraryPlayBrush" Color="#D7F36A"/>
         <SolidColorBrush x:Key="LibraryPlayHoverBrush" Color="#E6FF91"/>
     </Window.Resources>
-    <Window.Styles><StyleInclude Source="avares://Vortex Launcher/Styles/GameLibrary.axaml"/></Window.Styles>
+
     <Panel>
         <Border x:Name="mainShell" Classes="StartupShell" Background="{DynamicResource ThemeBackgroundBrush}">
             <Grid RowDefinitions="72,*,42">
@@ -50,7 +50,7 @@
                         </Grid>
                     </Border>
                     <Panel Grid.Row="2">
-                        <Grid x:Name="instancesPage" Classes="PagePanel" RowDefinitions="Auto,Auto,*" IsVisible="{Binding IsInstancesTab}">
+                        <Grid x:Name="instancesPage" Classes="PagePanel" views:SurfaceMotion.Kind="Page" RowDefinitions="Auto,Auto,*" IsVisible="{Binding IsInstancesTab}">
                             <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,22">
                                 <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center"><TextBlock Text="Library" FontSize="27" FontWeight="SemiBold" LetterSpacing="-0.8"/><TextBlock Text="{Binding Library.CountLabel}" Classes="Muted" FontSize="11" VerticalAlignment="Center"/></StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10"><Button Classes="SecondaryBtn" Content="Import pack" Click="OnImportPackClick" IsEnabled="{Binding !IsInitializing}"/><Button Classes="PrimaryBtn" Content="+  New instance" Click="OnAddInstanceClick" IsEnabled="{Binding !IsInitializing}"/></StackPanel>
@@ -106,7 +106,7 @@
                                     <ContentControl x:Name="librarySelection" Content="{Binding Library.SelectedInstance}" IsVisible="{Binding Library.HasSelection}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                                         <ContentControl.ContentTemplate><DataTemplate DataType="models:InstanceModel">
                                             <Grid RowDefinitions="*,Auto,Auto">
-                                                <Border x:Name="libraryHero" CornerRadius="10" ClipToBounds="True" views:RoundedClip.IsEnabled="True" MinHeight="150">
+                                                <Border x:Name="libraryHero" views:SurfaceMotion.Kind="Content" CornerRadius="10" ClipToBounds="True" views:RoundedClip.IsEnabled="True" MinHeight="150">
                                                     <Panel>
                                                         <views:WorldCover Seed="{Binding Name}"/>
                                                         <conv:AsyncImage SourcePath="{Binding CoverImagePath}" DecodeWidth="1600" Stretch="UniformToFill"/>
@@ -163,7 +163,7 @@
                                 </Panel>
                             </Grid>
                         </Grid>
-                        <Grid x:Name="modpacksPage" Classes="PagePanel" RowDefinitions="*" IsVisible="{Binding IsModpacksTab}">
+                        <Grid x:Name="modpacksPage" Classes="PagePanel" views:SurfaceMotion.Kind="Page" RowDefinitions="*" IsVisible="{Binding IsModpacksTab}">
                             <Grid Grid.Row="0" x:Name="modpacksContentGrid" DataContext="{Binding ModpacksVm}" RowDefinitions="Auto, *">
                                 <StackPanel Grid.Row="0" Spacing="10" Margin="0,0,0,16" IsEnabled="{Binding !IsInstalling}">
                                     <Grid ColumnDefinitions="*, Auto">
@@ -209,15 +209,15 @@
                                         <Button Grid.Column="2" Content="Load more" Command="{Binding LoadMoreCommand}" IsVisible="{Binding HasMore}" IsEnabled="{Binding !IsSearching}" />
                                     </Grid>
                                 </StackPanel>
-                                <Grid Grid.Row="1" ColumnDefinitions="*, 300">
+                                <Grid Grid.Row="1" ColumnDefinitions="*, 316">
                                     <ScrollViewer Grid.Column="0" Margin="0,0,16,0" HorizontalScrollBarVisibility="Disabled">
                                         <ListBox ItemsSource="{Binding Modpacks}" SelectedItem="{Binding SelectedModpack}" Background="Transparent" BorderThickness="0" Padding="0">
                                             <ListBox.ItemTemplate>
                                                 <DataTemplate>
-                                                    <Border Classes="VortexCard" Padding="14" CornerRadius="14">
+                                                    <Border Classes="WorkspaceRow" Padding="8,16" Margin="0,0,0,4">
                                                         <Grid ColumnDefinitions="Auto, *">
-                                                            <Border Grid.Column="0" Width="48" Height="48" CornerRadius="12" ClipToBounds="True" Background="{DynamicResource ThemeBorderBrush}" Margin="0,0,12,0" VerticalAlignment="Center">
-                                                                <Image Source="{Binding IconBitmap}" Width="48" Height="48" Stretch="UniformToFill" />
+                                                            <Border Grid.Column="0" Width="68" Height="68" CornerRadius="7" ClipToBounds="True" Background="{DynamicResource ThemeBorderBrush}" Margin="0,0,12,0" VerticalAlignment="Center">
+                                                                <Image Source="{Binding IconBitmap}" Width="68" Height="68" Stretch="UniformToFill" />
                                                             </Border>
                                                             <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                                                                 <TextBlock Text="{Binding Item.Title}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextBrush}" FontSize="15" />
@@ -229,24 +229,21 @@
                                             </ListBox.ItemTemplate>
                                         </ListBox>
                                     </ScrollViewer>
-                                    <Border Grid.Column="1" Classes="VortexCard" Padding="20">
+                                    <Border Grid.Column="1" Classes="WorkspaceAside" Padding="20">
                                         <Panel>
                                             <TextBlock Text="Select a modpack from the list to view details and install" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" IsVisible="{Binding SelectedModpack, Converter={x:Static ObjectConverters.IsNull}}" />
                                             <ContentControl Content="{Binding SelectedModpack}">
                                                 <ContentControl.ContentTemplate>
                                                     <DataTemplate DataType="vm:ModrinthModItemViewModel">
-                                                        <Grid RowDefinitions="*,Auto">
+                                                        <Grid RowDefinitions="*,Auto" views:SurfaceMotion.Kind="Content">
                                                             <ScrollViewer HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,16">
                                                                 <StackPanel Spacing="16">
-                                                                    <Grid ColumnDefinitions="Auto,*">
-                                                                        <Border Width="44" Height="44" CornerRadius="12" Margin="0,0,12,0" Background="{DynamicResource ThemeSidebarBrush}" ClipToBounds="True">
-                                                                            <Image Source="{Binding IconBitmap}" Stretch="UniformToFill"/>
-                                                                        </Border>
-                                                                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
-                                                                            <TextBlock Text="{Binding Item.Title}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Item.Title}"/>
-                                                                            <TextBlock Text="{Binding Item.Author, StringFormat='by {0}'}" Classes="Muted" FontSize="11" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-                                                                        </StackPanel>
-                                                                    </Grid>
+                                                                    <StackPanel Spacing="14">
+                                                                        <Border Height="112" CornerRadius="7" ClipToBounds="True" views:RoundedClip.IsEnabled="True"><Panel><views:WorldCover Seed="{Binding Item.Title}"/><Border Background="#33000000"/><Image Source="{Binding IconBitmap}" Width="56" Height="56" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/></Panel></Border>
+                                                                        <TextBlock Text="MODPACK DETAILS" Classes="LibraryMetaLabel"/>
+                                                                        <TextBlock Text="{Binding Item.Title}" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Item.Title}"/>
+                                                                        <TextBlock Text="{Binding Item.Author, StringFormat='by {0}'}" Classes="Muted" FontSize="11"/>
+                                                                    </StackPanel>
                                                                     <StackPanel Spacing="6">
                                                                         <TextBlock Text="Choose a version" Classes="FieldLabel"/>
                                                                         <ComboBox ItemsSource="{Binding DataContext.ModpacksVm.ModpackVersions, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -274,61 +271,43 @@
                                 </Grid>
                             </Grid>
                         </Grid>
-                        <Grid x:Name="accountsPage" Classes="PagePanel" ColumnDefinitions="280,*" IsVisible="{Binding IsAccountsTab}">
-                            <Border Classes="VortexCard" Padding="24" Margin="0,0,20,0" VerticalAlignment="Top">
-                                <StackPanel Spacing="14">
-                                    <TextBlock Classes="Eyebrow" Text="NEW PROFILE" />
-                                    <TextBlock Classes="SectionTitle" Text="Make yourself at home" TextWrapping="Wrap" />
-                                    <TextBlock Classes="Muted" Text="Add a local player profile for your Minecraft instances." />
-                                    <StackPanel Spacing="6" Margin="0,8,0,0">
-                                        <TextBlock Classes="FieldLabel" Text="Player name" />
-                                        <TextBox Text="{Binding NewAccountUsername}" Watermark="Minecraft username" AutomationProperties.Name="Player name" />
-                                    </StackPanel>
-                                    <Button Classes="PrimaryBtn" Content="+  Add profile" Command="{Binding AddAccountCommand}" HorizontalAlignment="Stretch" />
-                                </StackPanel>
-                            </Border>
-                            <Border Grid.Column="1" Classes="VortexCard" Padding="24">
-                                <Grid RowDefinitions="Auto,*">
-                                    <StackPanel Margin="0,0,0,20" Spacing="6">
-                                        <TextBlock Classes="SectionTitle" Text="Your profiles" />
-                                        <TextBlock Classes="Muted" Text="Select a profile to use it for your next launch." />
-                                    </StackPanel>
-                                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
-                                        <ItemsControl ItemsSource="{Binding Accounts}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Border Background="{DynamicResource ThemeSidebarBrush}" CornerRadius="14" Padding="16" Margin="0,0,0,10">
-                                                        <Grid ColumnDefinitions="Auto,*,Auto">
-                                                            <Border Width="42" Height="42" CornerRadius="14" Background="{DynamicResource AccentSoftBrush}" Margin="0,0,14,0">
-                                                                <TextBlock Text="{Binding Username[0]}" FontWeight="Bold" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                            </Border>
-                                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
-                                                                <TextBlock Text="{Binding Username}" FontWeight="SemiBold" FontSize="15" TextTrimming="CharacterEllipsis" />
-                                                                <TextBlock Classes="Muted" Text="Local player profile" FontSize="11" />
-                                                            </StackPanel>
-                                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                                <Button Classes="SecondaryBtn" Content="Use profile" Command="{Binding #root.DataContext.SelectAccountCommand}" CommandParameter="{Binding}" />
-                                                                <Button Classes="IconButton danger" Command="{Binding #root.DataContext.DeleteAccountCommand}" CommandParameter="{Binding}" ToolTip.Tip="Delete profile" AutomationProperties.Name="Delete profile">
-                                                                    <PathIcon Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" Width="14" Height="14" />
-                                                                </Button>
-                                                            </StackPanel>
-                                                        </Grid>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </ScrollViewer>
+                        <Grid x:Name="accountsPage" Classes="PagePanel" views:SurfaceMotion.Kind="Page" RowDefinitions="Auto,*" IsVisible="{Binding IsAccountsTab}">
+                            <Border Classes="IdentityBanner" Padding="16" Margin="0,0,0,16">
+                                <Grid ColumnDefinitions="68,*,Auto">
+                                    <Border Width="52" Height="52" CornerRadius="8" Background="{DynamicResource AccentSoftBrush}"><TextBlock Text="{Binding ActiveAccount.Username[0]}" FontSize="26" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                    <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center"><TextBlock Text="CURRENT PLAYER" Classes="LibraryMetaLabel"/><TextBlock Text="{Binding ActiveAccount.Username}" FontSize="24" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="Used for your next Minecraft session" Classes="Muted" FontSize="12"/></StackPanel>
+                                    <Border Grid.Column="2" Classes="Chip" VerticalAlignment="Center"><TextBlock Text="LOCAL PROFILE"/></Border>
                                 </Grid>
                             </Border>
+                            <Grid Grid.Row="1" ColumnDefinitions="*,280">
+                                <Grid RowDefinitions="Auto,*" Margin="0,0,26,0">
+                                    <TextBlock Text="Saved players" Classes="SectionTitle" Margin="0,0,0,16"/>
+                                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled"><ItemsControl ItemsSource="{Binding Accounts}"><ItemsControl.ItemTemplate><DataTemplate>
+                                        <Border Classes="WorkspaceRow" Padding="12,16" Margin="0,0,0,6">
+                                            <Grid ColumnDefinitions="52,*,Auto">
+                                                <Border Width="36" Height="36" CornerRadius="6" Background="{DynamicResource ThemePanelBrush}"><TextBlock Text="{Binding Username[0]}" FontWeight="SemiBold" FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                                <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center"><TextBlock Text="{Binding Username}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis"/><TextBlock Text="Minecraft player" Classes="Muted" FontSize="11"/></StackPanel>
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                    <Button Classes="SecondaryBtn" Content="Use profile" Command="{Binding #root.DataContext.SelectAccountCommand}" CommandParameter="{Binding}"/>
+                                                    <Button Classes="IconButton danger" Command="{Binding #root.DataContext.DeleteAccountCommand}" CommandParameter="{Binding}" ToolTip.Tip="Delete profile" AutomationProperties.Name="Delete profile"><PathIcon Data="M6,7 L18,7 L18,21 L6,21 Z M5,3 L9,3 L10,1 L14,1 L15,3 L19,3 L19,5 L5,5 Z" Width="13" Height="13"/></Button>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
+                                </Grid>
+                                <Border Grid.Column="1" Classes="WorkspaceAside" Padding="18" VerticalAlignment="Top">
+                                    <StackPanel Spacing="10"><TextBlock Text="ADD A LOCAL PLAYER" Classes="LibraryMetaLabel"/><TextBlock Text="New profile" FontSize="21" FontWeight="SemiBold"/><TextBlock Text="Player name" Classes="FieldLabel"/><TextBox Text="{Binding NewAccountUsername}" Watermark="Minecraft username" AutomationProperties.Name="Player name"/><Button Classes="PrimaryBtn" Content="+  Add profile" Command="{Binding AddAccountCommand}" HorizontalAlignment="Stretch"/></StackPanel>
+                                </Border>
+                            </Grid>
                         </Grid>
-                        <Grid x:Name="settingsPage" Classes="PagePanel" RowDefinitions="*,Auto" IsVisible="{Binding IsSettingsTab}">
-                            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                                <Grid ColumnDefinitions="*,*" Margin="0,0,0,10">
-                                    <StackPanel Spacing="18" Margin="0,0,9,0">
-                                        <Border Classes="VortexCard" Padding="24">
+                        <Grid x:Name="settingsPage" Classes="PagePanel" views:SurfaceMotion.Kind="Page" RowDefinitions="*,Auto" IsVisible="{Binding IsSettingsTab}">
+                            <TabControl x:Name="SettingsTabs" Classes="WorkspaceTabs" TabStripPlacement="Left">
+                                <TabItem Header="Appearance">
+                                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"><StackPanel views:SurfaceMotion.Kind="Page" Spacing="22" Margin="28,4,8,20">
+                                        <Border Classes="WorkspaceSection" Padding="0">
                                             <StackPanel Spacing="14">
-                                                <TextBlock Classes="Eyebrow" Text="APPEARANCE" />
-                                                <TextBlock Classes="SectionTitle" Text="Choose your atmosphere" />
+                                                
+                                                <TextBlock Classes="SectionTitle" Text="Appearance" />
                                                 <TextBlock Classes="Muted" Text="Every screen follows your palette. Pick a theme or fine-tune the accent." />
                                                 <ItemsControl ItemsSource="{Binding ThemePresets}">
                                                     <ItemsControl.ItemsPanel>
@@ -349,38 +328,18 @@
                                                 </ItemsControl>
                                                 <TextBlock Classes="FieldLabel" Text="Accent color" />
                                                 <Grid ColumnDefinitions="*,Auto">
-                                                    <TextBox Text="{Binding AccentColor}" Watermark="#7AA2F7" Margin="0,0,10,0" />
+                                                    <TextBox Text="{Binding AccentColor}" Watermark="#D7F36A" Margin="0,0,10,0" />
                                                     <Border Grid.Column="1" Width="40" Height="40" CornerRadius="12" Background="{DynamicResource AccentBrush}" />
                                                 </Grid>
                                             </StackPanel>
                                         </Border>
-                                        <Border Classes="VortexCard" Padding="24">
+                                        <Border Classes="WorkspaceSection" Padding="0,20,0,0"><StackPanel Spacing="8"><TextBlock Text="Motion &amp; transitions" Classes="SectionTitle"/><ToggleSwitch Content="Interface animations" IsChecked="{Binding InterfaceAnimationsEnabled}" AutomationProperties.Name="Interface animations"/><TextBlock Classes="Muted" Text="Smooth page, preview and dialog transitions. Disable entrances if you prefer less motion." FontSize="12"/></StackPanel></Border>
+                                    </StackPanel></ScrollViewer>
+                                </TabItem>
+                                <TabItem Header="Game &amp; memory">
+                                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"><StackPanel views:SurfaceMotion.Kind="Page" Spacing="24" Margin="28,4,8,20"><Border Classes="WorkspaceSection" Padding="0">
                                             <StackPanel Spacing="12">
-                                                <TextBlock Classes="Eyebrow" Text="GAME BEHAVIOR" />
-                                                <TextBlock Classes="SectionTitle" Text="Stay out of the way" />
-                                                <ToggleSwitch Content="Minimize while playing" IsChecked="{Binding MinimizeOnGameLaunch}" />
-                                                <TextBlock Classes="Muted" Text="The launcher returns automatically when you exit Minecraft." FontSize="12" />
-                                            </StackPanel>
-                                        </Border>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Spacing="18" Margin="9,0,0,0">
-                                        <Border Classes="VortexCard" Padding="24">
-                                            <StackPanel Spacing="12">
-                                                <TextBlock Classes="Eyebrow" Text="LAUNCHER UPDATES" />
-                                                <TextBlock Classes="SectionTitle" Text="{Binding LauncherVersionLabel}" TextWrapping="Wrap" />
-                                                <TextBlock Classes="Muted" Text="{Binding LauncherUpdateStatus}" />
-                                                <TextBlock Classes="Muted" Text="{Binding LastLauncherUpdateResult}" FontSize="11" />
-                                                <TextBlock Text="{Binding LauncherUpdateNotes}" TextWrapping="Wrap" IsVisible="{Binding UpdateAvailable}" />
-                                                <TextBlock Classes="Muted" Text="{Binding UpdateSource}" FontSize="10" TextWrapping="Wrap" />
-                                                <StackPanel Spacing="8">
-                                                    <Button x:Name="CheckLauncherUpdatesButton" Content="Check for updates" Command="{Binding CheckLauncherUpdatesCommand}" Classes="SecondaryBtn" IsEnabled="{Binding !IsCheckingUpdates}" />
-                                                    <Button x:Name="InstallLauncherUpdateButton" Content="Install update" Command="{Binding InstallLauncherUpdateCommand}" Classes="PrimaryBtn" IsVisible="{Binding UpdateAvailable}" IsEnabled="{Binding !IsInstallingUpdate}" />
-                                                </StackPanel>
-                                            </StackPanel>
-                                        </Border>
-                                        <Border Classes="VortexCard" Padding="24">
-                                            <StackPanel Spacing="12">
-                                                <TextBlock Classes="Eyebrow" Text="PERFORMANCE" />
+                                                
                                                 <Grid ColumnDefinitions="*,Auto">
                                                     <TextBlock Classes="SectionTitle" Text="Memory allocation" />
                                                     <Border Grid.Column="1" Classes="Chip" Background="{DynamicResource AccentSoftBrush}">
@@ -394,11 +353,20 @@
                                                     <TextBlock Grid.Column="1" Classes="Muted" Text="16 GB" FontSize="11" />
                                                 </Grid>
                                             </StackPanel>
-                                        </Border>
-                                        <Border Classes="VortexCard" Padding="24">
+                                        </Border><Border Classes="WorkspaceSection" Padding="0,20,0,0">
                                             <StackPanel Spacing="12">
-                                                <TextBlock Classes="Eyebrow" Text="ADVANCED" />
-                                                <TextBlock Classes="SectionTitle" Text="Java runtime" />
+                                                
+                                                <TextBlock Classes="SectionTitle" Text="Game behavior" />
+                                                <ToggleSwitch Content="Minimize while playing" IsChecked="{Binding MinimizeOnGameLaunch}" />
+                                                <TextBlock Classes="Muted" Text="The launcher returns automatically when you exit Minecraft." FontSize="12" />
+                                            </StackPanel>
+                                        </Border></StackPanel></ScrollViewer>
+                                </TabItem>
+                                <TabItem Header="Java">
+                                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"><Border views:SurfaceMotion.Kind="Page" Margin="28,4,8,20">
+                                            <StackPanel Spacing="12">
+                                                
+                                                <TextBlock Classes="SectionTitle" Text="Java &amp; launch arguments" />
                                                 <TextBlock Classes="Muted" Text="Leave the path empty to use automatic Java detection." FontSize="12" />
                                                 <TextBlock Classes="FieldLabel" Text="Java executable" />
                                                 <TextBox Text="{Binding CustomJavaPath}" Watermark="Automatic detection" />
@@ -406,16 +374,26 @@
                                                 <TextBox Text="{Binding JvmArgs}" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="80" />
                                                 <TextBlock Classes="Muted" Text="Only change these arguments if you know what they do." FontSize="12" />
                                             </StackPanel>
-                                        </Border>
-                                    </StackPanel>
-                                </Grid>
-                            </ScrollViewer>
-                            <Border Grid.Row="1" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,1,0,0" Padding="0,16,0,0">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Classes="Muted" Text="Your preferences, your launcher." VerticalAlignment="Center" />
-                                    <Button Grid.Column="1" Classes="PrimaryBtn" Content="Save settings" Command="{Binding SaveSettingsCommand}" />
-                                </Grid>
-                            </Border>
+                                        </Border></ScrollViewer>
+                                </TabItem>
+                                <TabItem Header="Updates">
+                                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"><Border views:SurfaceMotion.Kind="Page" Margin="28,4,8,20">
+                                            <StackPanel Spacing="12">
+                                                
+                                                <TextBlock Classes="SectionTitle" Text="{Binding LauncherVersionLabel}" TextWrapping="Wrap" />
+                                                <TextBlock Classes="Muted" Text="{Binding LauncherUpdateStatus}" />
+                                                <TextBlock Classes="Muted" Text="{Binding LastLauncherUpdateResult}" FontSize="11" />
+                                                <TextBlock Text="{Binding LauncherUpdateNotes}" TextWrapping="Wrap" IsVisible="{Binding UpdateAvailable}" />
+                                                <TextBlock Classes="Muted" Text="{Binding UpdateSource}" FontSize="10" TextWrapping="Wrap" />
+                                                <StackPanel Spacing="8">
+                                                    <Button x:Name="CheckLauncherUpdatesButton" Content="Check for updates" Command="{Binding CheckLauncherUpdatesCommand}" Classes="SecondaryBtn" IsEnabled="{Binding !IsCheckingUpdates}" />
+                                                    <Button x:Name="InstallLauncherUpdateButton" Content="Install update" Command="{Binding InstallLauncherUpdateCommand}" Classes="PrimaryBtn" IsVisible="{Binding UpdateAvailable}" IsEnabled="{Binding !IsInstallingUpdate}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border></ScrollViewer>
+                                </TabItem>
+                            </TabControl>
+                            <Border Grid.Row="1" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,1,0,0" Padding="0,16,0,0" Margin="0,12,0,0"><Grid ColumnDefinitions="*,Auto"><TextBlock Classes="Muted" Text="Your preferences are kept when the launcher updates." VerticalAlignment="Center"/><Button Grid.Column="1" Classes="PrimaryBtn" Content="Save settings" Command="{Binding SaveSettingsCommand}"/></Grid></Border>
                         </Grid>
                     </Panel>
                 </Grid>
