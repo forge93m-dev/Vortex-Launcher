@@ -50,6 +50,7 @@ VortexLauncher.Core.Media.ArtworkCache.DiskRoot = Path.Combine(output, "artwork-
 
 try
 {
+    if (args.Contains("--motion")) { MotionRegressionChecks.Run(Pump); return; }
     if (args.Contains("--chrome"))
     {
         ChromeAndHoverChecks.Run(Pump, output);
@@ -59,6 +60,7 @@ try
     GameLibraryChecks.Run(window, fixture, Pump, output);
     if (args.Contains("--library")) { Console.WriteLine("Rendered previews: " + output); return; }
     WorkspaceMotionChecks.Run(window, fixture, Pump, output);
+    MotionRegressionChecks.Run(Pump);
     if (args.Contains("--workspace")) { Console.WriteLine("Rendered previews: " + output); return; }
     foreach (var tab in new[] { "Modpacks", "Accounts", "Settings" })
     {

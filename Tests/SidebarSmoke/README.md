@@ -29,8 +29,12 @@ checks bounded list virtualization. Run just these checks with `-- --library`.
 data and fixture commands only; it never loads real accounts/settings/instances.
 
 `-- --workspace` additionally exercises the redesigned settings categories,
-profile layout at minimum size, hover/pressed transforms, cancelled/replaced
-entrances, reduced motion and the 24-animation concurrency cap. Full tests cover
+profile layout at minimum size, hover/pressed surface transitions without text
+scaling, cancelled/replaced entrances, reduced motion and the 24-animation
+concurrency cap. Sampled intermediate frames check stationary readable pages,
+one entrance per visual branch, and rapid tab switching. `-- --motion` isolates
+the regression checks for preserved transforms/bound opacity, duplicate requests,
+cancellation and disabling active motion. Full tests cover
 the content catalogs, instance/mod managers, transfer history, create/rename,
 dependency/removal confirmation, diagnostic and import preview windows.
 The interactive fixture preview offers F6 (instance workspace), F7 (create

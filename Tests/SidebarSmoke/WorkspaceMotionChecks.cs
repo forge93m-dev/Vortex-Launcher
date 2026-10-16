@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Headless;
 using Avalonia.Media;
 using Avalonia.VisualTree;
@@ -35,19 +36,23 @@ internal static class WorkspaceMotionChecks
         }
         window.Width=1280;window.Height=800;fixture.Select("Instances");pump(350);
         var play=GameLibraryChecks.Play(window);
-        Check(play.Transitions?.OfType<TransformOperationsTransition>().Any(t=>t.Duration.TotalMilliseconds>=100)==true,"Play has a real non-zero transform transition");
+        var chrome = play.GetVisualDescendants().OfType<ContentPresenter>().First();
+        Check(chrome.Transitions?.OfType<BrushTransition>().Any(t=>t.Duration.TotalMilliseconds>=100)==true,"Play has a real non-zero surface transition");
+        var background = (chrome.Background as ISolidColorBrush)?.Color;
+        var playBounds = play.Bounds;
         var center=play.TranslatePoint(new Point(play.Bounds.Width/2,play.Bounds.Height/2),window)!.Value;
         window.MouseMove(center);pump(260);
-        Check(play.RenderTransform!.Value.M11>1.01, "Play visibly scales up on hover");
+        Check((chrome.Background as ISolidColorBrush)?.Color != background, "Play smoothly changes its surface on hover");
+        Check(play.RenderTransform!.Value.IsIdentity && play.Bounds == playBounds, "hover never scales text or expands the button outside its slot");
         window.MouseDown(center,Avalonia.Input.MouseButton.Left);pump(220);
-        Check(play.RenderTransform!.Value.M11<1,"pressed buttons have a separate compressed state");
+        Check(chrome.Opacity<.95 && play.RenderTransform!.Value.IsIdentity,"pressed feedback changes the surface without shrinking text");
         window.MouseUp(center,Avalonia.Input.MouseButton.Left);window.MouseMove(new Point(20,20));pump(280);
         Check(Math.Abs(play.RenderTransform!.Value.M11-1)<.002,"hover/press animation returns cleanly to rest");
         var target=new Border { Width=160,Height=40,Background=Brushes.SlateBlue };
         var host=new Window {Width=300,Height=150,Content=target};host.Show();pump(30);
         var first=UiMotion.RevealAsync(target,default,100);var replacement=UiMotion.RevealAsync(target,default);
         pump(450);
-        Check(first.IsCompletedSuccessfully && replacement.IsCompletedSuccessfully && target.Opacity==1 && Math.Abs(target.RenderTransform!.Value.M32)<.01,"rapid replacement coalesces entrances without stale opacity/translation");
+        Check(first.IsCompletedSuccessfully && replacement.IsCompletedSuccessfully && target.Opacity==1 && (target.RenderTransform==null || target.RenderTransform.Value.IsIdentity),"rapid replacement coalesces entrances without stale opacity/translation");
         UiMotion.Enabled=false;var disabled=UiMotion.RevealAsync(target,default);
         Check(disabled.IsCompletedSuccessfully && target.Opacity==1,"reduced-motion preference skips entrances immediately");UiMotion.Enabled=true;
         var children=Enumerable.Range(0,80).Select(_=>new Border {Height=3}).ToArray();
@@ -56,6 +61,23 @@ internal static class WorkspaceMotionChecks
         Check(UiMotion.ActiveCount<=24,"simultaneous animation work is bounded even for a large batch");pump(450);
         Check(jobs.All(t=>t.IsCompletedSuccessfully),"batched animations complete without persistent loops");
         host.Close();pump(80);
+        foreach(var tab in new[]{"Accounts","Settings","Modpacks","Instances","Settings"})
+        {
+            fixture.Select(tab);
+            for(int frame=0;frame<10;frame++)
+            {
+                pump(16);
+                var visiblePages=window.GetVisualDescendants().OfType<Control>().Where(c=>SurfaceMotion.GetKind(c)!="" && c.IsEffectivelyVisible).ToArray();
+                Check(visiblePages.All(c=>c.Opacity>=.939 && (c.RenderTransform==null || c.RenderTransform.Value.IsIdentity)), "transition frame stays readable and stationary: "+tab+"/"+frame);
+                Check(visiblePages.Where(UiMotion.IsRunning).All(c=>!c.GetVisualAncestors().OfType<Control>().Any(UiMotion.IsRunning)), "transition frame has one animation per visual branch");
+                var inactiveNav=window.GetVisualDescendants().OfType<Button>().Where(b=>b.Classes.Contains("LibraryNav") && !b.Classes.Contains("active"));
+                Check(inactiveNav.All(b=>b.GetVisualDescendants().OfType<Border>().Where(n=>n.Name=="NavChrome").All(n=>n.BorderBrush is not ISolidColorBrush brush || brush.Color.A==0)), "old navigation underline disappears without a second active tab");
+                if(tab=="Settings" && frame==1) window.CaptureRenderedFrame()!.Save(Path.Combine(output,"motion-settings-midframe.png"));
+            }
+        }
+        for(int i=0;i<32;i++){fixture.Select(i%2==0?"Accounts":"Settings");pump(5);}
+        pump(220);
+        Check(UiMotion.ActiveCount==0, "rapid tab changes drain without queued or perpetual effects");
         Console.WriteLine("WORKSPACE_MOTION_UI_OK");
     }
     private static void Check(bool condition,string message){if(!condition)throw new Exception("FAIL: "+message);Console.WriteLine("PASS: "+message);}

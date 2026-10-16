@@ -333,7 +333,7 @@
                                                 </Grid>
                                             </StackPanel>
                                         </Border>
-                                        <Border Classes="WorkspaceSection" Padding="0,20,0,0"><StackPanel Spacing="8"><TextBlock Text="Motion &amp; transitions" Classes="SectionTitle"/><ToggleSwitch Content="Interface animations" IsChecked="{Binding InterfaceAnimationsEnabled}" AutomationProperties.Name="Interface animations"/><TextBlock Classes="Muted" Text="Smooth page, preview and dialog transitions. Disable entrances if you prefer less motion." FontSize="12"/></StackPanel></Border>
+                                        <Border Classes="WorkspaceSection" Padding="0,20,0,0"><StackPanel Spacing="8"><TextBlock Text="Motion &amp; transitions" Classes="SectionTitle"/><ToggleSwitch Content="Interface animations" IsChecked="{Binding InterfaceAnimationsEnabled}" AutomationProperties.Name="Interface animations"/><TextBlock Classes="Muted" Text="Subtle page, preview and dialog fades. No sliding panels or flashing content. Disable entrances if you prefer less motion." FontSize="12"/></StackPanel></Border>
                                     </StackPanel></ScrollViewer>
                                 </TabItem>
                                 <TabItem Header="Game &amp; memory">

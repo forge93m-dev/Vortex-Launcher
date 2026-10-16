@@ -1,11 +1,13 @@
 <Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:views="using:VortexLauncher.Views">
     <Style Selector="Button">
-        <Setter Property="RenderTransformOrigin" Value="50%,50%"/>
-        <Setter Property="Transitions"><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.16" Easing="CubicEaseOut"/><BrushTransition Property="Background" Duration="0:0:0.16"/><BrushTransition Property="BorderBrush" Duration="0:0:0.16"/></Transitions></Setter>
+        <Setter Property="RenderTransform" Value="scale(1)"/>
     </Style>
-    <Style Selector="Button:pointerover"><Setter Property="RenderTransform" Value="scale(1.025)"/></Style>
-    <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="scale(0.97)"/></Style>
-    <Style Selector="Button.IconButton:pointerover"><Setter Property="RenderTransform" Value="scale(1.07)"/></Style>
+    <Style Selector="Button:pointerover"><Setter Property="RenderTransform" Value="scale(1)"/></Style>
+    <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="scale(1)"/></Style>
+    <!-- Animate the surface, not the label or hit-test bounds. -->
+    <Style Selector="Button:pressed /template/ ContentPresenter"><Setter Property="Opacity" Value="0.88"/></Style>
+    <Style Selector="Button.LibraryPlay PathIcon"><Setter Property="RenderTransform" Value="translate(0px,0px)"/><Setter Property="Transitions"><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.14" Easing="CubicEaseOut"/></Transitions></Setter></Style>
+    <Style Selector="Button.LibraryPlay:pointerover PathIcon"><Setter Property="RenderTransform" Value="translate(2px,0px)"/></Style>
     <Style Selector="Button.ChromeButton"><Setter Property="MinHeight" Value="0"/></Style>
     <Style Selector="Button.CaptionButton"><Setter Property="MinHeight" Value="0"/></Style>
     <Style Selector="Button.WorkspaceMode"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0,0,0,2"/><Setter Property="BorderBrush" Value="Transparent"/><Setter Property="CornerRadius" Value="0"/></Style>
@@ -22,8 +24,8 @@
     <Style Selector="Border.WorkspaceAside"><Setter Property="Background" Value="{DynamicResource ThemeSidebarBrush}"/><Setter Property="CornerRadius" Value="8"/></Style>
     <Style Selector="Border.WorkspaceRow">
         <Setter Property="Background" Value="Transparent"/><Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}"/><Setter Property="BorderThickness" Value="0,0,0,1"/>
-        <Setter Property="CornerRadius" Value="5"/><Setter Property="RenderTransform" Value="translate(0px,0px)"/><Setter Property="views:SurfaceMotion.Kind" Value="Item"/>
-        <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.15"/><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.16" Easing="CubicEaseOut"/></Transitions></Setter>
+        <Setter Property="CornerRadius" Value="5"/>
+        <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.15"/></Transitions></Setter>
     </Style>
     <Style Selector="Border.WorkspaceRow:pointerover"><Setter Property="Background" Value="{DynamicResource ThemeSidebarBrush}"/></Style>
     <Style Selector="Border.DialogHeading"><Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}"/><Setter Property="BorderThickness" Value="0,0,0,1"/><Setter Property="Padding" Value="0,0,0,18"/><Setter Property="Margin" Value="0,0,0,20"/></Style>
@@ -32,7 +34,7 @@
         <Setter Property="FontSize" Value="12"/><Setter Property="FontWeight" Value="Medium"/><Setter Property="Foreground" Value="{DynamicResource ThemeSubtextBrush}"/>
         <Setter Property="Template"><ControlTemplate>
             <Border x:Name="WorkspaceTabChrome" CornerRadius="6" BorderBrush="Transparent" BorderThickness="2,0,0,0" Padding="14,12">
-                <Border.Transitions><Transitions><BrushTransition Property="Background" Duration="0:0:0.16"/><BrushTransition Property="BorderBrush" Duration="0:0:0.16"/></Transitions></Border.Transitions>
+                <Border.Transitions><Transitions><BrushTransition Property="Background" Duration="0:0:0.16"/></Transitions></Border.Transitions>
                 <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Header}" ContentTemplate="{TemplateBinding HeaderTemplate}" FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}" Foreground="{TemplateBinding Foreground}" HorizontalContentAlignment="Left" VerticalContentAlignment="Center"/>
             </Border>
         </ControlTemplate></Setter>
@@ -43,6 +45,6 @@
     <Style Selector="TabControl.WorkspaceTabs TabItem:selected /template/ ContentPresenter#PART_ContentPresenter TextBlock"><Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
     <Style Selector="TabControl.WorkspaceTabs TabItem:focus-visible /template/ Border#WorkspaceTabChrome"><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/></Style>
     <Style Selector="ListBox.LibraryList ListBoxItem /template/ Border#SelectionChrome"><Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.16"/><BrushTransition Property="BorderBrush" Duration="0:0:0.16"/></Transitions></Setter></Style>
-    <Style Selector="Button.LibraryNav /template/ Border#NavChrome"><Setter Property="Transitions"><Transitions><BrushTransition Property="BorderBrush" Duration="0:0:0.18"/><BrushTransition Property="Background" Duration="0:0:0.18"/></Transitions></Setter></Style>
+    <Style Selector="Button.LibraryNav /template/ Border#NavChrome"><Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.14"/></Transitions></Setter></Style>
     <Style Selector="ListBoxItem"><Setter Property="Margin" Value="2,2,6,6"/></Style>
 </Styles>

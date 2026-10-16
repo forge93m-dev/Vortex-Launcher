@@ -51,7 +51,6 @@ public partial class MainWindow : Window
     private void OnWindowOpened(object? sender, EventArgs e)
     {
         if (DataContext is MainWindowViewModel startup) _ = startup.InitializeAsync();
-        UiMotion.Reveal(mainShell);
 
         _ = HideStartupGreetingAsync();
     }

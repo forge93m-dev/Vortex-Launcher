@@ -50,13 +50,11 @@
         <Setter Property="Transitions">
             <Transitions>
                 <BrushTransition Property="BorderBrush" Duration="0:0:0.18" />
-                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18" Easing="CubicEaseOut" />
             </Transitions>
         </Setter>
     </Style>
     <Style Selector="Border.InstanceCard:pointerover">
         <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-        <Setter Property="RenderTransform" Value="translate(0px,-2px)" />
     </Style>
     <Style Selector="Border.InstanceCard Button">
         <Setter Property="FontSize" Value="12" />

@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using System.Linq;
 
 namespace VortexLauncher.Views;
 
@@ -40,6 +41,7 @@ public sealed class SurfaceMotion : AvaloniaObject
         Dispatcher.UIThread.Post(() =>
         {
             target.SetValue(QueuedProperty, false);
+            if (target.GetVisualAncestors().OfType<Control>().Any(parent => parent.GetValue(QueuedProperty) || UiMotion.IsRunning(parent))) return;
             if (GetKind(target).Length > 0 && target.IsEffectivelyVisible && target.GetVisualRoot() != null) UiMotion.Reveal(target);
         }, DispatcherPriority.Background);
     }
