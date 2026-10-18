@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "vortex_client",
+  "version": "0.1.54",
+  "name": "Vortex Client",
+  "description": "Client-side HUD modules, Zoom and Freelook, with a transparent Vortex hub, searchable module menu, bottom icon dock and drag/resize HUD Editor.",
+  "environment": "client",
+  "entrypoints": { "client": ["dev.vortex.client.VortexClient"] },
+  "mixins": ["vortex-client.mixins.json"],
+  "depends": { "fabricloader": ">=0.19.5", "minecraft": "26.3", "java": ">=25" }
+}

@@ -1,0 +1,506 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:VortexLauncher.ViewModels" xmlns:models="using:VortexLauncher.Models" xmlns:views="using:VortexLauncher.Views" xmlns:conv="using:VortexLauncher.Converters" x:Class="VortexLauncher.Views.MainWindow" x:DataType="vm:MainWindowViewModel" x:Name="root" Opened="OnWindowOpened" Title="Vortex Launcher" Icon="/Assets/Branding/vortex-icon-v1.ico" Width="1280" Height="800" MinWidth="960" MinHeight="600" WindowStartupLocation="CenterScreen" Background="{DynamicResource ThemeBackgroundBrush}">
+    <Window.Resources>
+        <conv:IndexEqualsConverter x:Key="IndexEquals"/>
+        <SolidColorBrush x:Key="LibraryPlayBrush" Color="#D7F36A"/>
+        <SolidColorBrush x:Key="LibraryPlayHoverBrush" Color="#E6FF91"/>
+    </Window.Resources>
+
+    <Panel>
+        <Border x:Name="mainShell" Classes="StartupShell" Background="{DynamicResource ThemeBackgroundBrush}">
+            <Grid RowDefinitions="72,*,42">
+                <Border x:Name="navigationRail" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,0,0,1" Padding="28,0">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="0,0,28,0">
+                            <Image Source="/Assets/Branding/vortex-icon-v1.png" Width="32" Height="32" Stretch="Uniform"/>
+                            <TextBlock Text="VORTEX" FontSize="17" FontWeight="Bold" LetterSpacing="2" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                            <Button x:Name="libraryNav" Classes="LibraryNav" Classes.active="{Binding IsInstancesTab}" Command="{Binding SelectTabCommand}" CommandParameter="Instances" AutomationProperties.Name="Library">
+                                <StackPanel Orientation="Horizontal" Spacing="8"><PathIcon Data="M3,3 L10,3 L10,10 L3,10 Z M14,3 L21,3 L21,10 L14,10 Z M3,14 L10,14 L10,21 L3,21 Z M14,14 L21,14 L21,21 L14,21 Z" Width="15" Height="15"/><TextBlock Classes="NavLabel" Text="Library" VerticalAlignment="Center"/></StackPanel>
+                            </Button>
+                            <Button x:Name="modpacksNav" Classes="LibraryNav" Classes.active="{Binding IsModpacksTab}" Command="{Binding SelectTabCommand}" CommandParameter="Modpacks" AutomationProperties.Name="Modpacks">
+                                <StackPanel Orientation="Horizontal" Spacing="8"><PathIcon Data="M12,2 L22,7 L12,12 L2,7 Z M2,12 L12,17 L22,12 M2,17 L12,22 L22,17" Width="15" Height="15"/><TextBlock Classes="NavLabel" Text="Discover" VerticalAlignment="Center"/></StackPanel>
+                            </Button>
+                            <Button x:Name="profilesNav" Classes="LibraryNav" Classes.active="{Binding IsAccountsTab}" Command="{Binding SelectTabCommand}" CommandParameter="Accounts" AutomationProperties.Name="Profiles">
+                                <StackPanel Orientation="Horizontal" Spacing="8"><PathIcon Data="M12,12 A4,4 0 1 0 12,4 A4,4 0 1 0 12,12 M4,21 L4,18 C4,13 20,13 20,18 L20,21 Z" Width="15" Height="15"/><TextBlock Classes="NavLabel" Text="Profiles" VerticalAlignment="Center"/></StackPanel>
+                            </Button>
+                            <Button x:Name="settingsNav" Classes="LibraryNav" Classes.active="{Binding IsSettingsTab}" Command="{Binding SelectTabCommand}" CommandParameter="Settings" AutomationProperties.Name="Settings">
+                                <StackPanel Orientation="Horizontal" Spacing="8"><PathIcon Data="M3,5 L21,5 L21,7 L3,7 Z M3,11 L21,11 L21,13 L3,13 Z M3,17 L21,17 L21,19 L3,19 Z M6,3 L9,3 L9,9 L6,9 Z M15,9 L18,9 L18,15 L15,15 Z M9,15 L12,15 L12,21 L9,21 Z" Width="15" Height="15"/><TextBlock Classes="NavLabel" Text="Settings" VerticalAlignment="Center"/></StackPanel>
+                            </Button>
+                        </StackPanel>
+                        <Button x:Name="profileSwitcher" Grid.Column="2" Classes="ProfileButton" IsEnabled="{Binding !IsInitializing}" AutomationProperties.Name="Active player profile" Padding="0" VerticalAlignment="Center">
+                            <Button.Flyout>
+                                <Flyout Placement="BottomEdgeAlignedRight">
+                                    <StackPanel Width="280" Spacing="10">
+                                        <TextBlock Text="Switch player" FontSize="17" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Recently used first · next launch only" Classes="Muted" FontSize="11"/>
+                                        <ScrollViewer MaxHeight="290" HorizontalScrollBarVisibility="Disabled">
+                                            <ItemsControl ItemsSource="{Binding Accounts}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="models:AccountModel">
+                                                <Button Classes="SecondaryBtn" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,0,0,5" Click="OnQuickProfileClick" CommandParameter="{Binding}">
+                                                    <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding Username}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/><TextBlock Grid.Column="1" Text="✓" IsVisible="{Binding IsActive}" Foreground="{DynamicResource AccentBrush}" Margin="10,0,0,0"/></Grid>
+                                                </Button>
+                                            </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+                                        </ScrollViewer>
+                                        <TextBlock Text="{Binding ProfileError}" IsVisible="{Binding HasProfileError}" TextWrapping="Wrap" FontSize="11"/>
+                                        <Button Classes="PrimaryBtn" Content="Manage player names" HorizontalAlignment="Stretch" Click="OnManageProfilesClick"/>
+                                    </StackPanel>
+                                </Flyout>
+                            </Button.Flyout>
+                            <Border x:Name="activePlayerCard" Height="40" Padding="7,4" CornerRadius="8">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Border Width="30" Height="30" Background="{DynamicResource AccentSoftBrush}" CornerRadius="7"><TextBlock Text="{Binding ActiveAccount.Username[0]}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                    <StackPanel VerticalAlignment="Center" MaxWidth="105"><TextBlock Text="{Binding ActiveAccount.Username}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="Active profile" Classes="Muted" FontSize="10" LineHeight="13"/></StackPanel>
+                                    <TextBlock Text="⌄" Classes="Muted" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </Button>
+                    </Grid>
+                </Border>
+                <Grid x:Name="LibraryAndPages" Grid.Row="1" RowDefinitions="Auto,Auto,*" Margin="28,22,28,18">
+                    <Grid IsVisible="{Binding !IsInstancesTab}" Margin="0,0,0,20">
+                        <StackPanel Spacing="5"><TextBlock Text="{Binding PageTitle}" FontSize="27" FontWeight="SemiBold" LetterSpacing="-0.6"/><TextBlock Text="{Binding PageDescription}" Classes="Muted" FontSize="12"/></StackPanel>
+                    </Grid>
+                    <Border Grid.Row="1" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,14" Margin="0,0,0,14" IsVisible="{Binding CanCancelInstallation}">
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                            <TextBlock Text="{Binding TransferDetails}" Classes="Muted" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Margin="0,0,14,8"/>
+                            <ProgressBar Grid.Row="1" Value="{Binding DownloadProgress}" Maximum="100" Height="4" Margin="0,0,14,0"/>
+                            <Button Grid.Column="1" Grid.RowSpan="2" Content="Cancel" Command="{Binding CancelInstallationCommand}" Classes="SecondaryBtn"/>
+                        </Grid>
+                    </Border>
+                    <Panel Grid.Row="2">
+                        <Grid x:Name="instancesPage" Classes="PagePanel" views:SurfaceMotion.Kind="Page" RowDefinitions="Auto,Auto,*" IsVisible="{Binding IsInstancesTab}">
+                            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,22">
+                                <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center"><TextBlock Text="Library" FontSize="27" FontWeight="SemiBold" LetterSpacing="-0.8"/><TextBlock Text="{Binding Library.CountLabel}" Classes="Muted" FontSize="11" VerticalAlignment="Center"/></StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10"><Button Classes="SecondaryBtn" Content="Import pack" Click="OnImportPackClick" IsEnabled="{Binding !IsInitializing}"/><Button Classes="PrimaryBtn" Content="+  New instance" Click="OnAddInstanceClick" IsEnabled="{Binding !IsInitializing}"/></StackPanel>
+                            </Grid>
+                            <Border Grid.Row="1" IsVisible="{Binding HasInterruptedOperations}" Background="{DynamicResource ThemePanelBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,12">
+                                <ScrollViewer MaxHeight="96"><ItemsControl ItemsSource="{Binding InterruptedOperations}"><ItemsControl.ItemTemplate><DataTemplate>
+                                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,4">
+                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                        <Button Grid.Column="1" Classes="SecondaryBtn" Content="Folder" Command="{Binding #root.DataContext.OpenInterruptedFolderCommand}" CommandParameter="{Binding}" Margin="4,0"/>
+                                        <Button Grid.Column="2" Classes="SecondaryBtn" Content="Cancel (keep files)" IsEnabled="{Binding CanCancel}" Command="{Binding #root.DataContext.CancelInterruptedCommand}" CommandParameter="{Binding}" Margin="4,0"/>
+                                        <Button Grid.Column="3" Classes="PrimaryBtn" Content="Resume" IsEnabled="{Binding CanResume}" Command="{Binding #root.DataContext.ResumeInterruptedCommand}" CommandParameter="{Binding}" Margin="4,0"/>
+                                    </Grid>
+                                </DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
+                            </Border>
+                            <Grid Grid.Row="2" ColumnDefinitions="252,24,*">
+                                <Grid x:Name="libraryCollection" RowDefinitions="Auto,Auto,*">
+                                    <TextBox x:Name="librarySearch" Text="{Binding Library.SearchQuery, Mode=TwoWay}" Watermark="Search your library" Margin="0,0,0,12" AutomationProperties.Name="Search instances"/>
+                                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,0,0,12">
+                                        <Button x:Name="allInstancesFilter" Classes="LibraryFilter" Classes.active="{Binding Library.IsAllSelected}" Content="All games" Command="{Binding Library.ShowAllCommand}"/>
+                                        <Button x:Name="favoritesFilter" Classes="LibraryFilter" Classes.active="{Binding Library.FavoritesOnly}" Content="★  Favorites" Command="{Binding Library.ShowFavoritesCommand}"/>
+                                    </StackPanel>
+                                    <Panel Grid.Row="2">
+                                        <ListBox x:Name="instanceCards" Classes="LibraryList" ItemsSource="{Binding Library.VisibleInstances}" SelectedItem="{Binding Library.SelectedInstance, Mode=TwoWay}" SelectionMode="Single" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Installed instances">
+                                            <ListBox.ItemTemplate><DataTemplate DataType="models:InstanceModel">
+                                                <Border Classes="InstanceCard LibraryRow" Height="88" Padding="7" PointerPressed="OnInstanceCardPointerPressed" Opacity="{Binding CardOpacity}">
+                                                    <Grid ColumnDefinitions="64,*,24">
+                                                        <Border CornerRadius="5" ClipToBounds="True" views:RoundedClip.IsEnabled="True" Margin="0,0,10,0">
+                                                            <Panel>
+                                                                <views:WorldCover Seed="{Binding Name}"/>
+                                                                <conv:AsyncImage SourcePath="{Binding CoverImagePath}" DecodeWidth="160" Stretch="UniformToFill"/>
+                                                                <Border Background="#20000000"/>
+                                                                <Border Width="26" Height="26" CornerRadius="5" Background="#99131518" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="5" IsVisible="{Binding HasIcon}" ClipToBounds="True"><conv:AsyncImage SourcePath="{Binding IconPath}" DecodeWidth="64" Stretch="UniformToFill"/></Border>
+                                                            </Panel>
+                                                        </Border>
+                                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="5" Margin="0,0,4,0">
+                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}"/>
+                                                            <TextBlock Text="{Binding SummaryText}" Classes="Muted" FontSize="10" LineHeight="14" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Text="{Binding StatusText}" Classes="Muted" FontSize="10" LineHeight="14" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="7">
+                                                            <Button Classes="IconButton"  Width="24" Height="26" Padding="0" Click="OnOpenInstanceMenuClick" Tag="{Binding}" ToolTip.Tip="Instance actions" AutomationProperties.Name="Instance actions"><PathIcon Classes="CenteredGlyph" Width="16" Height="4" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M4,10 A2,2 0 1 0 4,14 A2,2 0 1 0 4,10 Z M12,10 A2,2 0 1 0 12,14 A2,2 0 1 0 12,10 Z M20,10 A2,2 0 1 0 20,14 A2,2 0 1 0 20,10 Z"/></Button>
+                                                            <TextBlock Text="★" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsFavorite}" HorizontalAlignment="Center" FontSize="11"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate></ListBox.ItemTemplate>
+                                        </ListBox>
+                                        <TextBlock Text="Loading library…" IsVisible="{Binding IsInitializing}" Classes="Muted" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Nothing here yet." Classes="Muted" IsVisible="{Binding Library.IsEmpty}" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,24"/>
+                                    </Panel>
+                                </Grid>
+                                <Panel Grid.Column="2">
+                                    <ContentControl x:Name="librarySelection" Content="{Binding Library.SelectedInstance}" IsVisible="{Binding Library.HasSelection}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+                                        <ContentControl.ContentTemplate><DataTemplate DataType="models:InstanceModel">
+                                            <Grid RowDefinitions="Auto,Auto,*">
+                                                <Border x:Name="libraryHero" views:SurfaceMotion.Kind="Content" CornerRadius="10" ClipToBounds="True" views:RoundedClip.IsEnabled="True" Height="210" MinHeight="150">
+                                                    <Panel>
+                                                        <views:WorldCover Seed="{Binding Name}"/>
+                                                        <conv:AsyncImage SourcePath="{Binding CoverImagePath}" DecodeWidth="1600" Stretch="UniformToFill"/>
+                                                        <Border><Border.Background><LinearGradientBrush StartPoint="0%,0%" EndPoint="70%,100%"><GradientStop Offset="0" Color="#14101316"/><GradientStop Offset="0.6" Color="#55101316"/><GradientStop Offset="1" Color="#EE101316"/></LinearGradientBrush></Border.Background></Border>
+                                                        <Grid Margin="26" RowDefinitions="Auto,*,Auto" ColumnDefinitions="*,Auto">
+                                                            <TextBlock Text="MINECRAFT  /  JAVA EDITION" Foreground="#E6EFEB" FontSize="10" FontWeight="SemiBold" LetterSpacing="2" VerticalAlignment="Top"/>
+                                                            <Button Grid.Column="1" Classes="HeroFavorite" Classes.active="{Binding IsFavorite}" Command="{Binding #root.DataContext.ToggleFavoriteCommand}" CommandParameter="{Binding}" ToolTip.Tip="Pin / unpin favorite" AutomationProperties.Name="Toggle favorite"><Path Classes="CenteredGlyph" Width="17" Height="17" HorizontalAlignment="Center" VerticalAlignment="Center" Stretch="Uniform" Data="M12,2 L15.1,8.3 L22,9.3 L17,14.2 L18.2,21 L12,17.8 L5.8,21 L7,14.2 L2,9.3 L8.9,8.3 Z" Stroke="White" StrokeThickness="1.5"/></Button>
+                                                            <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Spacing="8">
+                                                                <TextBlock Text="{Binding Name}" Foreground="White" FontSize="32" FontWeight="Bold" LetterSpacing="-0.9" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="82" ToolTip.Tip="{Binding Name}"/>
+                                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                                    <Border Background="#660D1518" CornerRadius="4" Padding="8,4"><TextBlock Foreground="#E5EEEA" FontSize="10" Text="{Binding Version}"/></Border>
+                                                                    <Border Background="#660D1518" CornerRadius="4" Padding="8,4"><TextBlock Foreground="#E5EEEA" FontSize="10" Text="{Binding Loader}"/></Border>
+                                                                    <Border Background="#D7F36A" CornerRadius="4" Padding="8,4" IsVisible="{Binding VortexClientEnabled}"><TextBlock Foreground="#18200B" FontSize="10" Text="VORTEX CLIENT" FontWeight="SemiBold"/></Border>
+                                                                </StackPanel>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Panel>
+                                                </Border>
+                                                <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="0,18,0,0">
+                                                    <Button x:Name="featuredPlayButton" Classes="PlayButton LibraryPlay" Command="{Binding #root.DataContext.LaunchSpecificInstanceCommand}" CommandParameter="{Binding}" IsEnabled="{Binding CanLaunch}" AutomationProperties.Name="Play selected instance">
+                                                        <StackPanel Orientation="Horizontal" Spacing="12"><PathIcon Width="13" Height="13" Data="M4,2 L21,12 L4,22 Z"/><TextBlock Text="{Binding LaunchButtonText}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/></StackPanel>
+                                                    </Button>
+                                                    <StackPanel Grid.Column="1" Spacing="3" Margin="16,0,8,0" VerticalAlignment="Center"><TextBlock Text="{Binding StatusText}" FontSize="12" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding PlayTimeText}" Classes="Muted" FontSize="10" LineHeight="14" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/></StackPanel>
+                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                        <Button Classes="SecondaryBtn" Content="Open instance" Click="OnManageInstanceClick" Tag="{Binding}" AutomationProperties.Name="Manage selected instance"/>
+                                                        <Button Classes="IconButton"  Click="OnOpenInstanceMenuClick" Tag="{Binding}" ToolTip.Tip="Instance actions" AutomationProperties.Name="Selected instance actions"><PathIcon Classes="CenteredGlyph" Width="16" Height="4" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M4,10 A2,2 0 1 0 4,14 A2,2 0 1 0 4,10 Z M12,10 A2,2 0 1 0 12,14 A2,2 0 1 0 12,10 Z M20,10 A2,2 0 1 0 20,14 A2,2 0 1 0 20,10 Z"/></Button>
+                                                    </StackPanel>
+                                                </Grid>
+                                                <Border Grid.Row="2" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,1,0,0" Margin="0,14,0,0" Padding="0,10,0,0" VerticalAlignment="Top">
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <Button Grid.Column="1" Classes="LibraryTextButton" Click="OnSetCoverClick" VerticalAlignment="Top" AutomationProperties.Name="Change selected cover">
+                                                            <StackPanel Orientation="Horizontal" Spacing="7"><TextBlock Text="Change cover" FontSize="11" VerticalAlignment="Center"/><PathIcon Width="11" Height="11" Data="M5,2 L20,2 L20,17 L18,17 L18,6 L4,20 L2,18 L16,4 L5,4 Z"/></StackPanel>
+                                                        </Button>
+                                                        <WrapPanel>
+                                                            <Button Content="Mods" CommandParameter="Mods" Tag="{Binding}" Click="OnWorkspaceShortcut" Classes="SecondaryBtn" Margin="0,0,8,8"/>
+                                                            <Button Content="Resource packs" CommandParameter="Resource packs" Tag="{Binding}" Click="OnWorkspaceShortcut" Classes="SecondaryBtn" Margin="0,0,8,8"/>
+                                                            <Button Content="Worlds" CommandParameter="Worlds" Tag="{Binding}" Click="OnWorkspaceShortcut" Classes="SecondaryBtn" Margin="0,0,8,8"/>
+                                                            <Button Content="Settings &amp; tools" CommandParameter="Settings" Tag="{Binding}" Click="OnWorkspaceShortcut" Classes="SecondaryBtn" Margin="0,0,0,8"/>
+                                                        </WrapPanel>
+                                                    </Grid>
+                                                </Border>
+                                            </Grid>
+                                        </DataTemplate></ContentControl.ContentTemplate>
+                                    </ContentControl>
+                                    <Border IsVisible="{Binding !Library.HasSelection}" CornerRadius="10" ClipToBounds="True" views:RoundedClip.IsEnabled="True">
+                                        <Panel>
+                                            <views:WorldCover Seed="A new world"/>
+                                            <Border Background="#C9101316"/>
+                                            <StackPanel x:Name="libraryEmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="360" Margin="24" Spacing="14">
+                                                <TextBlock Text="MAKE ROOM FOR ADVENTURE" Foreground="#D7F36A" FontSize="10" LetterSpacing="2" TextWrapping="Wrap" TextAlignment="Center"/>
+                                                <TextBlock Text="{Binding Library.EmptyTitle}" FontSize="28" FontWeight="SemiBold" Foreground="White" TextWrapping="Wrap" TextAlignment="Center"/>
+                                                <TextBlock Text="{Binding Library.EmptyDescription}" Foreground="#BBC8C2" FontSize="12" LineHeight="19" TextWrapping="Wrap" TextAlignment="Center"/>
+                                                <Button Content="Clear filters" Command="{Binding Library.ClearFiltersCommand}" Classes="SecondaryBtn" IsVisible="{Binding Library.HasInstances}" HorizontalAlignment="Center"/>
+                                                <Button Content="+  Create your first instance" Click="OnAddInstanceClick" Classes="PrimaryBtn" IsVisible="{Binding !Library.HasInstances}" IsEnabled="{Binding !IsInitializing}" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Panel>
+                                    </Border>
+                                </Panel>
+                            </Grid>
+                        </Grid>
+                        <Grid x:Name="modpacksPage" Classes="PagePanel" views:SurfaceMotion.Kind="Page" RowDefinitions="*" IsVisible="{Binding IsModpacksTab}">
+                            <Grid Grid.Row="0" x:Name="modpacksContentGrid" DataContext="{Binding ModpacksVm}" RowDefinitions="Auto, *">
+                                <StackPanel Grid.Row="0" Spacing="10" Margin="0,0,0,16" IsEnabled="{Binding !IsInstalling}">
+                                    <Grid ColumnDefinitions="*, Auto">
+                                        <TextBox Grid.Column="0" Text="{Binding SearchQuery}" Watermark="Search modpacks..." Background="{DynamicResource ThemePanelBrush}" Foreground="{DynamicResource ThemeTextBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10" />
+                                        <Button Grid.Column="1" Classes="PrimaryBtn" Content="Search" Command="{Binding SearchModpacksCommand}" Margin="10,0,0,0" />
+                                    </Grid>
+                                    <Grid ColumnDefinitions="*,*,*,Auto">
+                                        <StackPanel Spacing="5" Margin="0,0,10,0">
+                                            <TextBlock Text="Category" FontSize="12" Foreground="{DynamicResource ThemeSubtextBrush}" />
+                                            <ComboBox x:Name="ModpackCategoryFilter" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}" HorizontalAlignment="Stretch" MaxDropDownHeight="280">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Label}" />
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="5" Margin="0,0,10,0">
+                                            <TextBlock Text="Loader" FontSize="11" Foreground="{DynamicResource ThemeSubtextBrush}" />
+                                            <ComboBox ItemsSource="{Binding Loaders}" SelectedItem="{Binding SelectedLoader, Mode=TwoWay}" HorizontalAlignment="Stretch" MaxDropDownHeight="280">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Spacing="5" Margin="0,0,10,0">
+                                            <TextBlock Text="Sort by" FontSize="11" Foreground="{DynamicResource ThemeSubtextBrush}" />
+                                            <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSort, Mode=TwoWay}" HorizontalAlignment="Stretch" MaxDropDownHeight="280">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Label}" />
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <Button Grid.Column="3" Classes="SecondaryBtn" Content="Reset" Command="{Binding ResetFiltersCommand}" VerticalAlignment="Bottom" />
+                                    </Grid>
+                                    <Grid ColumnDefinitions="*,Auto,Auto">
+                                        <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        <ProgressBar Grid.Column="1" IsVisible="{Binding IsSearching}" IsIndeterminate="True" Width="70" Height="3" Margin="10,0" />
+                                        <Button Grid.Column="2" Content="Load more" Command="{Binding LoadMoreCommand}" IsVisible="{Binding HasMore}" IsEnabled="{Binding !IsSearching}" />
+                                    </Grid>
+                                </StackPanel>
+                                <Grid Grid.Row="1" ColumnDefinitions="*, 316">
+                                    <ScrollViewer Grid.Column="0" Margin="0,0,16,0" HorizontalScrollBarVisibility="Disabled">
+                                        <ListBox ItemsSource="{Binding Modpacks}" SelectedItem="{Binding SelectedModpack}" Background="Transparent" BorderThickness="0" Padding="0">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Classes="WorkspaceRow" Padding="8,16" Margin="0,0,0,4">
+                                                        <Grid ColumnDefinitions="Auto, *">
+                                                            <Border Grid.Column="0" Width="68" Height="68" CornerRadius="7" ClipToBounds="True" Background="{DynamicResource ThemeBorderBrush}" Margin="0,0,12,0" VerticalAlignment="Center">
+                                                                <Image Source="{Binding IconBitmap}" Width="68" Height="68" Stretch="UniformToFill" />
+                                                            </Border>
+                                                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Item.Title}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextBrush}" FontSize="15" />
+                                                                <TextBlock Text="{Binding Item.Description}" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="11" TextWrapping="Wrap" MaxLines="2" />
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                    </ScrollViewer>
+                                    <Border Grid.Column="1" Classes="WorkspaceAside" Padding="20">
+                                        <Panel>
+                                            <TextBlock Text="Select a modpack from the list to view details and install" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" IsVisible="{Binding SelectedModpack, Converter={x:Static ObjectConverters.IsNull}}" />
+                                            <ContentControl Content="{Binding SelectedModpack}">
+                                                <ContentControl.ContentTemplate>
+                                                    <DataTemplate DataType="vm:ModrinthModItemViewModel">
+                                                        <Grid RowDefinitions="*,Auto" views:SurfaceMotion.Kind="Content">
+                                                            <ScrollViewer HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,16">
+                                                                <StackPanel Spacing="16">
+                                                                    <StackPanel Spacing="14">
+                                                                        <Border Height="112" CornerRadius="7" ClipToBounds="True" views:RoundedClip.IsEnabled="True"><Panel><views:WorldCover Seed="{Binding Item.Title}"/><Border Background="#33000000"/><Image Source="{Binding IconBitmap}" Width="56" Height="56" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/></Panel></Border>
+                                                                        <TextBlock Text="MODPACK DETAILS" Classes="LibraryMetaLabel"/>
+                                                                        <TextBlock Text="{Binding Item.Title}" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Item.Title}"/>
+                                                                        <TextBlock Text="{Binding Item.Author, StringFormat='by {0}'}" Classes="Muted" FontSize="11"/>
+                                                                    </StackPanel>
+                                                                    <StackPanel Spacing="6">
+                                                                        <TextBlock Text="Choose a version" Classes="FieldLabel"/>
+                                                                        <ComboBox ItemsSource="{Binding DataContext.ModpacksVm.ModpackVersions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                            SelectedItem="{Binding DataContext.ModpacksVm.SelectedVersion, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
+                                                                            IsEnabled="{Binding !DataContext.ModpacksVm.IsLoadingVersions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                            MaxDropDownHeight="280" HorizontalAlignment="Stretch" AutomationProperties.Name="Modpack version">
+                                                                            <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/></DataTemplate></ComboBox.ItemTemplate>
+                                                                        </ComboBox>
+                                                                    </StackPanel>
+                                                                    <Border BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+                                                                        <TextBlock Text="{Binding Item.Description}" Classes="Muted" FontSize="12"/>
+                                                                    </Border>
+                                                                </StackPanel>
+                                                            </ScrollViewer>
+                                                            <Button Grid.Row="1" Classes="PrimaryBtn" Content="Install modpack"
+                                                                Command="{Binding DataContext.ModpacksVm.InstallSelectedModpackCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                IsEnabled="{Binding !DataContext.ModpacksVm.IsInstalling, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                HorizontalAlignment="Stretch"/>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ContentControl.ContentTemplate>
+                                            </ContentControl>
+                                        </Panel>
+                                    </Border>
+                                </Grid>
+                            </Grid>
+                        </Grid>
+                        <Grid x:Name="accountsPage" Classes="PagePanel" views:SurfaceMotion.Kind="Page" RowDefinitions="Auto,*" IsVisible="{Binding IsAccountsTab}">
+                            <Border Classes="IdentityBanner" Padding="16" Margin="0,0,0,16">
+                                <Grid ColumnDefinitions="68,*,Auto">
+                                    <Border Width="52" Height="52" CornerRadius="8" Background="{DynamicResource AccentSoftBrush}"><TextBlock Text="{Binding ActiveAccount.Username[0]}" FontSize="26" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                    <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center"><TextBlock Text="CURRENT PLAYER" Classes="LibraryMetaLabel"/><TextBlock Text="{Binding ActiveAccount.Username}" FontSize="24" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="Used for your next Minecraft session" Classes="Muted" FontSize="12"/></StackPanel>
+                                    <Border Grid.Column="2" Classes="Chip" VerticalAlignment="Center"><TextBlock Text="LOCAL PROFILE"/></Border>
+                                </Grid>
+                            </Border>
+                            <Grid Grid.Row="1" ColumnDefinitions="*,280">
+                                <Grid RowDefinitions="Auto,*" Margin="0,0,26,0">
+                                    <TextBlock Text="Saved players" Classes="SectionTitle" Margin="0,0,0,16"/>
+                                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled"><ItemsControl ItemsSource="{Binding Accounts}"><ItemsControl.ItemTemplate><DataTemplate>
+                                        <Border Classes="WorkspaceRow" Padding="12,16" Margin="0,0,0,6">
+                                            <Grid ColumnDefinitions="52,*,Auto">
+                                                <Border Width="36" Height="36" CornerRadius="6" Background="{DynamicResource ThemePanelBrush}"><TextBlock Text="{Binding Username[0]}" FontWeight="SemiBold" FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                                <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center"><TextBlock Text="{Binding Username}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis"/><TextBlock Text="Local player" Classes="Muted" FontSize="11"/><TextBlock Text="Active · next launch" IsVisible="{Binding IsActive}" Foreground="{DynamicResource AccentBrush}" FontSize="11"/></StackPanel>
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                    <Button Classes="SecondaryBtn" Content="Use profile" Command="{Binding #root.DataContext.SelectAccountCommand}" CommandParameter="{Binding}"/>
+                                                    <Button Classes="IconButton" Content="✎" Command="{Binding #root.DataContext.EditAccountCommand}" CommandParameter="{Binding}" ToolTip.Tip="Edit player name" AutomationProperties.Name="Edit player name"/>
+                                                    <Button Classes="IconButton danger" Command="{Binding #root.DataContext.DeleteAccountCommand}" CommandParameter="{Binding}" ToolTip.Tip="Delete profile" AutomationProperties.Name="Delete profile"><PathIcon Data="M6,7 L18,7 L18,21 L6,21 Z M5,3 L9,3 L10,1 L14,1 L15,3 L19,3 L19,5 L5,5 Z" Width="13" Height="13"/></Button>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
+                                </Grid>
+                                <Border Grid.Column="1" Classes="WorkspaceAside" Padding="14" VerticalAlignment="Stretch">
+                                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="14">
+                                        <StackPanel Spacing="10" IsVisible="{Binding !IsEditingAccount}"><TextBlock Text="ADD A LOCAL PLAYER" Classes="LibraryMetaLabel"/><TextBlock Text="New profile" FontSize="21" FontWeight="SemiBold"/><TextBlock Text="Player name" Classes="FieldLabel"/><TextBox Text="{Binding NewAccountUsername}" Watermark="Minecraft username" AutomationProperties.Name="Player name"/><Button Classes="PrimaryBtn" Content="+  Add profile" Command="{Binding AddAccountCommand}" HorizontalAlignment="Stretch" IsEnabled="{Binding !IsInitializing}"/></StackPanel>
+                                        <Expander x:Name="vortexAccountExpander" Header="Vortex account" HorizontalAlignment="Stretch" IsVisible="{Binding !IsEditingAccount}"><StackPanel Spacing="9">
+                                        <StackPanel Spacing="9" IsEnabled="{Binding !IsVortexAccountBusy}">
+                                            <TextBlock Text="VORTEX ACCOUNT" Classes="LibraryMetaLabel"/>
+                                            <TextBlock Text="{Binding VortexAccountLabel}" FontSize="19" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                            <StackPanel Spacing="8" IsVisible="{Binding !HasVortexAccount}">
+                                                <TextBox Text="{Binding VortexLogin}" Watermark="Vortex login" AutomationProperties.Name="Vortex login"/>
+                                                <TextBox Text="{Binding VortexNickname}" Watermark="Vortex nickname" IsVisible="{Binding IsVortexRegistration}" AutomationProperties.Name="Vortex registration nickname"/>
+                                                <TextBlock Text="Beta: use a unique password of 15+ characters and save it safely. Password recovery is not available yet." IsVisible="{Binding IsVortexRegistration}" Classes="Muted" FontSize="11" TextWrapping="Wrap"/>
+                                                <TextBox Text="{Binding VortexPassword}" PasswordChar="●" Watermark="Password" AutomationProperties.Name="Vortex password"/>
+                                                <TextBox Text="{Binding VortexPasswordConfirmation}" PasswordChar="●" Watermark="Repeat password" IsVisible="{Binding IsVortexRegistration}" AutomationProperties.Name="Repeat Vortex password"/>
+                                                <CheckBox Content="Remember sign-in" IsChecked="{Binding RememberVortexAccount}" IsEnabled="{Binding CanRememberVortexAccount}"/>
+                                                <Button Classes="PrimaryBtn" Content="{Binding VortexAuthAction}" Command="{Binding AuthenticateVortexCommand}" HorizontalAlignment="Stretch"/>
+                                                <Button Classes="SecondaryBtn" Content="Sign in / Create account" Command="{Binding ToggleVortexRegistrationCommand}" HorizontalAlignment="Stretch"/>
+                                            </StackPanel>
+                                            <StackPanel Spacing="8" IsVisible="{Binding HasVortexAccount}">
+                                                <TextBox Text="{Binding VortexNickname}" Watermark="Vortex nickname" AutomationProperties.Name="Vortex nickname"/>
+                                                <Button Classes="SecondaryBtn" Content="Save Vortex nickname" Command="{Binding RenameVortexNicknameCommand}" HorizontalAlignment="Stretch"/>
+                                                <Button Classes="PrimaryBtn" Content="Use nickname for Minecraft" Command="{Binding UseVortexNicknameCommand}" HorizontalAlignment="Stretch"/>
+                                                <Button Classes="SecondaryBtn" Content="Sign out" Command="{Binding SignOutVortexCommand}" HorizontalAlignment="Stretch"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding VortexAccountMessage}" Classes="Muted" FontSize="11" TextWrapping="Wrap"/>
+                                        <TextBlock Text="Vortex accounts do not replace Microsoft accounts or verify ownership of an offline Minecraft name." Classes="Muted" FontSize="11" TextWrapping="Wrap"/>
+                                        </StackPanel></Expander>
+                                        <Border Height="1" Background="{DynamicResource ThemeBorderBrush}" IsVisible="{Binding !IsEditingAccount}"/>
+                                        <StackPanel Spacing="8" IsVisible="{Binding IsEditingAccount}">
+                                            <TextBlock Text="Edit player name" FontSize="19" FontWeight="SemiBold"/>
+                                            <TextBox x:Name="profileNameInput" Text="{Binding EditedAccountUsername}" AutomationProperties.Name="New player name"/>
+                                            <TextBlock Text="A new offline name means a new player identity. Saves stay untouched." Classes="Muted" FontSize="11" TextWrapping="Wrap"/>
+                                            <Grid ColumnDefinitions="*,8,*">
+                                                <Button Content="Save name" Classes="PrimaryBtn" Command="{Binding SaveAccountNameCommand}" HorizontalAlignment="Stretch"/>
+                                                <Button Grid.Column="2" Content="Cancel" Classes="SecondaryBtn" Command="{Binding CancelEditAccountCommand}" HorizontalAlignment="Stretch"/>
+                                            </Grid>
+                                        </StackPanel>
+                                        <StackPanel Spacing="10" IsVisible="{Binding HasPendingProfileDeletion}">
+                                            <TextBlock Text="Remove saved player?" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding PendingDeleteAccount.Username}" TextWrapping="Wrap"/>
+                                            <TextBlock Text="Only the launcher profile is removed. Worlds and game files stay untouched." Classes="Muted" FontSize="12" TextWrapping="Wrap"/>
+                                            <Button Content="Remove profile" Classes="SecondaryBtn danger" Command="{Binding ConfirmDeleteAccountCommand}" HorizontalAlignment="Stretch"/>
+                                            <Button Content="Keep profile" Classes="SecondaryBtn" Command="{Binding CancelDeleteAccountCommand}" HorizontalAlignment="Stretch"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding ProfileError}" IsVisible="{Binding HasProfileError}" TextWrapping="Wrap" FontSize="12"/>
+                                    </StackPanel></ScrollViewer>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                        <Grid x:Name="settingsPage" Classes="PagePanel" views:SurfaceMotion.Kind="Page" RowDefinitions="*,Auto" IsVisible="{Binding IsSettingsTab}">
+                            <Grid ColumnDefinitions="158,*">
+<TabControl x:Name="SettingsTabs" Classes="WorkspaceTabs" TabStripPlacement="Left" Padding="0" BorderThickness="0">
+<TabItem Header="Appearance"/>
+<TabItem Header="Game &amp; memory"/>
+<TabItem Header="Java"/>
+<TabItem Header="Updates"/>
+</TabControl>
+<Panel Grid.Column="1" x:Name="settingsContent">
+<ScrollViewer x:Name="settingsAppearance" views:SurfaceMotion.Kind="Section" IsVisible="{Binding #SettingsTabs.SelectedIndex, Converter={StaticResource IndexEquals}, ConverterParameter=0}" HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="22" Margin="28,4,8,20">
+                                        <Border Classes="WorkspaceSection" Padding="0">
+                                            <StackPanel Spacing="14">
+                                                
+                                                <TextBlock Classes="SectionTitle" Text="Appearance" />
+                                                <TextBlock Classes="Muted" Text="Every screen follows your palette. Pick a theme or fine-tune the accent." />
+                                                <ItemsControl ItemsSource="{Binding ThemePresets}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <UniformGrid Columns="2" />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Button Classes="SecondaryBtn" Click="OnThemePresetClick" Margin="3" HorizontalContentAlignment="Stretch" Padding="12,10">
+                                                                <Grid ColumnDefinitions="Auto,*">
+                                                                    <Border Width="14" Height="14" CornerRadius="7" Background="{Binding Brush}" Margin="0,0,8,0" />
+                                                                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                                                </Grid>
+                                                            </Button>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Classes="FieldLabel" Text="Accent color" />
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBox Text="{Binding AccentColor}" Watermark="#D7F36A" Margin="0,0,10,0" />
+                                                    <Border Grid.Column="1" Width="40" Height="40" CornerRadius="12" Background="{DynamicResource AccentBrush}" />
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Classes="WorkspaceSection" Padding="0,20,0,0"><StackPanel Spacing="8"><TextBlock Text="Motion &amp; transitions" Classes="SectionTitle"/><ToggleSwitch Content="Interface animations" IsChecked="{Binding InterfaceAnimationsEnabled}" AutomationProperties.Name="Interface animations"/><TextBlock Classes="Muted" Text="Subtle page, preview and dialog fades. No sliding panels or flashing content. Disable entrances if you prefer less motion." FontSize="12"/></StackPanel></Border>
+                                    </StackPanel></ScrollViewer>
+<ScrollViewer x:Name="settingsGame" views:SurfaceMotion.Kind="Section" IsVisible="{Binding #SettingsTabs.SelectedIndex, Converter={StaticResource IndexEquals}, ConverterParameter=1}" HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="24" Margin="28,4,8,20"><Border Classes="WorkspaceSection" Padding="0">
+                                            <StackPanel Spacing="12">
+                                                
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Classes="SectionTitle" Text="Memory allocation" />
+                                                    <Border Grid.Column="1" Classes="Chip" Background="{DynamicResource AccentSoftBrush}">
+                                                        <TextBlock Text="{Binding RamGb, StringFormat='{}{0} GB'}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" />
+                                                    </Border>
+                                                </Grid>
+                                                <TextBlock Classes="Muted" Text="Give your instance room to breathe. Large modpacks may need more memory." />
+                                                <Slider Minimum="2" Maximum="16" Value="{Binding RamGb}" IsSnapToTickEnabled="True" TickFrequency="1" />
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Classes="Muted" Text="2 GB" FontSize="11" />
+                                                    <TextBlock Grid.Column="1" Classes="Muted" Text="16 GB" FontSize="11" />
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border><Border Classes="WorkspaceSection" Padding="0,20,0,0">
+                                            <StackPanel Spacing="12">
+                                                
+                                                <TextBlock Classes="SectionTitle" Text="Game behavior" />
+                                                <ToggleSwitch Content="Minimize while playing" IsChecked="{Binding MinimizeOnGameLaunch}" />
+                                                <TextBlock Classes="Muted" Text="The launcher returns automatically when you exit Minecraft." FontSize="12" />
+                                            </StackPanel>
+                                        </Border><Border Classes="WorkspaceSection" Padding="0,20,0,0"><StackPanel Spacing="12">
+                                            <TextBlock Classes="SectionTitle" Text="Launcher library"/>
+                                            <TextBlock Classes="Muted" Text="Instances and profiles stay in the same folder when you run a new launcher. Connect an old Vortex folder to keep using its library; files will not be moved or merged." TextWrapping="Wrap"/>
+                                            <WrapPanel><Button Content="Open data folder" Click="OnOpenDataFolder" Classes="SecondaryBtn" Margin="0,0,8,8"/><Button Content="Connect existing library…" Click="OnConnectDataFolder" Classes="SecondaryBtn" Margin="0,0,0,8"/></WrapPanel>
+                                        </StackPanel></Border></StackPanel></ScrollViewer>
+<ScrollViewer x:Name="settingsJava" views:SurfaceMotion.Kind="Section" IsVisible="{Binding #SettingsTabs.SelectedIndex, Converter={StaticResource IndexEquals}, ConverterParameter=2}" HorizontalScrollBarVisibility="Disabled"><Border Margin="28,4,8,20">
+                                            <StackPanel Spacing="12">
+                                                
+                                                <TextBlock Classes="SectionTitle" Text="Java &amp; launch arguments" />
+                                                <TextBlock Classes="Muted" Text="Leave the path empty to use automatic Java detection." FontSize="12" />
+                                                <TextBlock Classes="FieldLabel" Text="Java executable" />
+                                                <TextBox Text="{Binding CustomJavaPath}" Watermark="Automatic detection" />
+                                                <TextBlock Classes="FieldLabel" Text="JVM arguments" Margin="0,8,0,0" />
+                                                <TextBox Text="{Binding JvmArgs}" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="80" VerticalContentAlignment="Top" />
+                                                <TextBlock Classes="Muted" Text="Only change these arguments if you know what they do." FontSize="12" />
+                                            </StackPanel>
+                                        </Border></ScrollViewer>
+<ScrollViewer x:Name="settingsUpdates" views:SurfaceMotion.Kind="Section" IsVisible="{Binding #SettingsTabs.SelectedIndex, Converter={StaticResource IndexEquals}, ConverterParameter=3}" HorizontalScrollBarVisibility="Disabled"><Border Margin="28,4,8,20">
+                                            <StackPanel Spacing="12">
+                                                
+                                                <TextBlock Classes="SectionTitle" Text="{Binding LauncherVersionLabel}" TextWrapping="Wrap" />
+                                                <TextBlock Classes="Muted" Text="{Binding LauncherUpdateStatus}" />
+                                                <TextBlock Classes="Muted" Text="{Binding LastLauncherUpdateResult}" FontSize="11" />
+                                                <TextBlock Text="{Binding LauncherUpdateNotes}" TextWrapping="Wrap" IsVisible="{Binding UpdateAvailable}" />
+                                                <TextBlock Classes="Muted" Text="{Binding UpdateSource}" FontSize="10" TextWrapping="Wrap" />
+                                                <StackPanel Spacing="8">
+                                                    <Button x:Name="CheckLauncherUpdatesButton" Content="Check for updates" Command="{Binding CheckLauncherUpdatesCommand}" Classes="SecondaryBtn" IsEnabled="{Binding !IsCheckingUpdates}" />
+                                                    <Button x:Name="InstallLauncherUpdateButton" Content="Install update" Command="{Binding InstallLauncherUpdateCommand}" Classes="PrimaryBtn" IsVisible="{Binding UpdateAvailable}" IsEnabled="{Binding !IsInstallingUpdate}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border></ScrollViewer>
+</Panel>
+</Grid>
+                            <Border Grid.Row="1" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,1,0,0" Padding="0,16,0,0" Margin="0,12,0,0"><Grid ColumnDefinitions="*,Auto"><TextBlock Classes="Muted" Text="Your preferences are kept when the launcher updates." VerticalAlignment="Center"/><Button Grid.Column="1" Classes="PrimaryBtn" Content="Save settings" Command="{Binding SaveSettingsCommand}"/></Grid></Border>
+                        </Grid>
+                    </Panel>
+                </Grid>
+                <ContentControl x:Name="InstanceWorkspaceHost" Grid.Row="1" IsVisible="False" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+                <Border Grid.Row="2" Background="{DynamicResource ThemeSidebarBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,1,0,0" Padding="24,0">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                        <Button x:Name="downloadCenterButton" Classes="LibraryTextButton" Command="{Binding ShowDownloadsCommand}" AutomationProperties.Name="Downloads" Height="28" MinHeight="0" VerticalAlignment="Center" VerticalContentAlignment="Center" Padding="4,0" Margin="0,0,18,0">
+                            <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center"><PathIcon Width="14" Height="14" VerticalAlignment="Center" Data="M11,3 L13,3 L13,12 L17,8 L18.4,9.4 L12,15.8 L5.6,9.4 L7,8 L11,12 Z M4,17 L6,17 L6,20 L18,20 L18,17 L20,17 L20,22 L4,22 Z"/><TextBlock Text="Downloads" FontSize="11" LineHeight="14" VerticalAlignment="Center"/></StackPanel>
+                        </Button>
+                        <TextBlock Grid.Column="1" Text="{Binding StatusMessage}" Classes="Muted" FontSize="10" LineHeight="14" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,16,0" ToolTip.Tip="{Binding StatusMessage}"/>
+                        <Button Grid.Column="2" Content="Install update" Command="{Binding InstallLauncherUpdateCommand}" Classes="LibraryTextButton" IsVisible="{Binding UpdateAvailable}" IsEnabled="{Binding !IsInstallingUpdate}" Margin="0,0,16,0" Padding="6,0" FontSize="11"/>
+                        <TextBlock Grid.Column="3" Text="VORTEX LAUNCHER" FontSize="9" LetterSpacing="1.5" Foreground="{DynamicResource ThemeSubtextBrush}" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+        <Border Background="#BB080B12" IsVisible="{Binding IsGlobalLoading}">
+            <Border Classes="VortexCard" Width="520" Padding="32" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Spacing="16">
+                    <TextBlock Classes="Eyebrow" Text="WORKING ON IT" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding LoadingTitle}" FontWeight="SemiBold" FontSize="22" TextWrapping="Wrap" TextAlignment="Center" />
+                    <TextBlock Text="{Binding StatusMessage}" Classes="Muted" TextAlignment="Center" />
+                    <ProgressBar IsIndeterminate="{Binding !CanCancelInstallation}" Value="{Binding DownloadProgress}" Maximum="100" Height="5" Margin="0,8" />
+                    <TextBlock Text="{Binding TransferDetails}" Classes="Muted" FontSize="12" TextAlignment="Center" />
+                    <Button Content="Cancel installation" Command="{Binding CancelInstallationCommand}" Classes="SecondaryBtn" IsVisible="{Binding CanCancelInstallation}" HorizontalAlignment="Center" />
+                    <Button Content="View downloads" Command="{Binding ShowDownloadsCommand}" Classes="SecondaryBtn" HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border x:Name="startupOverlay" Classes="StartupOverlay" Background="{DynamicResource ThemeBackgroundBrush}" IsVisible="{Binding IsStartupGreetingVisible}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                <TextBlock Classes="Eyebrow" Text="VORTEX LAUNCHER" HorizontalAlignment="Center" Margin="0,0,0,12" />
+                <TextBlock Text="{Binding StartupGreeting}" FontSize="32" FontWeight="Bold" HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding StartupUsername}" Foreground="{DynamicResource AccentBrush}" FontSize="20" HorizontalAlignment="Center" />
+                <TextBlock Text="Preparing your next adventure..." Classes="Muted" HorizontalAlignment="Center" Margin="0,12,0,0" />
+            </StackPanel>
+        </Border>
+    </Panel>
+</Window>

@@ -1,0 +1,65 @@
+name: Verify launcher stability and native packages
+on:
+  push:
+    branches: [main, 'codex/launcher-stability']
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  verify:
+    name: Verify ${{ matrix.rid }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            rid: win-x64
+          - runner: macos-15
+            rid: osx-arm64
+          - runner: macos-15-intel
+            rid: osx-x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Storage, interrupted operations and HTTP resume regression tests
+        shell: pwsh
+        run: |
+          dotnet run --project Tests/DownloadSmoke/DownloadSmoke.csproj -p:UseSharedCompilation=false
+          if ($LASTEXITCODE -ne 0) { throw 'Data/download/recovery regression failed.' }
+      - name: Headless interface, virtualized library, images and startup tests
+        shell: pwsh
+        run: |
+          dotnet run --project Tests/SidebarSmoke/SidebarSmoke.csproj -p:UseSharedCompilation=false -- --chrome
+          if ($LASTEXITCODE -ne 0) { throw 'Window chrome/card hover regression failed.' }
+          dotnet run --project Tests/SidebarSmoke/SidebarSmoke.csproj -p:UseSharedCompilation=false
+          if ($LASTEXITCODE -ne 0) { throw 'Interface regression failed.' }
+          dotnet run --project Tests/SidebarSmoke/SidebarSmoke.csproj --no-build -- --benchmark
+          if ($LASTEXITCODE -ne 0) { throw 'Library performance fixture failed.' }
+      - name: Build and verify the native package
+        shell: pwsh
+        env:
+          VERIFY_RID: ${{ matrix.rid }}
+        run: |
+          if ($env:VERIFY_RID -eq 'win-x64') {
+            ./publish-win-x64.ps1
+            [xml]$project = Get-Content 'Vortex Launcher.csproj'
+            dotnet run --project Tests/DownloadSmoke/DownloadSmoke.csproj --no-build -- --verify-release "release/VortexLauncher-$($project.Project.PropertyGroup.Version)-win-x64.zip"
+            if ($LASTEXITCODE -ne 0) { throw 'Native Windows package failed verification.' }
+          } else {
+            ./publish-macos.ps1 -Runtime $env:VERIFY_RID
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-launcher-${{ matrix.rid }}
+          path: release/*
+          if-no-files-found: error
+          retention-days: 30
+# No publishing, release, tag, manifest changes, signing secrets or Apple account.

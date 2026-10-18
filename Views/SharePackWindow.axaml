@@ -1,0 +1,18 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="VortexLauncher.Views.SharePackWindow" Title="Share pack" Width="760" Height="640" MinWidth="620" MinHeight="520" WindowStartupLocation="CenterOwner" Background="{DynamicResource ThemeBackgroundBrush}">
+  <Grid Margin="24" RowDefinitions="Auto,Auto,*,Auto">
+    <StackPanel Spacing="7" Margin="0,0,0,16"><TextBlock Text="SHARE / LOCAL ZIP" Classes="Eyebrow"/><TextBlock Text="Share your pack" FontSize="25" FontWeight="SemiBold"/><TextBlock Text="{Binding Title}" Classes="Muted"/></StackPanel>
+    <StackPanel Grid.Row="1" Spacing="9" Margin="0,0,0,14">
+      <WrapPanel IsEnabled="{Binding CanEdit}">
+        <CheckBox Content="Mods" IsChecked="{Binding Mods}" Margin="0,0,18,4"/><CheckBox Content="Resource packs" IsChecked="{Binding ResourcePacks}" Margin="0,0,18,4"/><CheckBox Content="Shaders" IsChecked="{Binding Shaders}" Margin="0,0,18,4"/>
+        <CheckBox Content="Mod configs" IsChecked="{Binding Config}" Margin="0,0,18,4"/><CheckBox Content="Worlds" IsChecked="{Binding Worlds}" Margin="0,0,18,4"/><CheckBox Content="Screenshots" IsChecked="{Binding Screenshots}" Margin="0,0,18,4"/>
+      </WrapPanel>
+      <TextBlock Text="Configs may contain tokens or private addresses; worlds/screenshots can contain personal data. Review them before including. These categories are off by default." Classes="Muted" FontSize="11" TextWrapping="Wrap"/>
+      <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding Summary}" Classes="Muted" VerticalAlignment="Center"/><Button Grid.Column="1" Content="Build preview" Command="{Binding PreviewCommand}" IsEnabled="{Binding CanEdit}" Classes="SecondaryBtn"/></Grid>
+    </StackPanel>
+    <Border Grid.Row="2" Classes="WorkspaceAside" Padding="10"><ListBox ItemsSource="{Binding Files}"><ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding}"/></DataTemplate></ListBox.ItemTemplate></ListBox></Border>
+    <StackPanel Grid.Row="3" Spacing="10" Margin="0,14,0,0">
+      <TextBlock Text="{Binding Status}" Classes="Muted" FontSize="12" MaxHeight="70" TextWrapping="Wrap"/>
+      <Grid ColumnDefinitions="Auto,*,Auto"><Button Content="Cancel operation" IsVisible="{Binding IsBusy}" Command="{Binding CancelOperationCommand}" Classes="SecondaryBtn"/><Button Grid.Column="2" Content="Save shared ZIP…" IsEnabled="{Binding CanExport}" Click="OnSave" Classes="PrimaryBtn"/></Grid>
+    </StackPanel>
+  </Grid>
+</Window>

@@ -1,0 +1,83 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:VortexLauncher.ViewModels" x:Class="VortexLauncher.Views.InstalledModsView" x:DataType="vm:InstanceModsViewModel" x:Name="root">
+  <UserControl.Styles>
+    <Style Selector="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
+    <Style Selector="Border.ModRow Button"><Setter Property="Height" Value="32"/><Setter Property="MinHeight" Value="28"/><Setter Property="Padding" Value="10,4"/></Style>
+  </UserControl.Styles>
+  <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="0">
+    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+      <TextBlock Text="Your mods" FontWeight="SemiBold" FontSize="20" VerticalAlignment="Center"/>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Button Content="← Installed mods" Command="{Binding ShowInstalledCommand}" IsVisible="{Binding IsPreviewVisible}" Classes="SecondaryBtn"/>
+        <Button Content="+ Add mods" Command="{Binding OpenDownloadModsCommand}" IsVisible="{Binding !IsPreviewVisible}" IsEnabled="{Binding CanMutate}" Classes="PrimaryBtn"/>
+        <Button x:Name="ModsMoreActions" Content="⋯" Click="OnMoreActions" Classes="IconButton" ToolTip.Tip="More mod actions" AutomationProperties.Name="More mod actions"/>
+      </StackPanel>
+    </Grid>
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,0,0,8" IsVisible="{Binding !IsPreviewVisible}">
+      <TextBox x:Name="ModSearch" Text="{Binding SearchQuery}" Watermark="Search installed mods…" Margin="0,0,12,0"/>
+      <ComboBox Grid.Column="1" ItemsSource="{Binding Filters}" SelectedItem="{Binding SelectedFilter}" MinWidth="125"/>
+    </Grid>
+    <Grid Grid.Row="2" RowDefinitions="Auto,*" IsVisible="{Binding !IsPreviewVisible}">
+      <WrapPanel x:Name="ModSelectionActions" IsVisible="{Binding HasSelection}" Margin="0,0,0,4">
+        <TextBlock Text="{Binding SelectedCount,StringFormat='{}{0} selected'}" VerticalAlignment="Center" Margin="0,0,12,6"/>
+        <Button Content="Enable" Command="{Binding EnableSelectedCommand}" IsEnabled="{Binding CanEditSelection}" Classes="SecondaryBtn" Margin="0,0,6,6"/>
+        <Button Content="Disable" Command="{Binding DisableSelectedCommand}" IsEnabled="{Binding CanEditSelection}" Classes="SecondaryBtn" Margin="0,0,6,6"/>
+        <Button Content="Remove selected" Command="{Binding RemoveSelectedCommand}" IsEnabled="{Binding CanEditSelection}" Classes="SecondaryBtn" Margin="0,0,6,6"/>
+        <Button Content="Cancel selection" Command="{Binding ClearSelectionCommand}" Classes="SecondaryBtn" Margin="0,0,6,6"/>
+      </WrapPanel>
+      <Grid Grid.Row="1">
+        <ListBox x:Name="InstalledModsList" ItemsSource="{Binding VisibleMods}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+          <ListBox.ItemTemplate><DataTemplate>
+            <Border Classes="WorkspaceRow ModRow" Padding="8,6"><Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="4,0">
+              <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,12,0" AutomationProperties.Name="Select mod"/>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3" Margin="0,0,12,0">
+                <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FileName}" FontSize="13" Foreground="{DynamicResource ThemeTextBrush}"/>
+                <TextBlock Text="{Binding StateLabel}" Classes="Muted" FontSize="11"/>
+              </StackPanel>
+              <ToggleSwitch Grid.Column="2" IsChecked="{Binding IsEnabled,Mode=OneWay}" Command="{Binding #root.DataContext.ToggleModCommand}" CommandParameter="{Binding}" IsEnabled="{Binding #root.DataContext.CanMutate}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+              <Button Grid.Column="3" Content="⋯" Click="OnModActions" Classes="IconButton" Margin="8,0,0,0" VerticalAlignment="Center" ToolTip.Tip="Mod actions" AutomationProperties.Name="Mod actions"/>
+            </Grid></Border>
+          </DataTemplate></ListBox.ItemTemplate>
+        </ListBox>
+        <StackPanel IsVisible="{Binding IsEmpty}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12"><TextBlock Text="No mods yet" Classes="SectionTitle"/><TextBlock Text="Browse mods to customize this instance." Classes="Muted"/></StackPanel>
+        <TextBlock Text="No matching mods" IsVisible="{Binding NoMatches}" Classes="Muted" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+      </Grid>
+    </Grid>
+    <Grid Grid.Row="1" Grid.RowSpan="2" RowDefinitions="Auto,Auto,*,Auto" IsVisible="{Binding IsPreviewVisible}">
+      <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+        <CheckBox Content="Include beta / alpha releases" IsChecked="{Binding IncludePrereleases}" IsEnabled="{Binding !IsBusy}" VerticalAlignment="Center"/>
+        <Button Grid.Column="1" Content="Check updates" Command="{Binding CheckUpdatesCommand}" IsEnabled="{Binding !IsBusy}" Classes="SecondaryBtn"/>
+      </Grid>
+      <TextBlock Grid.Row="1" Text="Exact file identification via Modrinth. Review changes before applying; unknown files and Vortex Client are not replaced." Classes="Muted" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,10"/>
+      <Grid Grid.Row="2">
+        <ListBox x:Name="ModUpdateList" ItemsSource="{Binding AvailableUpdates}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+          <ListBox.ItemTemplate><DataTemplate>
+            <Grid ColumnDefinitions="Auto,*" Margin="4,9">
+              <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="{Binding #root.DataContext.CanMutate}" VerticalAlignment="Top" Margin="0,0,12,0" AutomationProperties.Name="Select update"/>
+              <StackPanel Grid.Column="1" Spacing="4">
+                <TextBlock Text="{Binding Name}" Foreground="{DynamicResource ThemeTextBrush}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding VersionChange}" Foreground="{DynamicResource AccentBrush}"/>
+                <TextBlock Text="{Binding Details}" Classes="Muted" FontSize="11" TextWrapping="Wrap"/>
+                <Expander Header="Changelog" HorizontalAlignment="Stretch"><TextBlock Text="{Binding Changelog}" TextWrapping="Wrap" MaxWidth="680" Classes="Muted" FontSize="12"/></Expander>
+              </StackPanel>
+            </Grid>
+          </DataTemplate></ListBox.ItemTemplate>
+        </ListBox>
+        <TextBlock IsVisible="{Binding NoUpdates}" Text="Check for updates to see a preview here." Classes="Muted" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+      </Grid>
+      <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,12,0,0">
+        <TextBlock Text="{Binding UpdateSelectionLabel}" Classes="Muted" VerticalAlignment="Center"/>
+        <Button Grid.Column="1" Content="Update selected…" Command="{Binding ApplyUpdatesCommand}" IsEnabled="{Binding CanApplyUpdates}" Classes="PrimaryBtn"/>
+      </Grid>
+    </Grid>
+    <Grid Grid.Row="3" RowDefinitions="Auto,Auto,Auto" Margin="0,8,0,0">
+      <TextBlock Text="{Binding StatusMessage}" Classes="Muted" TextWrapping="Wrap" MaxHeight="40" FontSize="11" Margin="0,0,0,4"/>
+      <Border Grid.Row="1" IsVisible="{Binding HasUndoRemoval}" Classes="WorkspaceAside" Padding="10" Margin="0,0,0,10"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="Removed files can be restored." Classes="Muted" FontSize="12" VerticalAlignment="Center"/><Button Grid.Column="1" Content="Undo removal" Command="{Binding UndoRemovalCommand}" IsEnabled="{Binding CanUndoRemoval}" Classes="PrimaryBtn"/></Grid></Border>
+      <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <TextBlock Text="{Binding SelectionLabel}" Classes="Muted" FontSize="11" IsVisible="{Binding !IsPreviewVisible}" VerticalAlignment="Center"/>
+          <Button Content="Cancel operation" Command="{Binding CancelOperationCommand}" IsVisible="{Binding IsBusy}" Classes="SecondaryBtn"/>
+        </StackPanel>
+      </Grid>
+    </Grid>
+  </Grid>
+</UserControl>

@@ -1,0 +1,48 @@
+name: Build macOS beta (no Apple account)
+
+on:
+  push:
+    branches: ['codex/macos-beta']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    uses: ./.github/workflows/verify-launcher.yml
+  beta:
+    needs: checks
+    name: Beta ${{ matrix.rid }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            rid: osx-arm64
+          - runner: macos-15-intel
+            rid: osx-x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build, ad-hoc sign and verify the extracted ZIP
+        shell: pwsh
+        env:
+          BETA_RID: ${{ matrix.rid }}
+        run: ./publish-macos.ps1 -Runtime $env:BETA_RID
+      - name: Include first-launch instructions
+        shell: pwsh
+        run: Copy-Item -LiteralPath 'Installer/macOS/OPEN-FIRST.txt' -Destination 'release/OPEN-FIRST.txt'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VortexLauncher-beta-${{ matrix.rid }}
+          path: release/*
+          if-no-files-found: error
+          retention-days: 30
+# Only build artifacts are produced. No release, tag or update manifest is published.

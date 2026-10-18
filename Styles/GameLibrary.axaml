@@ -1,0 +1,102 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- This scope belongs to the launcher, not the Minecraft client's HUD. -->
+    <Style Selector="Button">
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="RenderTransform" Value="scale(1)"/>
+        <Setter Property="MinHeight" Value="36"/>
+    </Style>
+    
+    
+    <Style Selector="Border.VortexCard"><Setter Property="CornerRadius" Value="8"/></Style>
+    <Style Selector="TextBox"><Setter Property="CornerRadius" Value="6"/><Setter Property="FontSize" Value="12"/></Style>
+    <Style Selector="ComboBox"><Setter Property="CornerRadius" Value="6"/></Style>
+    <Style Selector="Button.LibraryNav">
+        <Setter Property="Height" Value="72"/>
+        <Setter Property="Padding" Value="14,0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="0"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{DynamicResource ThemeSubtextBrush}"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid ClipToBounds="True" Background="Transparent">
+                    <Border x:Name="NavHover" Background="{DynamicResource AccentSoftBrush}" CornerRadius="0" Margin="0" Opacity="0" RenderTransform="scale(1,1)" RenderTransformOrigin="50%,50%" IsHitTestVisible="False">
+                        <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.14"/><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" Easing="CubicEaseOut"/></Transitions></Border.Transitions>
+                    </Border>
+                    <Border x:Name="NavChrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}">
+                        <!-- Generic button hover styles must not paint another
+                             accent rectangle inside the navigation highlight. -->
+                        <ContentPresenter Name="NavContent" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Content="{TemplateBinding Content}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                    </Border>
+                    <Border x:Name="NavIndicator" Background="{DynamicResource LibraryPlayBrush}" Height="2" VerticalAlignment="Bottom" Opacity="0" RenderTransform="scale(0.35,1)" RenderTransformOrigin="50%,100%" IsHitTestVisible="False">
+                        <Border.Transitions><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18" Easing="CubicEaseOut"/></Transitions></Border.Transitions>
+                    </Border>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Button.LibraryNav TextBlock"><Setter Property="Foreground" Value="{DynamicResource ThemeSubtextBrush}"/></Style>
+    <Style Selector="Button.LibraryNav:pointerover TextBlock"><Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}"/></Style>
+    <Style Selector="Button.LibraryNav.active"><Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}"/></Style>
+    <Style Selector="Button.LibraryNav:pointerover /template/ ContentPresenter#NavContent"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderBrush" Value="Transparent"/></Style>
+    <Style Selector="Button.LibraryNav:pressed /template/ ContentPresenter#NavContent"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderBrush" Value="Transparent"/></Style>
+    <Style Selector="Button.LibraryNav:focus-visible /template/ ContentPresenter#NavContent"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderBrush" Value="Transparent"/></Style>
+    <Style Selector="Button.LibraryNav.active /template/ Border#NavHover"><Setter Property="Opacity" Value="0.6"/></Style>
+    <Style Selector="Button.LibraryNav.active /template/ Border#NavIndicator"><Setter Property="Opacity" Value="1"/><Setter Property="RenderTransform" Value="scale(1,1)"/></Style>
+    <Style Selector="Button.LibraryNav:focus-visible /template/ Border#NavHover"><Setter Property="Opacity" Value="0.85"/></Style>
+    <Style Selector="Button.LibraryNav:pointerover /template/ Border#NavHover"><Setter Property="Opacity" Value="1"/></Style>
+    <Style Selector="Button.LibraryNav:pressed /template/ Border#NavHover"><Setter Property="Opacity" Value="0.55"/><Setter Property="RenderTransform" Value="scale(0.96,0.9)"/></Style>
+    <Style Selector="Button.LibraryNav PathIcon"><Setter Property="Foreground" Value="{DynamicResource ThemeSubtextBrush}"/><Setter Property="Transitions"><Transitions><BrushTransition Property="Foreground" Duration="0:0:0.14"/></Transitions></Setter></Style>
+    <Style Selector="Button.LibraryNav.active PathIcon"><Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}"/></Style>
+    <Style Selector="Button.LibraryNav:pointerover PathIcon"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/></Style>
+    <Style Selector="Button.LibraryNav.active TextBlock"><Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}"/></Style>
+    <Style Selector="Button.ProfileButton"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/></Style>
+    <Style Selector="Button.LibraryFilter">
+        <Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="10,6"/><Setter Property="MinHeight" Value="28"/><Setter Property="FontSize" Value="11"/>
+    </Style>
+    <Style Selector="Button.LibraryFilter.active"><Setter Property="Background" Value="{DynamicResource ThemePanelBrush}"/></Style>
+    <Style Selector="ListBox.LibraryList"><Setter Property="Padding" Value="0"/></Style>
+    <Style Selector="ListBox.LibraryList ListBoxItem">
+        <Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0,0,0,6"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Template"><ControlTemplate>
+            <Border x:Name="SelectionChrome" Background="Transparent" CornerRadius="7" BorderThickness="2,0,0,0" BorderBrush="Transparent">
+                <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" HorizontalContentAlignment="Stretch"/>
+            </Border>
+        </ControlTemplate></Setter>
+    </Style>
+    <Style Selector="ListBox.LibraryList ListBoxItem:pointerover /template/ Border#SelectionChrome"><Setter Property="Background" Value="{DynamicResource ThemeSidebarBrush}"/></Style>
+    <Style Selector="ListBox.LibraryList ListBoxItem:selected /template/ Border#SelectionChrome"><Setter Property="Background" Value="{DynamicResource ThemePanelBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource LibraryPlayBrush}"/></Style>
+    <Style Selector="ListBox.LibraryList ListBoxItem:focus-visible /template/ Border#SelectionChrome"><Setter Property="BorderBrush" Value="{DynamicResource LibraryPlayBrush}"/></Style>
+    <Style Selector="ListBox.LibraryList ListBoxItem /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="Transparent"/></Style>
+    <Style Selector="ListBox.LibraryList ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="Transparent"/></Style>
+    <Style Selector="ListBox.LibraryList ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="Transparent"/></Style>
+    <Style Selector="Border.LibraryRow">
+        <Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="6"/><Setter Property="RenderTransform" Value="translate(0px,0px)"/>
+        <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.12"/></Transitions></Setter>
+    </Style>
+    <Style Selector="Border.LibraryRow:pointerover"><Setter Property="RenderTransform" Value="translate(0px,0px)"/></Style>
+    <Style Selector="Border.LibraryRow Button"><Setter Property="Height" Value="26"/><Setter Property="MinHeight" Value="0"/></Style>
+    <Style Selector="Button.LibraryPlay">
+        <Setter Property="Width" Value="156"/><Setter Property="Height" Value="48"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{DynamicResource LibraryPlayBrush}"/><Setter Property="Foreground" Value="#18200B"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="Padding" Value="16,0"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="Button.LibraryPlay TextBlock"><Setter Property="Foreground" Value="#18200B"/></Style>
+    <Style Selector="Button.LibraryPlay PathIcon"><Setter Property="Foreground" Value="#18200B"/></Style>
+    <Style Selector="Button.LibraryPlay:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource LibraryPlayHoverBrush}"/><Setter Property="Foreground" Value="#18200B"/></Style>
+    <Style Selector="Button.LibraryPlay:pressed /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource LibraryPlayBrush}"/></Style>
+    <Style Selector="Button.LibraryTextButton"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="FontSize" Value="11"/><Setter Property="Padding" Value="4,8"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
+    <Style Selector="Button.LibraryTextButton:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/></Style>
+    <Style Selector="TextBlock.LibraryMetaLabel"><Setter Property="FontSize" Value="9"/><Setter Property="LetterSpacing" Value="1.2"/><Setter Property="Foreground" Value="{DynamicResource ThemeSubtextBrush}"/></Style>
+    <Style Selector="Button.HeroFavorite"><Setter Property="Background" Value="#660D1518"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Width" Value="34"/><Setter Property="Height" Value="34"/><Setter Property="MinHeight" Value="0"/><Setter Property="FontSize" Value="19"/><Setter Property="Padding" Value="0"/><Setter Property="HorizontalContentAlignment" Value="Center"/></Style>
+    <Style Selector="Button.HeroFavorite"><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
+    <Style Selector="Button.HeroFavorite Path"><Setter Property="Fill" Value="Transparent"/></Style>
+    <Style Selector="Button.HeroFavorite.active Path"><Setter Property="Fill" Value="White"/></Style>
+</Styles>

@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:VortexLauncher.ViewModels" x:Class="VortexLauncher.Views.ContentCatalogView" x:DataType="vm:DownloadModsViewModel" x:Name="root">
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
+    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+      <TextBlock Text="{Binding ContentTitle}" FontSize="22" FontWeight="SemiBold"/>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center"><TextBlock Text="{Binding CompatibilityLabel}" Classes="Muted" FontSize="11"/><ProgressBar IsVisible="{Binding IsSearching}" IsIndeterminate="True" Width="60" Height="3"/></StackPanel>
+    </Grid>
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,150,140" Margin="0,0,0,12" IsEnabled="{Binding !IsInstalling}">
+      <TextBox Text="{Binding SearchQuery}" Watermark="Search on Modrinth…" KeyDown="OnSearchKeyDown" Margin="0,0,8,0"/>
+      <Button Grid.Column="1" Content="Search" Command="{Binding SearchModsCommand}" Classes="SecondaryBtn" Margin="0,0,8,0"/>
+      <ComboBox Grid.Column="2" x:Name="CategoryFilter" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory,Mode=TwoWay}" HorizontalAlignment="Stretch" Margin="0,0,8,0" ToolTip.Tip="Category"><ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis"/></DataTemplate></ComboBox.ItemTemplate></ComboBox>
+      <ComboBox Grid.Column="3" x:Name="SortFilter" ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSort,Mode=TwoWay}" HorizontalAlignment="Stretch" ToolTip.Tip="Sort results"><ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis"/></DataTemplate></ComboBox.ItemTemplate></ComboBox>
+    </Grid>
+    <Grid Grid.Row="2" x:Name="CatalogColumns" IsEnabled="{Binding !IsInstalling}">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="3*" MinWidth="320"/><ColumnDefinition Width="12"/><ColumnDefinition Width="2*" MinWidth="320" MaxWidth="540"/></Grid.ColumnDefinitions>
+      <ListBox x:Name="CatalogResults" ItemsSource="{Binding SearchResults}" SelectedItem="{Binding SelectedMod}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+        <ListBox.Styles><Style Selector="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style></ListBox.Styles>
+        <ListBox.ItemTemplate><DataTemplate>
+          <Border Classes="WorkspaceRow" Padding="6,10"><Grid ColumnDefinitions="Auto,Auto,*">
+            <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,10,0" AutomationProperties.Name="Select content"/>
+            <Border Grid.Column="1" Width="48" Height="48" CornerRadius="7" Background="{DynamicResource ThemePanelBrush}" ClipToBounds="True" VerticalAlignment="Center" Margin="0,0,12,0"><Panel>
+              <PathIcon IsVisible="{Binding !HasIcon}" Width="24" Height="24" Foreground="{DynamicResource ThemeSubtextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M12,2 L22,7 L22,17 L12,22 L2,17 L2,7 Z M2,7 L12,12 L22,7 M12,12 L12,22"/>
+              <Image x:Name="CatalogItemIcon" Source="{Binding IconBitmap}" Stretch="Uniform"/>
+            </Panel></Border>
+            <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4"><TextBlock Text="{Binding Item.Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Item.Description}" Classes="Muted" FontSize="11" MaxLines="2" TextWrapping="Wrap"/><TextBlock Text="{Binding Item.Author,StringFormat='by {0}'}" Classes="Muted" FontSize="10"/></StackPanel>
+          </Grid></Border>
+        </DataTemplate></ListBox.ItemTemplate>
+      </ListBox>
+      <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center" ResizeDirection="Columns" Background="{DynamicResource ThemeBorderBrush}" ToolTip.Tip="Drag to resize the details panel"/>
+      <Border Grid.Column="2" x:Name="CatalogDetails" Classes="WorkspaceAside" Padding="18">
+        <Panel>
+          <StackPanel IsVisible="{Binding !HasSelectedMod}" VerticalAlignment="Center" Spacing="8"><TextBlock Text="Select content" FontSize="17" FontWeight="SemiBold"/><TextBlock Text="Choose an item to review compatible versions before installing." Classes="Muted" TextWrapping="Wrap" FontSize="12"/></StackPanel>
+          <ContentControl Content="{Binding SelectedMod}" HorizontalContentAlignment="Stretch"><ContentControl.ContentTemplate><DataTemplate DataType="vm:ModrinthModItemViewModel">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="10">
+              <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,4">
+                <Border Width="56" Height="56" CornerRadius="8" Background="{DynamicResource ThemePanelBrush}" ClipToBounds="True" Margin="0,0,12,0"><Panel>
+                  <PathIcon IsVisible="{Binding !HasIcon}" Width="28" Height="28" Foreground="{DynamicResource ThemeSubtextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M12,2 L22,7 L22,17 L12,22 L2,17 L2,7 Z M2,7 L12,12 L22,7 M12,12 L12,22"/>
+                  <Image x:Name="CatalogDetailIcon" Source="{Binding IconBitmap}" Stretch="Uniform"/>
+                </Panel></Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4"><TextBlock Text="{Binding Item.Title}" FontSize="19" FontWeight="SemiBold" TextWrapping="Wrap"/><TextBlock Text="{Binding Item.Author,StringFormat='by {0}'}" Classes="Muted" FontSize="11" TextTrimming="CharacterEllipsis"/></StackPanel>
+              </Grid>
+              <TextBlock Text="Version to install" Classes="Muted" FontSize="11"/>
+              <ComboBox ItemsSource="{Binding AvailableVersions}" SelectedItem="{Binding SelectedVersion,Mode=TwoWay}" IsEnabled="{Binding !IsLoadingVersions}" HorizontalAlignment="Stretch" MaxDropDownHeight="250" AutomationProperties.Name="Content version"><ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/></DataTemplate></ComboBox.ItemTemplate></ComboBox>
+              <TextBlock Text="{Binding VersionStatus}" Classes="Muted" FontSize="11" TextWrapping="Wrap"/>
+              <CheckBox IsChecked="{Binding IsSelected}" Content="Add to installation"/>
+              <TextBlock Text="{Binding Item.Description}" Classes="Muted" FontSize="12" TextWrapping="Wrap"/>
+            </StackPanel></ScrollViewer>
+          </DataTemplate></ContentControl.ContentTemplate></ContentControl>
+        </Panel>
+      </Border>
+    </Grid>
+    <Border Grid.Row="3" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,10,0,0">
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <StackPanel VerticalAlignment="Center" Spacing="3" Margin="0,0,12,0"><TextBlock Text="{Binding SelectedCount,StringFormat='{}{0} selected'}" FontSize="12"/><TextBlock Text="{Binding StatusMessage}" Classes="Muted" FontSize="11" MaxLines="2" TextWrapping="Wrap" ToolTip.Tip="{Binding StatusMessage}"/></StackPanel>
+        <Button Grid.Column="1" x:Name="CatalogMoreActions" Content="⋯" Click="OnMoreActions" IsEnabled="{Binding !IsInstalling}" Classes="IconButton" Margin="0,0,8,0" ToolTip.Tip="Selection and filter actions" AutomationProperties.Name="More catalog actions"/>
+        <Button Grid.Column="2" x:Name="CatalogInstall" Content="Install selected" Command="{Binding InstallSelectedModsCommand}" IsEnabled="{Binding CanInstallSelection}" IsVisible="{Binding !IsInstalling}" Classes="PrimaryBtn"/>
+        <Button Grid.Column="2" Content="Cancel installation" Click="OnCancelInstall" IsVisible="{Binding IsInstalling}" Classes="SecondaryBtn"/>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

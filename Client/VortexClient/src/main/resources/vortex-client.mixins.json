@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "dev.vortex.client.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": ["DeathWaypointMixin", "CompactShieldMixin", "EnchantmentHintsMixin", "ShulkerItemMixin", "ShulkerTooltipMixin", "ChestSearchMixin", "NotificationOverlayMixin", "WardrobeCapeFadeMixin", "UiGlyphSamplingMixin", "CapeSkinMixin", "ChatComponentMixin", "UiFontReloadMixin", "FullbrightMixin", "UiResourcePackMixin", "FontAccessor", "MetricsPacketMixin", "MinecraftMixin", "HudMixin", "CameraMixin", "MouseHandlerMixin", "ToggleSprintMixin", "TitleScreenMixin", "PauseScreenMixin"],
+  "injectors": { "defaultRequire": 1 }
+}

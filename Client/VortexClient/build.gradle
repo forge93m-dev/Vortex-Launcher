@@ -1,0 +1,19 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version '1.17.21'
+}
+
+version = '0.1.54'
+group = 'dev.vortex'
+base { archivesName = 'vortex-client-26.3-fabric' }
+repositories { mavenCentral() }
+dependencies {
+    minecraft 'com.mojang:minecraft:26.3'
+    implementation 'net.fabricmc:fabric-loader:0.19.5'
+}
+java { toolchain.languageVersion = JavaLanguageVersion.of(25) }
+tasks.withType(JavaCompile).configureEach { options.release = 25 }
+tasks.register('stageClient', Copy) {
+    dependsOn jar
+    from tasks.jar.archiveFile
+    into 'dist'
+}

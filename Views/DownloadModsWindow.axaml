@@ -1,0 +1,115 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:VortexLauncher.ViewModels" xmlns:views="using:VortexLauncher.Views" x:Class="VortexLauncher.Views.DownloadModsWindow" x:DataType="vm:DownloadModsViewModel" x:Name="root" Title="Download Content" Width="1000" Height="720" MinWidth="780" MinHeight="520" WindowStartupLocation="CenterOwner" Background="{DynamicResource ThemeBackgroundBrush}">
+    <Border x:Name="dialogContent" Background="{DynamicResource ThemeBackgroundBrush}" CornerRadius="0" Padding="28" BorderThickness="0">
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,18">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="Eyebrow" Text="INSTANCE / CONTENT CATALOG" />
+                    <TextBlock Classes="PageTitle" Text="{Binding ContentTitle}" FontSize="25" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
+                    <Border Classes="Chip">
+                        <TextBlock Text="{Binding CompatibilityLabel}" />
+                    </Border>
+                    <ProgressBar IsVisible="{Binding IsSearching}" IsIndeterminate="True" Height="3" />
+                </StackPanel>
+            </Grid>
+            <StackPanel Grid.Row="1" Spacing="12" Margin="0,0,0,16" IsEnabled="{Binding !IsInstalling}">
+                <Grid ColumnDefinitions="*, Auto">
+                    <TextBox Grid.Column="0" Text="{Binding SearchQuery}" Watermark="Search on Modrinth..." KeyDown="OnSearchKeyDown" Background="{DynamicResource ThemePanelBrush}" Foreground="{DynamicResource ThemeTextBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10" />
+                    <Button Grid.Column="1" Classes="PrimaryBtn" Content="Search" Command="{Binding SearchModsCommand}" Margin="10,0,0,0" />
+                </Grid>
+                <Grid ColumnDefinitions="*,*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="5" Margin="0,0,10,0">
+                        <TextBlock Text="Category" FontSize="12" Foreground="{DynamicResource ThemeSubtextBrush}" />
+                        <ComboBox x:Name="CategoryFilter" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}" HorizontalAlignment="Stretch" MaxDropDownHeight="300" CornerRadius="8" Background="{DynamicResource ThemePanelBrush}" Foreground="{DynamicResource ThemeTextBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Label}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="5" Margin="0,0,10,0">
+                        <TextBlock Text="Sort by" FontSize="12" Foreground="{DynamicResource ThemeSubtextBrush}" />
+                        <ComboBox x:Name="SortFilter" ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSort, Mode=TwoWay}" HorizontalAlignment="Stretch" MaxDropDownHeight="260" CornerRadius="8" Background="{DynamicResource ThemePanelBrush}" Foreground="{DynamicResource ThemeTextBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Label}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                    <Button Grid.Column="2" Classes="SecondaryBtn" Content="Reset" Command="{Binding ResetFiltersCommand}" VerticalAlignment="Bottom" />
+                </Grid>
+            </StackPanel>
+            <Grid Grid.Row="2" ColumnDefinitions="*, 320" IsEnabled="{Binding !IsInstalling}">
+                <ScrollViewer Grid.Column="0" Margin="0,0,14,0" HorizontalScrollBarVisibility="Disabled" ScrollChanged="OnScrollChanged">
+                    <ListBox ItemsSource="{Binding SearchResults}" SelectedItem="{Binding SelectedMod}" Background="Transparent" BorderThickness="0" Padding="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="WorkspaceRow" Padding="8,16" Margin="0,0,0,4">
+                                    <Grid ColumnDefinitions="Auto, Auto, *">
+                                        <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="4,0,10,0" />
+                                        <Border Grid.Column="1" Width="44" Height="44" CornerRadius="10" ClipToBounds="True" Background="{DynamicResource ThemeBorderBrush}" Margin="0,0,10,0" VerticalAlignment="Center">
+                                            <Image Source="{Binding IconBitmap}" Width="44" Height="44" Stretch="UniformToFill" />
+                                        </Border>
+                                        <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Item.Title}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextBrush}" FontSize="13" />
+                                            <TextBlock Text="{Binding Item.Description}" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" TextWrapping="Wrap" MaxLines="2" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </ScrollViewer>
+                <Border Grid.Column="1" Classes="WorkspaceAside" Padding="20">
+                    <Panel>
+                        <TextBlock Text="Select content to explore details and choose a version." Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" IsVisible="{Binding SelectedMod, Converter={x:Static ObjectConverters.IsNull}}" />
+                        <ContentControl Content="{Binding SelectedMod}">
+                            <ContentControl.ContentTemplate>
+                                <DataTemplate DataType="vm:ModrinthModItemViewModel">
+                                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                        <StackPanel Spacing="14" views:SurfaceMotion.Kind="Content">
+                                            <StackPanel Spacing="12">
+                                                <Border Height="92" CornerRadius="6" ClipToBounds="True" views:RoundedClip.IsEnabled="True"><Panel><views:WorldCover Seed="{Binding Item.Title}"/><Border Background="#33000000"/><Image Source="{Binding IconBitmap}" Width="48" Height="48" Stretch="Uniform"/></Panel></Border>
+                                                <TextBlock Text="{Binding Item.Title}" FontWeight="SemiBold" FontSize="20" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Item.Title}"/>
+                                                <TextBlock Text="{Binding Item.Author, StringFormat='by {0}'}" Classes="Muted" FontSize="11"/>
+                                            </StackPanel>
+                                            <StackPanel Spacing="6">
+                                                <TextBlock Text="Version to install" Classes="FieldLabel" />
+                                                <ComboBox ItemsSource="{Binding AvailableVersions}" SelectedItem="{Binding SelectedVersion, Mode=TwoWay}" IsEnabled="{Binding !IsLoadingVersions}" MaxDropDownHeight="260" HorizontalAlignment="Stretch" AutomationProperties.Name="Content version">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+                                                <TextBlock Text="{Binding VersionStatus}" Classes="Muted" FontSize="11" />
+                                            </StackPanel>
+                                            <CheckBox IsChecked="{Binding IsSelected}" Content="Add to installation" />
+                                            <Border BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+                                                <TextBlock Text="{Binding Item.Description}" Classes="Muted" FontSize="12" />
+                                            </Border>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </DataTemplate>
+                            </ContentControl.ContentTemplate>
+                        </ContentControl>
+                    </Panel>
+                </Border>
+            </Grid>
+            <Border Grid.Row="3" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,18,0,0">
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                    <StackPanel VerticalAlignment="Center" Spacing="3" Margin="0,0,12,0">
+                        <TextBlock Text="{Binding SelectedCount, StringFormat='{}{0} items selected'}" FontWeight="Medium" />
+                        <TextBlock Text="{Binding StatusMessage}" Classes="Muted" FontSize="11" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" ToolTip.Tip="{Binding StatusMessage}" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="SecondaryBtn" Content="Clear selection" Command="{Binding ClearSelectionCommand}" IsEnabled="{Binding !IsInstalling}" Margin="0,0,10,0" />
+                    <Button Grid.Column="2" Classes="SecondaryBtn" Content="Downloads" Click="OnDownloadsClick" Margin="0,0,10,0" />
+                    <Button Grid.Column="3" Classes="PrimaryBtn" Content="Install selected" Command="{Binding InstallSelectedModsCommand}" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

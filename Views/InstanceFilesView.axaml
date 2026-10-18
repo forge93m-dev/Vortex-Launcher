@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="VortexLauncher.Views.InstanceFilesView" x:Name="root">
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
+    <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,14">
+      <TextBlock Text="{Binding SelectedSection}" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center"/>
+      <Button Grid.Column="1" Content="+ Add content" Click="OnBrowse" IsVisible="{Binding IsInstallableSection}" IsEnabled="{Binding CanImportFiles}" Classes="PrimaryBtn"/>
+      <Button Grid.Column="2" x:Name="FilesMoreActions" Content="⋯" Click="OnMoreActions" Classes="IconButton" Margin="8,0,0,0" ToolTip.Tip="More content actions" AutomationProperties.Name="More content actions"/>
+    </Grid>
+    <TextBox Grid.Row="1" x:Name="FileSearch" Watermark="Search files in this section…" TextChanged="OnSearchChanged" Margin="0,0,0,12" IsVisible="{Binding !IsServersSection}"/>
+    <Grid Grid.Row="2">
+      <ListBox x:Name="FileList" IsVisible="{Binding !IsServersSection}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+        <ListBox.Styles><Style Selector="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style></ListBox.Styles>
+        <ListBox.ItemTemplate><DataTemplate>
+          <Border Classes="WorkspaceRow" Padding="8,12"><Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="4" VerticalAlignment="Center" Margin="0,0,12,0"><TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}"/><TextBlock Text="{Binding Subtitle}" Classes="Muted" FontSize="11" TextTrimming="CharacterEllipsis"/></StackPanel>
+            <Button Grid.Column="1" Content="⋯" Click="OnFileActions" Classes="IconButton" VerticalAlignment="Center" ToolTip.Tip="File actions" AutomationProperties.Name="File actions"/>
+          </Grid></Border>
+        </DataTemplate></ListBox.ItemTemplate>
+      </ListBox>
+      <TextBlock x:Name="EmptyFiles" Text="Nothing here yet. Add files or browse the catalog." Classes="Muted" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"/>
+      <Grid IsVisible="{Binding IsServersSection}" RowDefinitions="Auto,*">
+        <Grid ColumnDefinitions="*,*,Auto" Margin="0,0,0,12"><TextBox Text="{Binding NewServerName}" Watermark="Server name" Margin="0,0,8,0"/><TextBox Grid.Column="1" Text="{Binding NewServerAddress}" Watermark="Server address" Margin="0,0,8,0"/><Button Grid.Column="2" Content="Save server" Command="{Binding AddServerCommand}" Classes="PrimaryBtn"/></Grid>
+        <ListBox Grid.Row="1" ItemsSource="{Binding Servers}"><ListBox.Styles><Style Selector="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style></ListBox.Styles><ListBox.ItemTemplate><DataTemplate><Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="8"><StackPanel Margin="0,0,12,0"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Address}" Classes="Muted" FontSize="11" TextTrimming="CharacterEllipsis"/></StackPanel><Button Grid.Column="1" Content="Copy" Command="{Binding #root.DataContext.CopyServerAddressCommand}" CommandParameter="{Binding}" Classes="SecondaryBtn" Margin="0,0,8,0"/><Button Grid.Column="2" Content="Play" Command="{Binding #root.DataContext.JoinServerCommand}" CommandParameter="{Binding}" Classes="SecondaryBtn"/><Button Grid.Column="3" Content="Remove" Command="{Binding #root.DataContext.RemoveServerCommand}" CommandParameter="{Binding}" Classes="SecondaryBtn" Margin="8,0,0,0"/></Grid></DataTemplate></ListBox.ItemTemplate></ListBox>
+      </Grid>
+    </Grid>
+    <Grid Grid.Row="3" RowDefinitions="Auto,Auto" Margin="0,12,0,0">
+      <TextBlock Text="{Binding StatusMessage}" Classes="Muted" FontSize="11" TextWrapping="Wrap" MaxHeight="45"/>
+      <Button Grid.Row="1" Content="Undo removal" Command="{Binding UndoRemovalCommand}" IsVisible="{Binding HasUndoRemoval}" IsEnabled="{Binding CanUndoRemoval}" Classes="PrimaryBtn" HorizontalAlignment="Left" Margin="0,8,0,0"/>
+    </Grid>
+  </Grid>
+</UserControl>

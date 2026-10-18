@@ -1,0 +1,83 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:VortexLauncher.ViewModels" xmlns:views="using:VortexLauncher.Views" x:Class="VortexLauncher.Views.CreateInstanceWindow" x:DataType="vm:CreateInstanceViewModel" Title="Create Instance" Width="760" Height="560" WindowStartupLocation="CenterOwner" CanResize="False" ExtendClientAreaToDecorationsHint="True" Background="{DynamicResource ThemeBackgroundBrush}">
+    <Window.Styles>
+        <Style Selector="ToggleSwitch.VortexSwitch:checked /template/ Border#SwitchKnobBounds">
+            <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+        </Style>
+        <Style Selector="ToggleSwitch.VortexSwitch:checked:pointerover /template/ Border#SwitchKnobBounds">
+            <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+        </Style>
+        <Style Selector="ToggleSwitch.VortexSwitch:checked /template/ Ellipse#SwitchKnobOn">
+            <Setter Property="Fill" Value="{DynamicResource AccentForegroundBrush}" />
+        </Style>
+        <Style Selector="ComboBoxItem:disabled /template/ ContentPresenter">
+            <Setter Property="Opacity" Value="0.42" />
+        </Style>
+    </Window.Styles>
+    <Border x:Name="dialogContent" Background="{DynamicResource ThemeBackgroundBrush}">
+        <Grid ColumnDefinitions="172,*">
+            <Border ClipToBounds="True" Background="{DynamicResource ThemeSidebarBrush}">
+                <Panel><views:WorldCover Seed="Create a new adventure"/><Border Background="#99101516"/><StackPanel VerticalAlignment="Bottom" Margin="20,24" Spacing="8"><TextBlock Text="YOUR NEXT" Foreground="#DBE6DF" FontSize="10" LetterSpacing="2"/><TextBlock Text="Adventure." FontWeight="SemiBold" FontSize="22" Foreground="White"/><TextBlock Text="One instance.&#10;Your own world." TextWrapping="Wrap" Foreground="#C3D5C9" FontSize="12" LineHeight="20"/></StackPanel></Panel>
+            </Border>
+        <Grid Grid.Column="1" Margin="28" RowDefinitions="Auto, *, Auto">
+            <StackPanel Grid.Row="0" Spacing="7" Margin="0,0,0,22">
+                <TextBlock Classes="Eyebrow" Text="LIBRARY / NEW INSTANCE" />
+                <TextBlock Classes="PageTitle" Text="New instance" FontSize="25" />
+                <TextBlock Classes="Muted" Text="Choose your Minecraft version and make it yours." FontSize="12" />
+            </StackPanel>
+            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="18">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Instance name" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" FontWeight="Medium" />
+                        <TextBox Text="{Binding InstanceName}" Background="{DynamicResource ThemePanelBrush}" Foreground="{DynamicResource ThemeTextBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10" />
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*, *">
+                        <StackPanel Grid.Column="0" Spacing="6" Margin="0,0,8,0">
+                            <Grid ColumnDefinitions="*, Auto">
+                                <TextBlock Grid.Column="0" Text="Minecraft version" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" FontWeight="Medium" />
+                                <ProgressBar Grid.Column="1" IsIndeterminate="True" Width="24" Height="3" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsLoadingVersions}" />
+                            </Grid>
+                            <ComboBox ItemsSource="{Binding AvailableVersions}" SelectedItem="{Binding SelectedVersion}" HorizontalAlignment="Stretch" Background="{DynamicResource ThemePanelBrush}" Foreground="{DynamicResource ThemeTextBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" CornerRadius="6" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="6" Margin="8,0,0,0">
+                            <TextBlock Text="Mod loader" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" FontWeight="Medium" />
+                            <ComboBox ItemsSource="{Binding AvailableLoaders}" SelectedItem="{Binding SelectedLoaderOption}" HorizontalAlignment="Stretch" Background="{DynamicResource ThemePanelBrush}" Foreground="{DynamicResource ThemeTextBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" CornerRadius="6">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DisplayName}" Opacity="{Binding ItemOpacity}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+                    <Border Background="{DynamicResource ThemePanelBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14">
+                        <StackPanel Spacing="10">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="Vortex Client" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextBrush}" />
+                                    <TextBlock Text="Optional client features" FontSize="11" Foreground="{DynamicResource ThemeSubtextBrush}" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" Classes="VortexSwitch" IsChecked="{Binding VortexClientEnabled}" IsEnabled="{Binding CanUseVortexClient}" VerticalAlignment="Center" OnContent="" OffContent="" ToolTip.Tip="{Binding VortexClientDescription}" />
+                            </Grid>
+                            <TextBlock Text="{Binding VortexClientDescription}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource ThemeSubtextBrush}" />
+                            <Border Background="{DynamicResource ThemeSidebarBrush}" CornerRadius="6" Padding="12">
+                                <StackPanel Spacing="5">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="Selected configuration" FontSize="11" Foreground="{DynamicResource ThemeSubtextBrush}" />
+                                        <TextBlock Grid.Column="1" Text="{Binding VortexClientStatus}" FontSize="11" Foreground="{DynamicResource AccentBrush}" />
+                                    </Grid>
+                                    <TextBlock Text="{Binding ConfigurationSummary}" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextBrush}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,16,0,0">
+                <Button Classes="SecondaryBtn" Content="Cancel" Click="OnCancelClick" />
+                <Button Classes="PrimaryBtn" Content="Create instance" Click="OnCreateClick" IsEnabled="{Binding CanCreate}" />
+            </StackPanel>
+        </Grid>
+        </Grid>
+    </Border>
+</Window>

@@ -1,0 +1,124 @@
+<Application xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:views="using:VortexLauncher.Views" x:Class="VortexLauncher.App" RequestedThemeVariant="Dark">
+    <Application.Styles>
+        <FluentTheme />
+        <Style Selector="ComboBox">
+            <Setter Property="Background" Value="{DynamicResource ThemePanelBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="MinHeight" Value="36" />
+        </Style>
+        <Style Selector="ComboBox /template/ Border#Background">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.16" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.16" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ComboBox:pointerover /template/ Border#Background">
+            <Setter Property="Background" Value="{DynamicResource ThemeSidebarBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+        </Style>
+        <Style Selector="ComboBox /template/ Border#PopupBorder">
+            <Setter Property="Background" Value="{DynamicResource ThemePanelBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="5" />
+            <Setter Property="views:PopupMotion.IsEnabled" Value="True" />
+        </Style>
+        <Style Selector="ComboBoxItem">
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="Margin" Value="2,1" />
+            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
+        </Style>
+        <Style Selector="ComboBoxItem /template/ ContentPresenter">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.14" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+        </Style>
+        <Style Selector="ComboBoxItem:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
+        </Style>
+        <Style Selector="MenuFlyoutPresenter">
+            <Setter Property="Background" Value="{DynamicResource ThemePanelBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="MinWidth" Value="210" />
+            <Setter Property="views:PopupMotion.IsEnabled" Value="True" />
+        </Style>
+        <Style Selector="MenuItem">
+            <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="Margin" Value="2,1" />
+            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style Selector="MenuItem /template/ Border#PART_LayoutRoot">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.14" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="MenuItem:pointerover /template/ Border#PART_LayoutRoot">
+            <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+        </Style>
+        <Style Selector="MenuItem:selected /template/ Border#PART_LayoutRoot">
+            <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+        </Style>
+        <Style Selector="MenuFlyoutPresenter Separator">
+            <Setter Property="Background" Value="{DynamicResource ThemeBorderBrush}" />
+            <Setter Property="Margin" Value="10,6" />
+        </Style>
+        <Style Selector="MenuItem.danger">
+            <Setter Property="Foreground" Value="#FB7185" />
+        </Style>
+        <Style Selector="MenuItem.danger:pointerover /template/ Border#PART_LayoutRoot">
+            <Setter Property="Background" Value="#24FB7185" />
+        </Style>
+        <Style Selector="MenuItem.danger:selected /template/ Border#PART_LayoutRoot">
+            <Setter Property="Background" Value="#24FB7185" />
+        </Style>
+        <Style Selector="Button /template/ ContentPresenter">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.16" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.16" />
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.16" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <StyleInclude Source="avares://Vortex Launcher/Styles/Launcher.axaml" />
+        <StyleInclude Source="avares://Vortex Launcher/Styles/GameLibrary.axaml" />
+        <StyleInclude Source="avares://Vortex Launcher/Styles/Workspace.axaml" />
+    </Application.Styles>
+    <Application.Resources>
+        <Color x:Key="AccentColor">#D7F36A</Color>
+        <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+        <SolidColorBrush x:Key="AccentHoverBrush" Color="#E6FF91" />
+        <SolidColorBrush x:Key="AccentSoftBrush" Color="#26D7F36A" />
+        <SolidColorBrush x:Key="AccentForegroundBrush" Color="#18200B" />
+        <SolidColorBrush x:Key="ThemeBackgroundBrush" Color="#101214" />
+        <SolidColorBrush x:Key="ThemeSidebarBrush" Color="#15181B" />
+        <SolidColorBrush x:Key="ThemePanelBrush" Color="#1D2125" />
+        <SolidColorBrush x:Key="ThemeBorderBrush" Color="#2E3439" />
+        <SolidColorBrush x:Key="ThemeTextBrush" Color="#F0F2EE" />
+        <SolidColorBrush x:Key="ThemeSubtextBrush" Color="#9BA49E" />
+        <SolidColorBrush x:Key="ModrinthBg" Color="#111217" />
+        <SolidColorBrush x:Key="ModrinthPanel" Color="#161822" />
+        <SolidColorBrush x:Key="ModrinthBorder" Color="#222636" />
+        <SolidColorBrush x:Key="ModrinthText" Color="#F8FAFC" />
+        <SolidColorBrush x:Key="ModrinthSubtext" Color="#94A3B8" />
+    </Application.Resources>
+</Application>
