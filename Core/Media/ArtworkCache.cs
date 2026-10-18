@@ -9,6 +9,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
+using Avalonia;
+using Avalonia.Platform;
 using SkiaSharp;
 
 namespace VortexLauncher.Core.Media;
@@ -17,6 +19,7 @@ internal static class ArtworkCache
 {
     private const long Budget = 16 * 1024 * 1024;
     private static readonly object Gate = new();
+    private static readonly object DecodeGate = new();
     private static readonly Dictionary<string, Entry> Entries = new();
     private static readonly ConcurrentDictionary<string, Lazy<Task>> Pending = new();
     private static readonly SemaphoreSlim Workers = new(4);
@@ -104,14 +107,34 @@ internal static class ArtworkCache
     }
     private static Bitmap Decode(Stream stream, int width)
     {
-        // Inspect encoded dimensions before decoding, including unusually tall/wide images.
-        using var codec = SKCodec.Create(stream) ?? throw new IOException("Unsupported artwork image.");
-        var info = codec.Info;
-        if (info.Width <= 0 || info.Height <= 0 || info.Width > 65535 || info.Height > 65535) throw new IOException("Unsupported artwork dimensions.");
-        stream.Position = 0;
-        return (double)width / info.Width <= 768d / info.Height
-            ? Bitmap.DecodeToWidth(stream, Math.Min(width, info.Width))
-            : Bitmap.DecodeToHeight(stream, Math.Min(768, info.Height));
+        // Avoid Avalonia 11.0's scaled-codec path (GetScaledDimensions), which
+        // crashes natively for concurrent mixed-format artwork. Own one codec
+        // over immutable data and copy decoded pixels into Avalonia instead.
+        // Serialize decoding and cap source pixels to bound transient memory.
+        lock (DecodeGate)
+        {
+            if (!stream.CanSeek || stream.Length > 20 * 1024 * 1024) throw new IOException("Artwork image is too large.");
+            stream.Position = 0;
+            using var managed = new SKManagedStream(stream, false);
+            using var data = SKData.Create(managed) ?? throw new IOException("Unsupported artwork image.");
+            using var codec = SKCodec.Create(data) ?? throw new IOException("Unsupported artwork image.");
+            var info = codec.Info;
+            if (info.Width <= 0 || info.Height <= 0 || info.Width > 65535 || info.Height > 65535 ||
+                (long)info.Width * info.Height > 16 * 1024 * 1024)
+                throw new IOException("Unsupported artwork dimensions (maximum 16 megapixels).");
+            var pixelsInfo = new SKImageInfo(info.Width, info.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
+            using var pixels = new SKBitmap(pixelsInfo);
+            if (pixels.GetPixels() == IntPtr.Zero || codec.GetPixels(pixelsInfo, pixels.GetPixels()) != SKCodecResult.Success)
+                throw new IOException("Artwork image could not be decoded.");
+            double scale = Math.Min(1d, Math.Min((double)width / info.Width, 768d / info.Height));
+            int targetWidth = Math.Max(1, (int)Math.Round(info.Width * scale));
+            int targetHeight = Math.Max(1, (int)Math.Round(info.Height * scale));
+            using var thumbnail = pixels.Resize(new SKImageInfo(targetWidth, targetHeight, SKColorType.Bgra8888, SKAlphaType.Premul), SKFilterQuality.Medium)
+                ?? throw new IOException("Artwork image could not be resized.");
+            // This constructor copies pixels; no native codec/stream outlives this method.
+            return new Bitmap(PixelFormat.Bgra8888, AlphaFormat.Premul, thumbnail.GetPixels(),
+                new PixelSize(targetWidth, targetHeight), new Vector(96, 96), thumbnail.RowBytes);
+        }
     }
     private static void TrimDisk(string keep)
     {
