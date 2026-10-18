@@ -40,6 +40,16 @@ internal static class ModPreflightChecks
         Jar(nested, "parent.jar", Meta("parent", "1", depends: new() { ["bundled"] = ">=2" }, jars: new[] { new { file = "libs/child.jar" } }), ("libs/child.jar", child));
         Jar(nested, "alternative.jar", Meta("alternative", "1", jars: new[] { new { file = "libs/child.jar" } }), ("libs/child.jar", child));
         Check(!(await Scan(nested)).NeedsReview, "nested dependencies and repeated optional bundled versions are not mistaken for duplicates");
+        string alternatives = NewRoot("multi-version-bundle");
+        Jar(alternatives, "modmenu.jar", Meta("modmenu", "21.0.0-beta.1"));
+        Jar(alternatives, "borderless.jar", Meta("borderless", "1", jars: new[] { new { file = "old.jar" }, new { file = "current.jar" } }),
+            ("old.jar", Bytes(Meta("borderless-old", "1", depends: new() { ["minecraft"] = "26.1.x", ["modmenu"] = ">=18.0.0-alpha.8", ["old-only-api"] = "*" }))),
+            ("current.jar", Bytes(Meta("borderless-current", "1", depends: new() { ["minecraft"] = "~26.3-rc.", ["modmenu"] = ">=21.0.0-beta.1" }))));
+        Jar(alternatives, "resourcify.jar", Meta("resourcify", "1", depends: new() { ["minecraft"] = "~26.3-rc." }));
+        report = await Scan(alternatives);
+        Check(!report.HasErrors && !report.NeedsReview && report.Issues.Single().IsInformational && report.Summary.Contains("INFO ·"), "optional multi-version bundles do not warn and unsupported prerelease rules remain informational without interrupting launch");
+        Jar(alternatives, "missing.jar", Meta("required-consumer", "1", depends: new() { ["required-missing-api"] = "*" }));
+        Check((await Scan(alternatives)).HasErrors, "delegating optional bundle resolution still blocks proven missing top-level dependencies");
         string loaderLibrary = NewRoot("loader-library");
         Jar(loaderLibrary, "consumer.jar", Meta("consumer", "1", depends: new() { ["mixinextras"] = ">=0.5.5" }));
         Check(!(await Scan(loaderLibrary)).HasErrors, "loader-provided MixinExtras is not falsely reported as a missing mandatory mod");

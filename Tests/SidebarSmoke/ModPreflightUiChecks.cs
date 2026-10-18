@@ -37,6 +37,20 @@ internal static class ModPreflightUiChecks
             }
             dialog.Close();
         }
+        var longReport = new ModPreflightReport(Enumerable.Range(0, 80)
+            .Select(i => warning with { File = $"mod-{i}.jar" }).ToArray(), 80, 0, 0);
+        var recycling = new ModCheckWindow(longReport, root, beforeLaunch: true);
+        recycling.Show(); pump(80);
+        var list = recycling.GetVisualDescendants().OfType<ListBox>().Single();
+        Check(list.ItemTemplate!.Build(null) is Control, "cleared virtualized items are safe to render");
+        foreach (int index in new[] { 79, 0, 50, 10, 79 })
+        {
+            list.ScrollIntoView(list.Items[index]!); pump(40);
+            recycling.Height = recycling.Height == 540 ? 440 : 540; pump(40);
+        }
+        list.ItemsSource = Array.Empty<ModCheckIssue>(); pump(60);
+        recycling.Close(); pump(40);
+        Check(true, "long warning lists survive scrolling, resizing, clearing and container recycling");
         Directory.CreateDirectory(Path.Combine(root, "mods"));
         string jar = Path.Combine(root, "mods/consumer.jar");
         using (var zip = ZipFile.Open(jar, ZipArchiveMode.Create))

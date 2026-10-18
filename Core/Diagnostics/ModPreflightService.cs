@@ -15,15 +15,16 @@ namespace VortexLauncher.Core.Diagnostics;
 
 public sealed record ModCheckIssue(bool IsError, string Code, string File, string Message, string Advice)
 {
-    public string Heading => (IsError ? "ERROR · " : "WARNING · ") + Message;
+    public bool IsInformational => !IsError && Code is "version-unverified" or "conflict-unverified";
+    public string Heading => (IsError ? "ERROR · " : IsInformational ? "INFO · " : "WARNING · ") + Message;
 }
 public sealed record ModPreflightReport(IReadOnlyList<ModCheckIssue> Issues, int Checked, int Disabled, int Unknown)
 {
     public bool HasErrors => Issues.Any(i => i.IsError);
-    public bool NeedsReview => Issues.Count > 0;
+    public bool NeedsReview => Issues.Any(i => !i.IsInformational);
     public string Headline => HasErrors ? "Fix mod errors before launching" : NeedsReview ? "Review mod warnings" : "No known mod problems found";
-    public string Counts => $"{Issues.Count(i => i.IsError)} error(s) · {Issues.Count(i => !i.IsError)} warning(s) · {Checked} JAR(s) checked · {Disabled} disabled · {Unknown} unverified";
-    public string Notes => "Offline metadata check, not a guarantee against crashes. Detailed dependency checks cover Fabric v1; Java, unpinned loader versions and unresolved rules remain the loader's responsibility.";
+    public string Counts => $"{Issues.Count(i => i.IsError)} error(s) · {Issues.Count(i => !i.IsError && !i.IsInformational)} warning(s) · {Issues.Count(i => i.IsInformational)} informational · {Checked} JAR(s) checked · {Disabled} disabled · {Unknown} unverified";
+    public string Notes => "Offline metadata check, not a guarantee against crashes. Fabric resolves optional bundled alternatives and unsupported version rules. Informational findings do not interrupt launch; known top-level errors still block it.";
     public string Summary => Headline + "\n" + Counts + "\n\n" + string.Join("\n\n", Issues.Select(i => $"{i.Heading}\n{i.File}\n{i.Advice}")) + "\n\n" + Notes;
 }
 
@@ -192,6 +193,10 @@ public sealed class ModPreflightService
         foreach (var node in nodes)
         {
             token.ThrowIfCancellationRequested();
+            // Bundled JARs are optional candidates, not all active mods. Only
+            // Fabric can choose their versions and resolve their dependencies.
+            // Keep them indexed as providers, but do not warn about inactive alternatives.
+            if (node.Nested) continue;
             foreach (string kind in new[] { "depends", "breaks", "conflicts" })
             {
                 if (!node.Metadata.TryGetProperty(kind, out var rules)) continue;

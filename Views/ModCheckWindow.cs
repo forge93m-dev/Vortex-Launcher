@@ -44,8 +44,10 @@ public sealed class ModCheckWindow : Window
         list.Styles.Add(new Style(x => x.OfType<ListBoxItem>()) { Setters = { new Setter(ListBoxItem.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch) } });
         list.ItemTemplate = new FuncDataTemplate<ModCheckIssue>((issue, _) =>
         {
+            // Avalonia clears the item while recycling a virtualized container.
+            if (issue is null) return new Border();
             var body = new StackPanel { Spacing = 6 };
-            body.Children.Add(new TextBlock { Text = issue!.Heading, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap, Foreground = issue.IsError ? new SolidColorBrush(Color.Parse("#FF9C9C")) : new SolidColorBrush(Color.Parse("#E9D993")) });
+            body.Children.Add(new TextBlock { Text = issue.Heading, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap, Foreground = new SolidColorBrush(Color.Parse(issue.IsError ? "#FF9C9C" : issue.IsInformational ? "#A7B7D0" : "#E9D993")) });
             body.Children.Add(new TextBlock { Text = issue.File, FontSize = 12, TextWrapping = TextWrapping.Wrap });
             body.Children.Add(new TextBlock { Text = issue.Advice, FontSize = 12, TextWrapping = TextWrapping.Wrap });
             var row = new Border { Child = body, Padding = new Thickness(12), Margin = new Thickness(0, 0, 0, 6), CornerRadius = new CornerRadius(7) };
