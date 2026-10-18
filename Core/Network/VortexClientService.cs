@@ -14,9 +14,9 @@ namespace VortexLauncher.Core.Network;
 public sealed class VortexClientService
 {
     public const string MinecraftVersion = "26.3";
-    public const string ClientVersion = "0.1.54";
-    private const string ResourceName = "VortexLauncher.Client.vortex-client-26.3-fabric-0.1.54.jar";
-    private const string FileName = "vortex-client-26.3-fabric-0.1.54.jar";
+    public const string ClientVersion = "0.2.0";
+    private const string ResourceName = "VortexLauncher.Client.vortex-client-26.3-fabric-0.2.0.jar";
+    private const string FileName = "vortex-client-26.3-fabric-0.2.0.jar";
 
     public static bool IsCompatible(string minecraftVersion, string loader) =>
         minecraftVersion == MinecraftVersion && loader.Equals("Fabric", StringComparison.OrdinalIgnoreCase);

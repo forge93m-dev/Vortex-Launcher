@@ -30,7 +30,9 @@ public sealed class UpdateService
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
             timeout.CancelAfter(TimeSpan.FromSeconds(20));
-            using var response = await _client.GetAsync(manifestUrl, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+            using var request = new HttpRequestMessage(HttpMethod.Get, manifestUrl);
+            request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { NoCache = true, NoStore = true };
+            using var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
             response.EnsureSuccessStatusCode();
             if (response.Content.Headers.ContentLength > 1048576) throw new InvalidDataException("Update manifest is too large.");
             await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token);

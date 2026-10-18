@@ -123,7 +123,9 @@ jobs:
         run: |
           ./Installer/GenerateUpdateManifest.ps1
           Copy-Item -LiteralPath 'Installer/macOS/OPEN-FIRST.txt' -Destination 'release/OPEN-FIRST.txt'
-          Copy-Item -LiteralPath 'Installer/RELEASE-NOTES-0.1.60.md' -Destination 'release/RELEASE-NOTES-0.1.60.md'
+          [xml]$project = Get-Content 'Vortex Launcher.csproj'
+          $version = [string]$project.Project.PropertyGroup.Version
+          Copy-Item -LiteralPath 'Installer/RELEASE-NOTES.md' -Destination "release/RELEASE-NOTES-$version.md"
       - uses: actions/upload-artifact@v4
         with:
           name: release-ready-for-publication

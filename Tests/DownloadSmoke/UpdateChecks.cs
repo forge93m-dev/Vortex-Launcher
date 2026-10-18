@@ -22,11 +22,20 @@ static class UpdateChecks
         var windows = new UpdateService(http, "0.1.2", "win-x64");
         var mac = new UpdateService(http, "0.1.2", "osx-arm64");
         Check((await windows.CheckForUpdateAsync(manifest)).Update?.Version == "0.1.3", "new version is detected for Windows");
+        Check(handler.ManifestRequestedFresh, "update checks explicitly revalidate the feed instead of accepting a stale HTTP cache");
         Check((await mac.CheckForUpdateAsync(manifest)).Update?.Url.EndsWith("osx-arm64.zip") == true, "Apple Silicon selects its own ZIP, never the Windows EXE");
         var intel = new UpdateService(http, "0.1.2", "osx-x64");
         Check((await intel.CheckForUpdateAsync(manifest)).Message.Contains("no package"), "missing CPU package is explained, not silently treated as up to date");
         Check((await new UpdateService(http, "0.1.3", "win-x64").CheckForUpdateAsync(manifest)).Update == null, "same version does not produce an update loop");
         Check((await new UpdateService(http, "0.1.4", "win-x64").CheckForUpdateAsync(manifest)).Update == null, "older remote build cannot downgrade the launcher");
+        update.Version = "0.2.0";
+        handler.Files[manifest] = JsonSerializer.SerializeToUtf8Bytes(update);
+        foreach (string earlier in new[] { "0.1.0", "0.1.59", "0.1.60" })
+            Check((await new UpdateService(http, earlier, "win-x64").CheckForUpdateAsync(manifest)).Update?.Version == "0.2.0",
+                "modern updater compares public Beta 2 above earlier/test version " + earlier);
+        Check((await new UpdateService(http, "0.2.0", "win-x64").CheckForUpdateAsync(manifest)).Update == null, "Beta 2 does not offer itself repeatedly");
+        update.Version = "0.1.3";
+        handler.Files[manifest] = JsonSerializer.SerializeToUtf8Bytes(update);
         Check((await windows.CheckForUpdateAsync("https://fixture.test/missing.json")).Message.Contains("Could not check"), "network failure is not reported as up to date");
         Check((await windows.CheckForUpdateAsync("http://fixture.test/latest.json")).Message.Contains("HTTPS"), "insecure manifest URL is rejected");
         var legacy = new LauncherUpdate { Version = "0.1.3", Url = "https://fixture.test/setup.exe" };

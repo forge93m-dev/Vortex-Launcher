@@ -192,6 +192,7 @@ sealed class FixtureHandler : HttpMessageHandler
     public ConcurrentDictionary<string, byte[]> Files { get; } = new();
     public int Requests, Peak, DelayMs;
     public int MinimumBatchOverlap;
+    public bool ManifestRequestedFresh;
     private int _batchArrivals;
     private readonly TaskCompletionSource<bool> _batchReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private int _active;
@@ -204,6 +205,8 @@ sealed class FixtureHandler : HttpMessageHandler
         try
         {
             string url = request.RequestUri!.ToString();
+            if (request.RequestUri.AbsolutePath.EndsWith("/latest.json", StringComparison.Ordinal))
+                ManifestRequestedFresh = request.Headers.CacheControl?.NoCache == true && request.Headers.CacheControl?.NoStore == true;
             int minimum = Volatile.Read(ref MinimumBatchOverlap);
             if (minimum > 0 && (request.RequestUri.Host == "resources.download.minecraft.net" ||
                 url.StartsWith("https://fixture.test/lib-", StringComparison.Ordinal) || url == "https://fixture.test/native.jar"))
