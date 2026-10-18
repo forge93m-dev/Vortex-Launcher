@@ -21,18 +21,6 @@ public partial class MainWindow : Window
     {
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(VortexLauncher.Core.Launch.PlatformSupport.DataRoot) { UseShellExecute = true });
     }
-    private async void OnConnectDataFolder(object? sender, RoutedEventArgs e)
-    {
-        var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Select the old Vortex folder (contains instances)", AllowMultiple = false });
-        if (folders.Count == 0 || folders[0].TryGetLocalPath() is not { } path) return;
-        try {
-            if (!await TaskDialog.ConfirmAsync("Connect existing library", "Use this library after restarting Vortex?\n\n" + path + "\n\nNo files will be moved, removed or merged. Finish your current downloads and close Minecraft before restarting.", "Connect")) return;
-            VortexLauncher.Core.Launch.LauncherDataLocation.Connect(path, VortexLauncher.Core.Launch.LauncherDataLocation.RegistryDirectory, System.IO.Path.GetTempPath());
-            if (DataContext is MainWindowViewModel vm) vm.StatusMessage = "Library connected. Restart Vortex to load its instances and profiles.";
-        } catch (Exception error) when (error is System.IO.IOException or UnauthorizedAccessException or ArgumentException) {
-            if (DataContext is MainWindowViewModel vm) vm.StatusMessage = error.Message;
-        }
-    }
     public InstanceWorkspaceView? ActiveWorkspace { get; private set; }
     private readonly Dictionary<Control, CancellationTokenSource> _cardMotions = new();
 
@@ -60,6 +48,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        if (OperatingSystem.IsMacOS())
+            LibraryLocationHint.Text = "Your library is in Vortex Launcher Data beside the installed .app, outside its signed bundle. A new installation folder starts with an empty library; old Application Support data is not connected automatically.";
         WindowTitleBar.Apply(this);
         Height = 800;
         MinHeight = 600;

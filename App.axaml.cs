@@ -22,7 +22,7 @@ public partial class App : Application
                 _ = Core.Launch.PlatformSupport.DataRoot;
                 desktop.MainWindow = new MainWindow { DataContext = new MainWindowViewModel() };
             } catch (System.Exception error) when (error is System.IO.IOException or System.UnauthorizedAccessException or System.ArgumentException) {
-                desktop.MainWindow = new TaskDialog("Library unavailable", error.Message + "\n\nVortex did not create an empty replacement library or change your instances. Reconnect the saved folder/drive and restart the launcher.");
+                desktop.MainWindow = new TaskDialog("Library unavailable", error.Message + "\n\nVortex did not switch to another data folder or change your instances. Check the installation folder and restart the launcher.");
             }
         }
 

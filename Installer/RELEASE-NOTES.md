@@ -1,22 +1,35 @@
-# Vortex Launcher 0.2.1 — Beta 2 hotfix
+# Vortex Launcher 0.2.2 — Installation-local libraries
 
-## Fixes
+## New storage behavior
 
-- Fixed a launcher crash when scrolling, resizing or closing a long mod-check report. Empty recycled list items are now handled safely.
-- Stopped treating every optional bundled JAR as an active mod. Fabric remains responsible for choosing bundled alternatives, including mods that package variants for several Minecraft versions.
-- Unsupported version predicates (including prerelease rules) are now informational, not compatibility warnings. They remain in the manual report but do not interrupt every launch.
-- Kept checks for proven missing required dependencies, duplicate enabled top-level mod IDs, known incompatible versions and unreadable JAR archives.
+- Windows stores the library, profiles, settings, protected remembered Vortex sign-in, download/artwork caches and update staging beside `Vortex Launcher.exe`.
+- macOS stores the library, profiles, settings, caches and update staging in `Vortex Launcher Data` beside the installed `Vortex Launcher.app`. User data stays outside the signed bundle so replacing the application does not overwrite it.
+- A new empty installation folder starts with a separate, empty library. Global Windows `data-location.json` pointers and the old Mac Application Support library are no longer connected automatically.
+- Temporary ZIP launch locations, macOS Gatekeeper translocation and non-writable installation folders show an actionable error instead of silently creating a library elsewhere.
+- Settings now describe the active storage policy; the old global Connect existing library action has been removed.
 
-No mods are removed, disabled or changed by this update. Offline inspection is not a complete compatibility solver; Fabric can still report genuine dependency problems.
+## Important when updating
 
-Includes unchanged **Vortex Client 0.2.0**. All features from [Beta 2](https://github.com/forge93m-dev/Vortex-Launcher/releases/tag/v0.2.0) are retained.
+**Old data is preserved, not deleted or moved, but may no longer appear automatically.** This release intentionally changes which library the launcher opens. Windows installations that already stored instances beside the executable continue using those instances. If your previous library was elsewhere, keep its original folder and copy only the data you deliberately want to reuse after closing Minecraft and Vortex. Never overwrite a populated new library without a backup. Old global remembered Vortex sign-in is not imported; sign in again if needed. This does not delete your online Vortex account.
 
-## Updating
+For macOS, previous releases used `~/Library/Application Support/VortexLauncher`. That directory is left untouched. To keep its data, copy the desired contents to the adjacent `Vortex Launcher Data` folder while the application and Minecraft are closed. Keep the original until you verify the result.
 
-From **0.2.0**, use **Settings → Updates → Check for updates → Install update**. Keep existing instances, saves, settings and accounts.
+For future updates, replace only the executable/application in the **same installation folder**. Keep `instances`, `config`, caches and the adjacent Mac Data folder.
 
-The original **0.1.0** predates the working updater and needs one manual application-only replacement. On Windows, close the launcher and Minecraft, extract the Windows ZIP separately and replace only `Vortex Launcher.exe` in the old launcher folder. Do not delete the old folder or its data. On macOS, replace only the application bundle and keep Application Support data.
+## Testing from scratch
+
+Close Vortex and Minecraft. Install/extract into a **new, empty, permanent, writable folder**; do not copy old data into it. On Windows, run the extracted executable or use the installer with a new destination. On macOS, for example:
+
+```text
+~/Applications/Vortex Clean Test/
+    Vortex Launcher.app
+    Vortex Launcher Data/  (created on first launch)
+```
+
+Do not run directly from a ZIP, read-only disk image, temporary extraction, or a protected system folder. This is a local reset, not deletion of cloud accounts or cosmetics stored separately by Vortex Client.
+
+Includes unchanged **Vortex Client 0.2.0** and all [0.2.1 launch fixes](https://github.com/forge93m-dev/Vortex-Launcher/releases/tag/v0.2.1).
 
 ## macOS beta notice
 
-Apple Silicon and Intel packages are built on native Mac runners. The extracted bundle signature, executable permission and native command-line startup are checked. Packages are **ad-hoc signed, not Apple Developer ID signed or notarized**. First launch may require **System Settings → Privacy & Security → Open Anyway**. Do not disable Gatekeeper globally. GUI/game behavior and in-place updates still need validation on users' Macs.
+Apple Silicon and Intel packages are built on native Mac runners. The extracted bundle signature, executable permission and native command-line startup are checked. Packages are **ad-hoc signed, not Apple Developer ID signed or notarized**. First launch may require **System Settings → Privacy & Security → Open Anyway**. Do not disable Gatekeeper globally. These automated checks are not a full GUI/game test on your Mac.

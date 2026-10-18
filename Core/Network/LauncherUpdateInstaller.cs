@@ -18,7 +18,15 @@ namespace VortexLauncher.Core.Network;
 // It replaces only one executable/app bundle. Instances/config/runtime are never targets.
 public static class LauncherUpdateInstaller
 {
-    public static string StagingRoot => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VortexLauncher", "updates");
+    public static string StagingRoot => Path.Combine(PlatformSupport.DataRoot, "updates");
+    internal static string LegacyStagingRoot => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VortexLauncher", "updates");
+    internal static string StagingRootForTarget(string target, bool mac) => Path.Combine(
+        Path.GetDirectoryName(Path.GetFullPath(target))!, mac ? "Vortex Launcher Data" : "", "updates");
+    internal static bool IsWithinStaging(string path, string root) => Path.GetFullPath(path).StartsWith(
+        Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
+        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+    internal static bool IsPlanInStagingArea(string path, string target, bool mac) =>
+        IsWithinStaging(path, StagingRootForTarget(target, mac)) || IsWithinStaging(path, LegacyStagingRoot);
     private const string AppName = "Vortex Launcher.app";
     private const string ExeName = "Vortex Launcher.exe";
 
@@ -174,13 +182,16 @@ public static class LauncherUpdateInstaller
         {
             string path = Path.GetFullPath(planPath);
             string directory = Path.GetDirectoryName(path)!;
-            if (!directory.StartsWith(Path.GetFullPath(StagingRoot).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
-                OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) || Path.GetFileName(path) != "apply.json")
-                throw new IOException("The update plan is outside the updater staging area.");
+            if (Path.GetFileName(path) != "apply.json") throw new IOException("Invalid update plan filename.");
             RejectLinks(path);
             if (new FileInfo(path).Length > 16384) throw new InvalidDataException("Update plan is too large.");
             var plan = JsonSerializer.Deserialize<UpdatePlan>(await File.ReadAllTextAsync(path)) ?? throw new InvalidDataException("Invalid update plan.");
             if (plan.Kind is not ("mac-app-zip" or "windows-singlefile-zip")) throw new InvalidDataException("Unsupported updater plan.");
+            // The helper runs from the downloaded package, not the installed app.
+            // Resolve staging against the validated replacement target, never the
+            // helper's own data folder. Accept legacy staging for 0.2.0/0.2.1 upgrades.
+            if (!IsPlanInStagingArea(path, plan.Target, plan.Kind == "mac-app-zip"))
+                throw new IOException("The update plan is outside the updater staging area.");
             result = Path.Combine(directory, "result.json");
             string expectedSource = Path.Combine(directory, "staged", plan.Kind == "mac-app-zip" ? AppName : ExeName);
             if (Path.GetFullPath(plan.Source) != Path.GetFullPath(expectedSource)) throw new IOException("Invalid staged application path.");
@@ -232,8 +243,7 @@ public static class LauncherUpdateInstaller
         try
         {
             string path = Path.GetFullPath(args[index + 1]);
-            if (!path.StartsWith(Path.GetFullPath(StagingRoot).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
-                OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) || Path.GetFileName(path) != "result.json") return "";
+            if ((!IsWithinStaging(path, StagingRoot) && !IsWithinStaging(path, LegacyStagingRoot)) || Path.GetFileName(path) != "result.json") return "";
             RejectLinks(path);
             if (new FileInfo(path).Length > 16384) return "";
             using var document = JsonDocument.Parse(File.ReadAllText(path));

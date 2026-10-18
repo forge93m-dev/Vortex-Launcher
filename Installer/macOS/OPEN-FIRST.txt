@@ -6,7 +6,9 @@ Only open the package if you trust its source.
 
 1. Choose osx-arm64 for Apple Silicon (M1/M2/M3/etc.), or osx-x64 for Intel.
 2. Extract VortexLauncher-<version>-<architecture>.zip with Finder.
-3. Drag Vortex Launcher.app into Applications, then open it.
+3. Move Vortex Launcher.app into a permanent folder you can write to, then open it.
+   For example, create ~/Applications/Vortex and put the app there.
+   Do not launch directly from the ZIP, a disk image, or a temporary extraction.
 4. If macOS blocks this trusted beta, open System Settings > Privacy & Security,
    scroll down to the security notice, and use Open Anyway if offered.
    Confirm Open in the following dialog.
@@ -19,7 +21,17 @@ The .verification.json beside the ZIP records signature checks, native CLI
 startup verification and the SHA-256 of the packaged ZIP on the macOS builder.
 These checks are NOT Apple notarization or a test on your own Mac.
 
-Worlds, mods, accounts and settings stay in:
-~/Library/Application Support/VortexLauncher
+Worlds, mods, profiles, settings and caches stay in "Vortex Launcher Data"
+beside the installed .app, never inside the signed application bundle.
+For example:
+~/Applications/Vortex/Vortex Launcher.app
+~/Applications/Vortex/Vortex Launcher Data/
+
+To update, replace only the .app in the SAME folder. Keep its adjacent Data folder.
+To test a fresh installation, use a NEW empty permanent folder.
+Earlier releases used ~/Library/Application Support/VortexLauncher. These files
+are preserved but are no longer connected automatically. A clean test does not
+delete cloud accounts or other applications' files. Do not delete the old folder
+unless you are sure you no longer need its worlds and other data.
 
 Apple instructions: https://support.apple.com/en-us/102445

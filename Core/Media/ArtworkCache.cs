@@ -21,7 +21,7 @@ internal static class ArtworkCache
     private static readonly ConcurrentDictionary<string, Lazy<Task>> Pending = new();
     private static readonly SemaphoreSlim Workers = new(4);
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(20) };
-    internal static string DiskRoot { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VortexLauncher", "cache", "artwork");
+    internal static string DiskRoot { get; set; } = Path.Combine(VortexLauncher.Core.Launch.PlatformSupport.DataRoot, "cache", "artwork");
     private static int _diskWrites;
     private sealed class Entry(Bitmap bitmap) { public Bitmap Bitmap = bitmap; public long Bytes = (long)bitmap.PixelSize.Width * bitmap.PixelSize.Height * 4; public int Pins; public long Used; }
     internal sealed class Lease : IDisposable

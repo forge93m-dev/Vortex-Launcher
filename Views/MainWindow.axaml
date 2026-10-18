@@ -433,8 +433,8 @@
                                             </StackPanel>
                                         </Border><Border Classes="WorkspaceSection" Padding="0,20,0,0"><StackPanel Spacing="12">
                                             <TextBlock Classes="SectionTitle" Text="Launcher library"/>
-                                            <TextBlock Classes="Muted" Text="Instances and profiles stay in the same folder when you run a new launcher. Connect an old Vortex folder to keep using its library; files will not be moved or merged." TextWrapping="Wrap"/>
-                                            <WrapPanel><Button Content="Open data folder" Click="OnOpenDataFolder" Classes="SecondaryBtn" Margin="0,0,8,8"/><Button Content="Connect existing library…" Click="OnConnectDataFolder" Classes="SecondaryBtn" Margin="0,0,0,8"/></WrapPanel>
+                                            <TextBlock x:Name="LibraryLocationHint" Classes="Muted" Text="On Windows, instances, profiles, settings and caches stay beside Vortex Launcher.exe. A new installation folder starts with a separate, empty library. Old folders are never connected or moved automatically." TextWrapping="Wrap"/>
+                                            <WrapPanel><Button Content="Open data folder" Click="OnOpenDataFolder" Classes="SecondaryBtn" Margin="0,0,8,8"/></WrapPanel>
                                         </StackPanel></Border></StackPanel></ScrollViewer>
 <ScrollViewer x:Name="settingsJava" views:SurfaceMotion.Kind="Section" IsVisible="{Binding #SettingsTabs.SelectedIndex, Converter={StaticResource IndexEquals}, ConverterParameter=2}" HorizontalScrollBarVisibility="Disabled"><Border Margin="28,4,8,20">
                                             <StackPanel Spacing="12">

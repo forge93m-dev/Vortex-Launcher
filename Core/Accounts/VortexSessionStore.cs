@@ -11,7 +11,10 @@ public sealed class VortexSessionStore
 {
     private readonly string _path;
     public bool CanRemember => OperatingSystem.IsWindows();
-    public VortexSessionStore() : this(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".vortex", "launcher-session.dpapi")) { }
+    internal static string DefaultPath => OperatingSystem.IsWindows()
+        ? Path.Combine(VortexLauncher.Core.Launch.PlatformSupport.DataRoot, "config", "launcher-session.dpapi")
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".vortex", "launcher-session.dpapi");
+    public VortexSessionStore() : this(DefaultPath) { }
     internal VortexSessionStore(string path) => _path = Path.GetFullPath(path);
     private void CheckPath()
     {

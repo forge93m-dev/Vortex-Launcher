@@ -12,9 +12,9 @@ public static class PlatformSupport
 {
     internal static string? DataRootOverride { get; set; }
     private static readonly Lazy<string> UserDataRoot = new(() => OperatingSystem.IsWindows()
-        ? LauncherDataLocation.Resolve(AppDomain.CurrentDomain.BaseDirectory, LauncherDataLocation.RegistryDirectory, Path.GetTempPath())
+        ? LauncherDataLocation.Resolve(AppDomain.CurrentDomain.BaseDirectory, Path.GetTempPath())
         : OperatingSystem.IsMacOS()
-        ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Application Support", "VortexLauncher")
+        ? LauncherDataLocation.ResolveMac(AppDomain.CurrentDomain.BaseDirectory, Path.GetTempPath())
         : AppDomain.CurrentDomain.BaseDirectory);
     public static string DataRoot => DataRootOverride ?? UserDataRoot.Value;
 

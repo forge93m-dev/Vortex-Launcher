@@ -9,6 +9,14 @@ static class UpdateChecks
     public static async Task RunAsync(string root, FixtureHandler handler, HttpClient http)
     {
         string work = Directory.CreateDirectory(Path.Combine(root, "updater")).FullName;
+        string windowsTarget = Path.Combine(work, "installed", "Vortex Launcher.exe");
+        string macTarget = Path.Combine(work, "installed", "Vortex Launcher.app");
+        Check(LauncherUpdateInstaller.IsPlanInStagingArea(Path.Combine(work, "installed", "updates", "job", "apply.json"), windowsTarget, false), "staged Windows helper validates against installed target, not its temporary executable directory");
+        Check(LauncherUpdateInstaller.IsPlanInStagingArea(Path.Combine(work, "installed", "Vortex Launcher Data", "updates", "job", "apply.json"), macTarget, true), "staged Mac helper validates against the target's adjacent data folder");
+        Check(LauncherUpdateInstaller.IsPlanInStagingArea(Path.Combine(LauncherUpdateInstaller.LegacyStagingRoot, "job", "apply.json"), windowsTarget, false)
+            && LauncherUpdateInstaller.IsPlanInStagingArea(Path.Combine(LauncherUpdateInstaller.LegacyStagingRoot, "job", "apply.json"), macTarget, true), "old-version updater staging remains accepted during the 0.2.2 transition");
+        Check(!LauncherUpdateInstaller.IsPlanInStagingArea(Path.Combine(work, "installed", "updates-other", "apply.json"), windowsTarget, false)
+            && !LauncherUpdateInstaller.IsPlanInStagingArea(Path.Combine(work, "unrelated", "apply.json"), macTarget, true), "updater staging checks reject lookalike prefixes and unrelated folders");
         byte[] payload = Encoding.UTF8.GetBytes("verified update fixture");
         string url = "https://fixture.test/VortexLauncher-0.1.3-win-x64.zip";
         var update = new LauncherUpdate { Version = "0.1.3", Notes = "Fixture release", Packages = new()

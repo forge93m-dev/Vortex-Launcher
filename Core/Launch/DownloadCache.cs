@@ -24,9 +24,7 @@ internal static class DownloadCache
     private sealed record VerifiedFile(long Length, long Written, long Created, string Sha1);
     private static readonly ConcurrentDictionary<string, VerifiedFile> Verified = new(
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
-    private static readonly string Root = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "VortexLauncher", "cache", "downloads");
+    internal static string Root => Path.Combine(PlatformSupport.DataRoot, "cache", "downloads");
 
     public static async Task EnsureAsync(string url, string destination,
         CancellationToken token = default, string? sha1 = null, long? size = null,

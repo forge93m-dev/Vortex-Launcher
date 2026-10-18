@@ -1,52 +1,58 @@
 using System;
 using System.IO;
-using VortexLauncher.Core.Management;
 
 namespace VortexLauncher.Core.Launch;
 
-/// <summary>One remembered library per OS user. Existing portable data is connected, never moved.</summary>
+/// <summary>Installation-local data, outside signed Mac bundles. Never reconnect another installation implicitly.</summary>
 internal static class LauncherDataLocation
 {
-    internal sealed record Location(string Root);
-    internal static string RegistryDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VortexLauncher");
-    internal static bool HasLibrary(string root) => Directory.Exists(Path.Combine(root, "instances")) || File.Exists(Path.Combine(root, "config", "settings.json"));
     private static string Validate(string root, string temporary)
     {
-        if (!Path.IsPathFullyQualified(root)) throw new IOException("The saved library path must be absolute.");
+        if (!Path.IsPathFullyQualified(root)) throw new IOException("The launcher installation path must be absolute.");
         root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
         string temp = Path.TrimEndingDirectorySeparator(Path.GetFullPath(temporary));
         if (root.Equals(Path.GetPathRoot(root), StringComparison.OrdinalIgnoreCase) || root.Equals(temp, StringComparison.OrdinalIgnoreCase) ||
             root.StartsWith(temp + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-            throw new IOException("Choose a permanent Vortex folder, not a temporary folder or drive root.");
+            throw new IOException("Extract or install Vortex in a permanent, writable folder before launching it. Do not run it from a temporary ZIP folder or a drive root. Your library stays beside the installed application.");
         if (Directory.Exists(root) && (File.GetAttributes(root) & FileAttributes.ReparsePoint) != 0)
             throw new IOException("Linked library folders are not supported.");
         return root;
     }
-    internal static string Resolve(string executableDirectory, string registryDirectory, string temporary)
+    internal static string Resolve(string executableDirectory, string temporary)
     {
-        string registry = Path.Combine(registryDirectory, "data-location.json");
-        var stored = SafeJsonStore.Read<Location>(registry, value => !string.IsNullOrWhiteSpace(value.Root) && Path.IsPathFullyQualified(value.Root));
-        if (stored.Damaged) throw new IOException("The Vortex library location could not be read. Original files were preserved: " + registry);
-        if (stored.Value is { } location) {
-            string saved = Validate(location.Root, temporary);
-            if (!Directory.Exists(saved)) throw new IOException("The saved Vortex library is unavailable. Reconnect its drive or folder: " + saved);
-            return saved;
+        string root = Validate(executableDirectory, temporary);
+        if (!Directory.Exists(root)) throw new IOException("The launcher installation folder is unavailable. No replacement library was created.");
+        try
+        {
+            // Fail clearly rather than silently putting data in AppData when the
+            // installation is read-only. The probe is removed when its handle closes.
+            using var probe = new FileStream(Path.Combine(root, ".vortex-write-test-" + Guid.NewGuid().ToString("N")),
+                FileMode.CreateNew, FileAccess.Write, FileShare.None, 1, FileOptions.DeleteOnClose);
         }
-        string root = Path.Combine(registryDirectory, "data");
-        if (HasLibrary(executableDirectory)) {
-            // ZIP launchers can have short-lived extraction directories. Never remember those.
-            try { root = Validate(executableDirectory, temporary); }
-            catch (IOException) { }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            throw new IOException("Vortex needs write access to its installation folder. Move or install it in a folder you own, rather than a protected system folder. No alternate library was created.", error);
         }
-        root = Validate(root, temporary);
-        Directory.CreateDirectory(root);
-        SafeJsonStore.Write(registry, new Location(root));
         return root;
     }
-    internal static void Connect(string root, string registryDirectory, string temporary)
+    internal static string ResolveMac(string executableDirectory, string temporary)
     {
-        root = Validate(root, temporary);
-        if (!HasLibrary(root)) throw new IOException("Select the old Vortex folder containing instances or config/settings.json. Nothing was changed.");
-        SafeJsonStore.Write(Path.Combine(registryDirectory, "data-location.json"), new Location(root));
+        // Keep user data outside the signed bundle and next to the installed app.
+        // Gatekeeper's translocated copy is not a permanent installation location.
+        if (executableDirectory.Contains("/AppTranslocation/", StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Move Vortex Launcher.app to a permanent, writable folder before launching it. The library will be stored beside the application, not in a temporary Gatekeeper location.");
+        for (var directory = new DirectoryInfo(Path.GetFullPath(executableDirectory)); directory != null; directory = directory.Parent)
+        {
+            if (!directory.Name.EndsWith(".app", StringComparison.OrdinalIgnoreCase)) continue;
+            string parent = directory.Parent?.FullName ?? throw new IOException("The application needs a permanent installation folder.");
+            Resolve(parent, temporary);
+            string data = Path.Combine(parent, "Vortex Launcher Data");
+            // Validate an existing location before any writes, including symlink rejection.
+            Validate(data, temporary);
+            Directory.CreateDirectory(data);
+            return Resolve(data, temporary);
+        }
+        // Unbundled development builds also remain installation-local.
+        return Resolve(executableDirectory, temporary);
     }
 }
