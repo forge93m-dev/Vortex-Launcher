@@ -124,10 +124,13 @@ var downloader = new GameDownloader(client, Path.Combine(testRoot, "game-cache")
 string instanceName = "download-smoke-" + Guid.NewGuid().ToString("N");
 handler.DelayMs = 35;
 handler.Peak = 0;
+// Hold real batch requests until 17 overlap, rather than relying on CI disk/CPU timing.
+handler.MinimumBatchOverlap = 17;
 var progress = new ConcurrentQueue<TransferSnapshot>();
 var timer = Stopwatch.StartNew();
 await downloader.DownloadGameAsync(instanceName, "fixture", manifestUrl, (_, _) => { }, transfer: new TransferProgress(progress.Enqueue));
 timer.Stop();
+handler.MinimumBatchOverlap = 0;
 string instance = Path.Combine(PlatformSupport.DataRoot, "instances", instanceName);
 Check(handler.Peak > 16 && handler.Peak <= 24, "one bounded queue overlaps independent file transfers");
 Check(Directory.GetFiles(Path.Combine(instance, "assets", "objects"), "*", SearchOption.AllDirectories).Length == 32,
@@ -188,6 +191,9 @@ sealed class FixtureHandler : HttpMessageHandler
 {
     public ConcurrentDictionary<string, byte[]> Files { get; } = new();
     public int Requests, Peak, DelayMs;
+    public int MinimumBatchOverlap;
+    private int _batchArrivals;
+    private readonly TaskCompletionSource<bool> _batchReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private int _active;
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
     {
@@ -197,8 +203,15 @@ sealed class FixtureHandler : HttpMessageHandler
         do { previous = Peak; if (active <= previous) break; } while (Interlocked.CompareExchange(ref Peak, active, previous) != previous);
         try
         {
-            if (DelayMs > 0) await Task.Delay(DelayMs, token);
             string url = request.RequestUri!.ToString();
+            int minimum = Volatile.Read(ref MinimumBatchOverlap);
+            if (minimum > 0 && (request.RequestUri.Host == "resources.download.minecraft.net" ||
+                url.StartsWith("https://fixture.test/lib-", StringComparison.Ordinal) || url == "https://fixture.test/native.jar"))
+            {
+                if (Interlocked.Increment(ref _batchArrivals) >= minimum) _batchReady.TrySetResult(true);
+                await _batchReady.Task.WaitAsync(TimeSpan.FromSeconds(20), token);
+            }
+            if (DelayMs > 0) await Task.Delay(DelayMs, token);
             return Files.TryGetValue(url, out var bytes)
                 ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) }
                 : new HttpResponseMessage(HttpStatusCode.NotFound);
