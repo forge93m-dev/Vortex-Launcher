@@ -8,7 +8,9 @@ internal static class InstallationPolishChecks
     internal static async Task RunAsync(string root, FixtureHandler handler, HttpClient client,
         GameDownloader downloader, string classifier, string nativeName)
     {
-        var localizedFull = new IOException("Localized disk-full message", unchecked((int)0x80070070));
+        // Simulate the current OS error representation: Win32 ERROR_DISK_FULL vs Unix ENOSPC.
+        // A Windows-only HRESULT is not a native disk-full code on macOS/Linux.
+        var localizedFull = new IOException("Localized disk-full message", OperatingSystem.IsWindows() ? unchecked((int)0x80070070) : 28);
         Check(CrashAnalyzer.Diagnose(new InvalidOperationException("Install failed", localizedFull)).Title == "Not enough disk space",
             "nested disk-full error is diagnosed by OS code, not language");
         Check(CrashAnalyzer.Diagnose(new[] { "System.IO.IOException: There is not enough space on the disk." }).Title == "Not enough disk space",
