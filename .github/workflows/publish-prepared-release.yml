@@ -1,0 +1,54 @@
+name: Publish verified launcher release (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful Prepare launcher release packages run ID
+        required: true
+        type: string
+      version:
+        description: Exact prepared launcher version
+        required: true
+        type: string
+      confirm_publish:
+        description: Publish the release and enable installed-launcher updates
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  actions: read
+jobs:
+  publish:
+    if: inputs.confirm_publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify build provenance
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN: ${{ inputs.run_id }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          if ($env:RELEASE_RUN -notmatch '^\d+$' -or $env:RELEASE_VERSION -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid release input.' }
+          $build = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:RELEASE_RUN" | ConvertFrom-Json
+          if ($build.conclusion -ne 'success' -or $build.path -ne '.github/workflows/prepare-release.yml' -or $build.head_repository.full_name -ne $env:GITHUB_REPOSITORY) { throw 'Only a successful trusted prepare-release run may be published.' }
+          "RELEASE_COMMIT=$($build.head_sha)" >> $env:GITHUB_ENV
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.run_id }}
+          name: release-ready-for-publication
+          path: release
+      - name: Validate, publish and enable the update feed
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: ./Installer/PublishPreparedRelease.ps1 -Version $env:RELEASE_VERSION -BuildCommit $env:RELEASE_COMMIT
