@@ -1,26 +1,26 @@
-# Vortex Launcher 0.2.3 — Artwork startup crash hotfix
+# Vortex Launcher 0.2.4 — Showcase & Launcher Wardrobe
 
-## Fixed
+## Launcher
 
-- Fixed a native crash while loading covers and icons that could prevent 0.2.2 from opening. The same crash was reproduced with generated mixed-format images before the fix.
-- Replaced the scaled codec path with a single owned decoder over immutable image data, followed by pixel resizing and a copied bitmap. Decoding is serialized and bounded to 20 MiB of encoded data and 16 megapixels; unsupported or oversized artwork is omitted rather than blocking startup.
-- Added regression checks for concurrent PNG/JPEG/WebP loads, repeated garbage collection, damaged thumbnail caches, invalid images and extremely tall/wide images. These checks run in the normal interface test suite on Windows and both Mac architectures.
+- Showcase library layout: full-width featured instance, Play and instance management on its cover, and a compact horizontal collection below it. Keyboard arrows navigate the virtualized collection without creating hundreds of hidden cards; smaller windows can scroll without hiding actions.
+- New Wardrobe entry in the launcher. Sign in to Vortex and select **Use nickname for Minecraft** in Profiles, then open Wardrobe.
+- Import and retain skin/cape PNGs by account. Preview real texture UVs, switch front/back, select slim arms, choose bundled capes or restore the original appearance. Arbitrary cape pictures are fitted onto both cape faces; source files are never modified.
+- Apply online changes only the selected cosmetic and checks the server response. Matching legacy launcher and Java offline-server UUID aliases are both published and checked, subject to the service's ownership checks. No activation code is needed for a new owned Vortex nickname. Existing protected profiles still require their original ownership key.
+- Custom instance covers take precedence; otherwise the launcher can use a PNG from that instance's screenshots folder. No AI-generated artwork or private gameplay screenshots are bundled.
+- Recognized Forge, NeoForge or Quilt metadata in an instance using that same loader is informational rather than an automatic warning dialog. Full dependency validation still belongs to the loader; unreadable archives and foreign-loader warnings remain visible.
 
-Includes unchanged **Vortex Client 0.2.0**. Installation-local library behavior from [0.2.2](https://github.com/forge93m-dev/Vortex-Launcher/releases/tag/v0.2.2) is retained. This hotfix does not delete or move instances, worlds, profiles or settings.
+## Vortex Client 0.2.1
 
-## If 0.2.2 does not open
+- Showcase-inspired main/pause menu controls and compact two-column module cards with labeled states and switches. Wardrobe keeps its separate layout; inventory and hotbar are unchanged.
+- Account appearance can load before joining a world. An online account skin takes precedence over an older local skin until you apply a new local selection during that session. Failed cape texture downloads remain retryable.
+- Exact Fabric builds: 26.3, 26.2, 26.1, 26.1.1, 26.1.2 and 1.21.11. New ports remain experimental: automated compilation, mixin transformation and initialization checks passed; they have not received complete real-world gameplay/multiplayer/macOS testing. 1.21.10 and 1.21.9 are not supported yet.
+- Existing instances: use **Update Vortex Client** in the instance tools to install the new bundled client. Launcher and client updates are separate.
 
-1. Close Minecraft and all Vortex windows before replacing application files.
-2. Download the ZIP for your platform from this release and extract it separately.
-3. **Windows:** replace only `Vortex Launcher.exe` in the existing launcher folder. Keep every other file and folder, especially `instances` and `config`.
-4. **macOS:** replace only `Vortex Launcher.app` in the same installation folder. Keep the adjacent `Vortex Launcher Data` folder.
+## macOS
 
-Do not delete the installation folder or reinstall Minecraft. A manual application-only replacement is necessary if the old launcher closes before its updater can be opened. If Vortex still opens, use **Settings → Updates → Check for updates**.
+- ARM64 and Intel application packages include a signed microphone permission helper, a microphone purpose description and the audio-input entitlement.
+- Launching an enabled Simple Voice Chat JAR requests microphone permission when needed. Choose **Allow** in the macOS prompt. If previously denied, enable **Vortex Launcher** under **System Settings → Privacy & Security → Microphone**, then restart Minecraft.
+- A denial or unavailable helper is explained in the game console; the launcher does not disable the mod's permission check or change system privacy settings.
+- Native package/signature/startup checks are automated on both Mac architectures. Actual recording and TCC permission inheritance must still be confirmed on a user's Mac. Beta packages are ad-hoc signed, not Apple-notarized; Gatekeeper may still require per-app Open Anyway.
 
-## Storage reminder
-
-Windows libraries stay beside the executable. Mac libraries stay in `Vortex Launcher Data` beside the .app, outside its signed bundle. A new empty installation folder starts clean; old global AppData/Application Support libraries are preserved but are not automatically connected. Use the same folder to keep your current local library. A fresh local installation does not delete online Vortex accounts or separately stored client cosmetics.
-
-## macOS beta notice
-
-Apple Silicon and Intel packages are built on native Mac runners. Extracted bundle signature, executable permission and native command-line startup are verified. Packages are **ad-hoc signed, not Apple Developer ID signed or notarized**. First launch may require **System Settings → Privacy & Security → Open Anyway**. Do not disable Gatekeeper globally. Automated checks are not a full GUI/game test on your Mac.
+Online cosmetics are Vortex cosmetics, not Microsoft account skin changes. Other players need a compatible Vortex Client; a launcher's nickname alone is not proof of ownership on an arbitrary offline server.
