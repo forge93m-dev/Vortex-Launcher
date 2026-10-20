@@ -1,30 +1,30 @@
 {
-  "version": "0.2.3",
-  "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.3/VortexLauncherSetup-0.2.3.exe",
+  "version": "0.2.4",
+  "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.4/VortexLauncherSetup-0.2.4.exe",
   "platforms": {
-    "win-x64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.3/VortexLauncherSetup-0.2.3.exe",
-    "osx-arm64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.3/VortexLauncher-0.2.3-osx-arm64.zip",
-    "osx-x64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.3/VortexLauncher-0.2.3-osx-x64.zip"
+    "win-x64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.4/VortexLauncherSetup-0.2.4.exe",
+    "osx-arm64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.4/VortexLauncher-0.2.4-osx-arm64.zip",
+    "osx-x64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.4/VortexLauncher-0.2.4-osx-x64.zip"
   },
   "packages": {
     "win-x64": {
-      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.3/VortexLauncher-0.2.3-win-x64.zip",
-      "sha256": "a2cb2c59fea2d42bdf11c934bf17051abbf91c316ace1e19dd20166b6be3b9d1",
-      "size": 43470725,
+      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.4/VortexLauncher-0.2.4-win-x64.zip",
+      "sha256": "64f67c78c5385bca69211a8275952a319db607aa504d62be83000e9a1ab6174b",
+      "size": 49315736,
       "kind": "windows-singlefile-zip"
     },
     "osx-arm64": {
-      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.3/VortexLauncher-0.2.3-osx-arm64.zip",
-      "sha256": "3daf49cbec5a3ef1054daf504c98522dd9fdfe1196bf696d54e1928f5e6b7111",
-      "size": 43906300,
+      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.4/VortexLauncher-0.2.4-osx-arm64.zip",
+      "sha256": "7351e3614163e1923731d474d531394ccd47be807894b397914eacf629eca273",
+      "size": 49800506,
       "kind": "mac-app-zip"
     },
     "osx-x64": {
-      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.3/VortexLauncher-0.2.3-osx-x64.zip",
-      "sha256": "7f56e68bd61c7c09ae43598d6ba4897b3c3864af9f95768a4eb28a6ab748cf1d",
-      "size": 45278861,
+      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.4/VortexLauncher-0.2.4-osx-x64.zip",
+      "sha256": "06741f663ac09d90f4b50c8b57671faab312c0643f68854639c9d6f87232a7b6",
+      "size": 51173290,
       "kind": "mac-app-zip"
     }
   },
-  "notes": "Vortex Launcher 0.2.3 - artwork startup crash hotfix. Replaces the scaled image-decoding path that could crash the process when loading mixed-format covers. Adds bounded single-codec decoding, safe thumbnail dimensions and mixed PNG/JPEG/WebP regression tests. If 0.2.2 cannot open, download the platform ZIP and replace only the executable/app in its existing folder. Keep all data folders. Installation-local libraries from 0.2.2 remain unchanged; old global libraries are not automatically imported. Includes unchanged Vortex Client 0.2.0. macOS beta is ad-hoc signed, not notarized; Open Anyway may be required."
+  "notes": "Vortex Launcher 0.2.4 - artwork startup crash hotfix. Replaces the scaled image-decoding path that could crash the process when loading mixed-format covers. Adds bounded single-codec decoding, safe thumbnail dimensions and mixed PNG/JPEG/WebP regression tests. If 0.2.2 cannot open, download the platform ZIP and replace only the executable/app in its existing folder. Keep all data folders. Installation-local libraries from 0.2.2 remain unchanged; old global libraries are not automatically imported. Includes unchanged Vortex Client 0.2.1. macOS beta is ad-hoc signed, not notarized; Open Anyway may be required."
 }
