@@ -15,7 +15,7 @@ namespace VortexLauncher.Core.Diagnostics;
 
 public sealed record ModCheckIssue(bool IsError, string Code, string File, string Message, string Advice)
 {
-    public bool IsInformational => !IsError && Code is "version-unverified" or "conflict-unverified";
+    public bool IsInformational => !IsError && Code is "version-unverified" or "conflict-unverified" or "loader-metadata";
     public string Heading => (IsError ? "ERROR · " : IsInformational ? "INFO · " : "WARNING · ") + Message;
 }
 public sealed record ModPreflightReport(IReadOnlyList<ModCheckIssue> Issues, int Checked, int Disabled, int Unknown)
@@ -91,8 +91,9 @@ public sealed class ModPreflightService
                 if (archive.GetEntry("quilt.mod.json") != null) declared.Add("Quilt");
                 if (archive.GetEntry("META-INF/mods.toml") != null || archive.GetEntry("mcmod.info") != null) declared.Add("Forge");
                 if (archive.GetEntry("META-INF/neoforge.mods.toml") != null) declared.Add("NeoForge");
-                Add(false, "unverified", file, declared.Count > 0 ? $"Declares {string.Join(" / ", declared)} metadata" : "No supported mod metadata found",
-                    declared.Count > 0 ? $"This instance uses {loader}. Full dependency validation is currently available for Fabric only; verify this file before launch." : "May be a library or a different kind of archive. No compatibility was guessed.");
+                bool matching=declared.Contains(loader,StringComparer.OrdinalIgnoreCase);
+                Add(false, matching?"loader-metadata":"unverified", file, declared.Count > 0 ? $"Declares {string.Join(" / ", declared)} metadata" : "No supported mod metadata found",
+                    matching?$"The archive declares metadata for {loader}. {loader} will validate its dependencies; this is not a compatibility guarantee.":declared.Count > 0 ? $"This instance uses {loader}. Full dependency validation is currently available for Fabric only; verify this file before launch." : "May be a library or a different kind of archive. No compatibility was guessed.");
                 return;
             }
             if (metadataBytes + metadata.Length > 16777216) throw new InspectionLimitException("Total metadata inspection limit reached.");

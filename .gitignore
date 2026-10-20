@@ -22,3 +22,5 @@ AllScripts.txt
 *.key
 Client/VortexClient/.gradle/
 Client/VortexClient/build/
+Client/VortexClient/ports/**/build/
+Client/VortexClient/ports/**/.gradle/

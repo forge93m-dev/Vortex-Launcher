@@ -53,7 +53,7 @@ internal static class ChromeAndHoverChecks
         Check(card.Bounds.Height==88 && card.GetVisualDescendants().OfType<Border>().Any(b=>RoundedClip.GetIsEnabled(b) && b.Clip!=null), "compact cover thumbnails retain an explicit rounded clip");
         window.CaptureRenderedFrame()!.Save(Path.Combine(output, "library-hover-first-row.png"));
         window.MouseMove(new Point(700, 80)); pump(120);
-        scroller.Offset = new Vector(0, scroller.Extent.Height); pump(250);
+        scroller.Offset = new Vector(scroller.Extent.Width, 0); pump(250);
         var last = VisibleCards(window, scroller).Single(c => (c.DataContext as InstanceModel)?.Name == "Instance 35");
         Hover(window, last, pump);
         var bottom = last.TranslatePoint(new Point(last.Bounds.Width, last.Bounds.Height), scroller)!.Value;

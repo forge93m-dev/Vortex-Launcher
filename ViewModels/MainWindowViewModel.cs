@@ -420,7 +420,7 @@ public partial class MainWindowViewModel : ObservableObject
         if (IsInitializing) return;
         if (vortexClientEnabled && !VortexClientService.IsCompatible(version, loader))
         {
-            StatusMessage = "Vortex Client is available for Minecraft 26.3 with Fabric only.";
+            StatusMessage = "Vortex Client is available for " + VortexClientService.SupportedVersionsDescription + ".";
             return;
         }
         var newInst = _instanceManager.CreateInstance(name, version, loader);

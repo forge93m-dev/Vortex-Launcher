@@ -28,6 +28,16 @@ foreach ($target in $targets) {
     [IO.File]::WriteAllText((Join-Path $bundlePath 'Contents/Info.plist'), $plist, [Text.UTF8Encoding]::new($false))
 
     if ($IsMacOS) {
+        $nativeArch = if ($target -eq 'osx-arm64') { 'arm64' } else { 'x86_64' }
+        $permissionLibrary = Join-Path $binaryPath 'libVortexPermissions.dylib'
+        & /usr/bin/clang -arch $nativeArch -mmacosx-version-min=12.0 -dynamiclib -fobjc-arc -framework Foundation -framework AVFoundation (Join-Path $PSScriptRoot 'Installer/macOS/MicrophonePermission.m') -o $permissionLibrary
+        if ($LASTEXITCODE -ne 0) { throw "Microphone permission helper build failed for $target." }
+        $helperSign=@('--force','--sign',$SignIdentity)
+        if($SignIdentity -ne '-'){ $helperSign+=@('--options','runtime','--timestamp') }
+        & /usr/bin/codesign @helperSign $permissionLibrary
+        if ($LASTEXITCODE -ne 0) { throw "Microphone permission helper signing failed for $target." }
+        & /usr/bin/codesign --verify --strict $permissionLibrary
+        if ($LASTEXITCODE -ne 0) { throw "Microphone helper signature verification failed for $target." }
         & /bin/chmod 755 (Join-Path $binaryPath 'Vortex Launcher')
         if ($LASTEXITCODE -ne 0) { throw "Cannot mark the launcher executable for $target." }
         $signArguments = @('--force', '--entitlements', (Join-Path $PSScriptRoot 'Installer/macOS/Entitlements.plist'), '--sign', $SignIdentity)
@@ -86,6 +96,8 @@ foreach ($target in $targets) {
             zip_signature_verified = $true
             executable_permission_verified = $true
             native_cli_startup_verified = ($target -eq $hostRid)
+            microphone_helper_signature_verified = $true
+            microphone_usage_description = $plist.Contains('NSMicrophoneUsageDescription')
             sha256 = (Get-FileHash -LiteralPath $signedZip -Algorithm SHA256).Hash.ToLowerInvariant()
         }
         [IO.File]::WriteAllText(($signedZip + '.verification.json'), ($verification | ConvertTo-Json), [Text.UTF8Encoding]::new($false))

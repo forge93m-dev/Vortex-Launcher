@@ -1,7 +1,7 @@
 <Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- This scope belongs to the launcher, not the Minecraft client's HUD. -->
     <Style Selector="Button">
-        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="CornerRadius" Value="10"/>
         <Setter Property="RenderTransform" Value="scale(1)"/>
         <Setter Property="MinHeight" Value="36"/>
     </Style>
@@ -60,7 +60,8 @@
     <Style Selector="Button.LibraryFilter.active"><Setter Property="Background" Value="{DynamicResource ThemePanelBrush}"/></Style>
     <Style Selector="ListBox.LibraryList"><Setter Property="Padding" Value="0"/></Style>
     <Style Selector="ListBox.LibraryList ListBoxItem">
-        <Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0,0,0,6"/>
+        <Setter Property="Width" Value="300"/>
+        <Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0,0,10,8"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="Template"><ControlTemplate>
             <Border x:Name="SelectionChrome" Background="Transparent" CornerRadius="7" BorderThickness="2,0,0,0" BorderBrush="Transparent">

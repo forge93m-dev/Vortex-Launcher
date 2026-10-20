@@ -89,13 +89,14 @@ public final class Capes {
             },true);
             return;
         }
-        if (mc.level == null || mc.player == null) return;
-        self = mc.player.getUUID();
+        self = LocalSkins.profile(mc);
+        if (self == null || (mc.level == null && !AccountWardrobe.connected())) return;
         if (lastSuccess != 0 && now - lastSuccess > 300_000_000_000L) { visible = Map.of(); patched.clear(); lastSuccess = 0; }
         if (now < nextPoll || busy()) return;
         nextPoll = now + 60_000_000_000L;
-        List<UUID> ids = mc.level.players().stream().sorted(java.util.Comparator.comparingDouble(p -> p.distanceToSqr(mc.player)))
+        List<UUID> ids = mc.level == null || mc.player == null ? List.of(self) : mc.level.players().stream().sorted(java.util.Comparator.comparingDouble(p -> p.distanceToSqr(mc.player)))
             .limit(32).map(p -> p.getUUID()).distinct().toList();
+        String selectionAtRequest=VortexClient.config.selectedCape;
         if (ids.isEmpty()) return;
         submit(() -> {
             var connection=new CapeConnection();
@@ -126,8 +127,8 @@ public final class Capes {
                 images.forEach(Capes::install);
                 AccountSkinTextures.install(accountProfiles,skins);
                 if(own!=null && !own.skin().isEmpty())LocalSkins.restoreOnline(self,own.slim(),skins.get(own.skin()));
-                if(own!=null && accountRestored.add(self) && "none".equals(VortexClient.config.selectedCape) && !"none".equals(own.cape())){
-                    if(!CapeCatalog.custom(own.cape()) || CapeImages.asset(own.cape())!=null){preview(own.cape());restoredCustom=CapeCatalog.custom(own.cape())?own.cape():"";}
+                if(own!=null && !accountRestored.contains(self) && java.util.Objects.equals(selectionAtRequest,VortexClient.config.selectedCape)){
+                    if(!CapeCatalog.custom(own.cape()) || CapeImages.asset(own.cape())!=null){accountRestored.add(self);if(!java.util.Objects.equals(own.cape(),VortexClient.config.selectedCape))preview(own.cape());restoredCustom=CapeCatalog.custom(own.cape())?own.cape():"";}
                 }
                 visible = found; patched.clear(); lastSuccess = System.nanoTime();
                 if(ids.contains(self))PUBLICATION.observe(self,found.get(self),System.nanoTime()/1_000_000);

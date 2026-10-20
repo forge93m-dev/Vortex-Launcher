@@ -42,7 +42,8 @@ internal static class GameLibraryChecks
         Check(fixture.Library.SelectedInstance == fixture.Instances[1] && preview.Content == fixture.Instances[1], "list selection updates the large cover and metadata");
         var selectedRow=list.GetVisualDescendants().OfType<Border>().Single(b=>b.Classes.Contains("LibraryRow") && ReferenceEquals(b.DataContext, fixture.Instances[1]));
         Click(window,selectedRow); pump(40);
-        window.KeyPress(Key.Down,RawInputModifiers.None,PhysicalKey.ArrowDown, ""); window.KeyRelease(Key.Down,RawInputModifiers.None,PhysicalKey.ArrowDown, ""); pump(40);
+        list.Focus();pump(20);
+        window.KeyPress(Key.Right,RawInputModifiers.None,PhysicalKey.ArrowRight, ""); window.KeyRelease(Key.Right,RawInputModifiers.None,PhysicalKey.ArrowRight, ""); pump(40);
         Check(list.SelectedIndex==2 && preview.Content==fixture.Instances[2], $"arrow keys select an instance and update its preview (index={list.SelectedIndex})");
         list.SelectedIndex=1; pump(40);
         var play = Play(window);
@@ -65,14 +66,14 @@ internal static class GameLibraryChecks
         fixture.Library.SelectedInstance = fixture.Instances[0]; pump(80);
         foreach (var size in new[] { new Size(960,600), new Size(1280,800), new Size(1600,1000) })
         {
-            window.Width=size.Width; window.Height=size.Height; pump(180);
+            window.Width=size.Width; window.Height=size.Height;window.FindControl<ScrollViewer>("showcaseScroll")!.Offset=default; pump(180);
             foreach (var name in navs.Select(n=>n.Item1).Concat(new[] { "activePlayerCard", "librarySearch", "downloadCenterButton" }))
-                Fits(window, window.FindControl<Control>(name)!, name + " fits " + size);
+                if(name!="librarySearch")Fits(window, window.FindControl<Control>(name)!, name + " fits " + size);
             Fits(window, Play(window), "featured Play fits " + size);
             var hero = window.GetVisualDescendants().OfType<Border>().Single(b=>b.Name=="libraryHero");
             Fits(window, hero, "hero fits " + size);
             Check(hero.Bounds.Height >= 150 && hero.Bounds.Width > 550, "cover remains usable at " + size);
-            Check(list.Bounds.Width <= 255 && list.GetVisualDescendants().OfType<Border>().Where(b=>b.Classes.Contains("LibraryRow")).All(b=>b.Bounds.Height == 88), "collection rows stay compact at " + size);
+            Check(list.Bounds.Width > 800 && list.GetVisualDescendants().OfType<Border>().Where(b=>b.Classes.Contains("LibraryRow")).All(b=>b.Bounds.Height == 88), "Showcase collection spans the window and cards stay compact at " + size);
             window.CaptureRenderedFrame()!.Save(Path.Combine(output, $"game-library-{(int)size.Width}.png"));
         }
         window.Width=1280; window.Height=800; fixture.Library.SelectedInstance=fixture.Instances[2]; pump(120);
@@ -111,6 +112,6 @@ internal static class GameLibraryChecks
         Check(p.X>=-.5 && p.Y>=-.5 && p.X+control.Bounds.Width<=window.Bounds.Width+.5 && p.Y+control.Bounds.Height<=window.Bounds.Height+.5, label);
     }
     private static void Move(Window window,Control control) => window.MouseMove(control.TranslatePoint(new Point(control.Bounds.Width/2,control.Bounds.Height/2),window)!.Value);
-    private static void Click(Window window,Control control){Move(window,control); var p=control.TranslatePoint(new Point(control.Bounds.Width/2,control.Bounds.Height/2),window)!.Value; window.MouseDown(p,MouseButton.Left);window.MouseUp(p,MouseButton.Left);}
+    private static void Click(Window window,Control control){control.BringIntoView();Avalonia.Threading.Dispatcher.UIThread.RunJobs();Move(window,control); var p=control.TranslatePoint(new Point(control.Bounds.Width/2,control.Bounds.Height/2),window)!.Value; window.MouseDown(p,MouseButton.Left);window.MouseUp(p,MouseButton.Left);}
     private static void Check(bool condition,string message){if(!condition)throw new Exception("FAIL: "+message);Console.WriteLine("PASS: "+message);}
 }

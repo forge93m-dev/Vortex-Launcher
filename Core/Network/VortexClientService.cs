@@ -13,13 +13,21 @@ namespace VortexLauncher.Core.Network;
 
 public sealed class VortexClientService
 {
-    public const string MinecraftVersion = "26.3";
-    public const string ClientVersion = "0.2.0";
-    private const string ResourceName = "VortexLauncher.Client.vortex-client-26.3-fabric-0.2.0.jar";
-    private const string FileName = "vortex-client-26.3-fabric-0.2.0.jar";
+    public const string ClientVersion = "0.2.1";
+    private sealed record ClientBuild(string Minecraft)
+    {
+        public string FileName => $"vortex-client-{Minecraft}-fabric-{ClientVersion}.jar";
+        public string ResourceName => "VortexLauncher.Client." + FileName;
+    }
+    public static System.Collections.Generic.IReadOnlyList<string> SupportedMinecraftVersions { get; } =
+        Array.AsReadOnly(new[] { "26.3", "26.2", "26.1.2", "26.1.1", "26.1", "1.21.11" });
+    public static string SupportedVersionsDescription => "Minecraft " + string.Join(", ", SupportedMinecraftVersions) + " with Fabric";
+    public static bool IsExperimentalTarget(string minecraftVersion) => minecraftVersion != "26.3" && SupportedMinecraftVersions.Contains(minecraftVersion);
+    private static ClientBuild BuildFor(string minecraft, string loader) => IsCompatible(minecraft, loader)
+        ? new ClientBuild(minecraft) : throw new InvalidOperationException("Vortex Client is available for " + SupportedVersionsDescription + ".");
 
     public static bool IsCompatible(string minecraftVersion, string loader) =>
-        minecraftVersion == MinecraftVersion && loader.Equals("Fabric", StringComparison.OrdinalIgnoreCase);
+        SupportedMinecraftVersions.Contains(minecraftVersion) && loader.Equals("Fabric", StringComparison.OrdinalIgnoreCase);
 
     public static string InstalledVersion(InstanceModel instance)
     {
@@ -45,19 +53,20 @@ public sealed class VortexClientService
     public async Task<string?> UpdateAsync(InstanceModel instance, CancellationToken cancellationToken = default)
     {
         if (instance.IsRunning || !IsCompatible(instance.Version, instance.Loader))
-            throw new InvalidOperationException("Close Minecraft and select a Minecraft 26.3 Fabric instance to update Vortex Client.");
+            throw new InvalidOperationException("Close Minecraft and select a supported Fabric instance to update Vortex Client. Supported: " + SupportedVersionsDescription + ".");
+        var build = BuildFor(instance.Version, instance.Loader);
         if (!string.IsNullOrWhiteSpace(instance.LoaderVersion) &&
             (!Version.TryParse(instance.LoaderVersion, out var loader) || loader < new Version(0, 19, 5)))
             throw new InvalidOperationException("Vortex Client requires Fabric Loader 0.19.5 or newer.");
         string? existing = FindClient(instance);
         if (existing != null && Version.TryParse(InstalledVersion(instance).Split(' ')[0], out var installed) && installed > Version.Parse(ClientVersion))
             throw new InvalidOperationException("A newer Vortex Client is already installed. Update the launcher; it will not downgrade your client.");
-        using var bundled = Assembly.GetExecutingAssembly().GetManifestResourceStream(ResourceName)
+        using var bundled = Assembly.GetExecutingAssembly().GetManifestResourceStream(build.ResourceName)
             ?? throw new InvalidOperationException("This launcher build does not include Vortex Client.");
         using var content = new MemoryStream();
         await bundled.CopyToAsync(content, cancellationToken);
         byte[] bytes = content.ToArray();
-        ValidateArtifact(bytes);
+        ValidateArtifact(bytes, build);
         if (existing != null)
         {
             await using var input = File.OpenRead(existing);
@@ -72,7 +81,7 @@ public sealed class VortexClientService
             (existing != null && (File.GetAttributes(existing) & FileAttributes.ReparsePoint) != 0))
             throw new IOException("Linked instance/mod folders are not supported for client updates.");
         Directory.CreateDirectory(mods);
-        string target = Path.Combine(mods, FileName + (existing?.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase) == true ? ".disabled" : ""));
+        string target = Path.Combine(mods, build.FileName + (existing?.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase) == true ? ".disabled" : ""));
         if (existing != target && File.Exists(target)) throw new IOException("The target filename is already used by another file. Nothing was overwritten.");
         string temporary = Path.Combine(mods, ".vortex-client-" + Guid.NewGuid().ToString("N") + ".part");
         string? backup = null;
@@ -108,22 +117,23 @@ public sealed class VortexClientService
     {
         if (!instance.VortexClientEnabled) return;
         if (!IsCompatible(instance.Version, instance.Loader))
-            throw new InvalidOperationException("Vortex Client currently supports Minecraft 26.3 with Fabric only.");
+            throw new InvalidOperationException("Vortex Client is available for " + SupportedVersionsDescription + ".");
+        var build = BuildFor(instance.Version, instance.Loader);
         if (instance.IsRunning)
             throw new InvalidOperationException("Close Minecraft before installing Vortex Client.");
         if (!string.IsNullOrWhiteSpace(instance.LoaderVersion) &&
             (!Version.TryParse(instance.LoaderVersion, out var pinned) || pinned < new Version(0, 19, 5)))
             throw new InvalidOperationException("Vortex Client requires Fabric Loader 0.19.5 or newer.");
 
-        using var bundled = Assembly.GetExecutingAssembly().GetManifestResourceStream(ResourceName)
+        using var bundled = Assembly.GetExecutingAssembly().GetManifestResourceStream(build.ResourceName)
             ?? throw new InvalidOperationException("This launcher build does not include Vortex Client.");
         using var content = new MemoryStream();
         await bundled.CopyToAsync(content, cancellationToken);
         byte[] bytes = content.ToArray();
-        ValidateArtifact(bytes);
+        ValidateArtifact(bytes, build);
         string mods = Path.Combine(instance.InstancePath, "mods");
         Directory.CreateDirectory(mods);
-        string target = Path.Combine(mods, FileName);
+        string target = Path.Combine(mods, build.FileName);
         byte[] expectedHash = SHA256.HashData(bytes);
         int installedCopies = 0;
         foreach (string file in Directory.EnumerateFiles(mods))
@@ -131,8 +141,8 @@ public sealed class VortexClientService
             cancellationToken.ThrowIfCancellationRequested();
             if (!file.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) &&
                 !file.EndsWith(".jar.disabled", StringComparison.OrdinalIgnoreCase)) continue;
-            bool sameName = Path.GetFileName(file).Equals(FileName, StringComparison.OrdinalIgnoreCase) ||
-                Path.GetFileName(file).Equals(FileName + ".disabled", StringComparison.OrdinalIgnoreCase);
+            bool sameName = Path.GetFileName(file).Equals(build.FileName, StringComparison.OrdinalIgnoreCase) ||
+                Path.GetFileName(file).Equals(build.FileName + ".disabled", StringComparison.OrdinalIgnoreCase);
             if (!sameName && !HasClientId(file)) continue;
             if (++installedCopies > 1)
                 throw new InvalidOperationException("Multiple Vortex Client JARs are installed. Keep only one enabled copy in Mods.");
@@ -170,7 +180,7 @@ public sealed class VortexClientService
         catch (JsonException) { return false; }
     }
 
-    private static void ValidateArtifact(byte[] content)
+    private static void ValidateArtifact(byte[] content, ClientBuild build)
     {
         using var stream = new MemoryStream(content);
         using var jar = new ZipArchive(stream);
@@ -180,7 +190,7 @@ public sealed class VortexClientService
         if (root.GetProperty("id").GetString() != "vortex_client" ||
             root.GetProperty("version").GetString() != ClientVersion ||
             root.GetProperty("environment").GetString() != "client" ||
-            root.GetProperty("depends").GetProperty("minecraft").GetString() != MinecraftVersion ||
+            root.GetProperty("depends").GetProperty("minecraft").GetString() != build.Minecraft ||
             jar.GetEntry("dev/vortex/client/VortexClient.class") == null)
             throw new InvalidDataException("The bundled Vortex Client is not compatible with this release.");
     }

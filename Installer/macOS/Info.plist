@@ -13,5 +13,6 @@
     <key>CFBundleVersion</key><string>__VERSION__</string>
     <key>LSMinimumSystemVersion</key><string>12.0</string>
     <key>NSHighResolutionCapable</key><true/>
+    <key>NSMicrophoneUsageDescription</key><string>Minecraft voice chat mods use your microphone so other players can hear you. Access is requested only when launching a voice chat instance.</string>
 </dict>
 </plist>

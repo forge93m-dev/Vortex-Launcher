@@ -1,0 +1,29 @@
+plugins {
+    id 'net.fabricmc.fabric-loom-remap' version '1.17.21'
+}
+version = '0.2.1'
+group = 'dev.vortex'
+base { archivesName = 'vortex-client-1.21.11-fabric' }
+repositories { mavenCentral() }
+dependencies {
+    minecraft 'com.mojang:minecraft:1.21.11'
+    mappings loom.officialMojangMappings()
+    modImplementation 'net.fabricmc:fabric-loader:0.19.5'
+}
+java { toolchain.languageVersion = JavaLanguageVersion.of(25) }
+tasks.withType(JavaCompile).configureEach { options.release = 21 }
+sourceSets {
+    main {
+        java.srcDirs = [file('../../build/targets/1.21.11/generated')]
+        resources.srcDirs = [file(providers.gradleProperty('vortexResources').getOrElse('src/main/resources'))]
+    }
+}
+tasks.remapJar { archiveFileName = 'vortex-client-1.21.11-fabric-0.2.1.jar' }
+tasks.register('preparePortClasspath') {
+    doLast {
+        def destination = layout.buildDirectory.file('port-classpath.txt').get().asFile
+        destination.parentFile.mkdirs()
+        destination.text = configurations.compileClasspath.files.collect { it.absolutePath }.join(File.pathSeparator)
+        println "Prepared named 1.21.11 compile classpath: ${destination}"
+    }
+}

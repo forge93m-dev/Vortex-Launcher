@@ -30,10 +30,10 @@ public sealed class WorldCover : Control
         uint hash = 2166136261;
         foreach (char c in Seed ?? "") hash = unchecked((hash ^ c) * 16777619);
         var p = Palettes[hash % (uint)Palettes.Length];
-        // Uniform-to-fill keeps the square sun and voxel proportions at every size.
-        double scale = Math.Max(Bounds.Width / 1000, Bounds.Height / 600);
+        // A wide hero must show the entire landscape, not a magnified strip of rock.
+        double scaleX = Bounds.Width / 1000, scaleY = Bounds.Height / 600;
         using (context.PushClip(new Rect(Bounds.Size)))
-        using (context.PushTransform(new Matrix(scale, 0, 0, scale, (Bounds.Width - 1000 * scale) / 2, (Bounds.Height - 600 * scale) / 2)))
+        using (context.PushTransform(new Matrix(scaleX, 0, 0, scaleY, 0, 0)))
         {
             context.DrawRectangle(p.Sky, null, new Rect(0, 0, 1000, 600));
             context.DrawRectangle(p.Light, null, new Rect(780, 92, 70, 70));

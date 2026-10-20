@@ -55,8 +55,8 @@ public final class VortexScreen extends Screen {
         int h = Math.min(400, Math.max(1, screenHeight - 16));
         int sidebar = 0;
         int content = Math.max(1, w - sidebar - 28);
-        int columns = content >= 520 ? 4 : content >= 380 ? 3 : content >= 180 ? 2 : 1;
-        int cardHeight = Math.min(84, Math.max(64, h - 158));
+        int columns = content >= 380 ? 2 : 1;
+        int cardHeight = Math.min(72, Math.max(64, h - 158));
         int rows = Math.max(1, (h - 150 + 8) / (cardHeight + 8));
         return new MenuLayout((screenWidth - w) / 2, (screenHeight - h) / 2, w, h, sidebar,
             columns, rows, Math.max(1, (content - (columns - 1) * 8) / columns), cardHeight);
@@ -464,16 +464,17 @@ public final class VortexScreen extends Screen {
             UiMotion.begin(g, x, y, w, h, motion.scale(), VortexClient.config.uiAnimations ? -hover * 2 : 0);
             ClientUi.panel(g, x, y, w, h, 4, ClientUi.mix(ClientUi.BORDER, ClientUi.ACCENT, hover * .65f),
                 ClientUi.mix(0xFF191B20, 0xFF262A33, hover));
-            ClientUi.moduleIcon(g, module, x + (w - 25) / 2, y + 5, ClientUi.mix(ClientUi.MUTED, ClientUi.TEXT, state), 0);
+            ClientUi.moduleIcon(g, module, x + 10, y + 12, ClientUi.mix(ClientUi.MUTED, ClientUi.TEXT, state), 0);
             ClientUi.icon(g, "settings", x + w - 19, y + 5, 12, ClientUi.MUTED);
             var font = UiFonts.body();
-            String name = font.plainSubstrByWidth(module.title, w - 12);
-            g.text(font, name, x + (w - font.width(name)) / 2, y + 33, ClientUi.TEXT, false);
-            ClientUi.rounded(g, x + 5, y + h - 22, w - 10, 17, 3,
-                ClientUi.mix(0xFF25282E, 0xFF2C3745, state));
-            String status = module.enabled() ? "ENABLED" : "DISABLED";
-            g.text(font, status, x + (w - font.width(status)) / 2, y + h - 18,
-                ClientUi.mix(ClientUi.MUTED, 0xFFD1DCEB, state), false);
+            String name = font.plainSubstrByWidth(module.title, w - 75);
+            g.text(font, name, x + 44, y + 12, ClientUi.TEXT, false);
+            String description=font.plainSubstrByWidth(module.description,w-58);
+            g.text(font,description,x+44,y+28,ClientUi.MUTED,false);
+            String status = module.enabled() ? "Enabled" : "Disabled";
+            g.text(font, status, x + 44, y + h - 16, ClientUi.mix(ClientUi.MUTED, 0xFFD2E8C9, state), false);
+            ClientUi.rounded(g,x+w-34,y+h-20,25,13,6,ClientUi.mix(0xFF343942,0xFFD2E8C9,state));
+            ClientUi.rounded(g,x+w-32+(int)(state*11),y+h-18,9,9,4,ClientUi.mix(0xFFABB0BA,0xFF162319,state));
             g.pose().popMatrix();
         }
     }

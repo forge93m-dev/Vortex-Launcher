@@ -41,6 +41,7 @@ public class InstanceManager
             if (stored.Value is { } inst)
             {
                 inst.InstancePath = dir;
+                inst.RefreshScreenshotCover();
                 OperationJournal.Discover(inst);
                 list.Add(inst);
                 continue;

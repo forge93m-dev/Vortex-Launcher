@@ -16,6 +16,8 @@ import net.minecraft.world.entity.player.PlayerSkin;
 public final class LocalSkins {
     private static final java.util.concurrent.ExecutorService IO=Executors.newSingleThreadExecutor(r->{var t=new Thread(r,"Vortex local skins");t.setDaemon(true);return t;});
     private static volatile boolean busy;
+    private static boolean changedThisSession;
+    public static boolean changedThisSession(){return changedThisSession;}
     private static UUID profile;
     private static int generation,textureSerial;
     private static SkinPixels.Selection saved;
@@ -39,7 +41,7 @@ public final class LocalSkins {
     private static Path file(UUID id) {return Path.of(System.getProperty("user.home"),".vortex","skins",id.toString()+".skin");}
     public static void tick(Minecraft mc) {
         UUID id=profile(mc);if(java.util.Objects.equals(id,profile))return;
-        profile=id;int version=++generation;saved=null;vanilla=cached=null;
+        profile=id;int version=++generation;saved=null;vanilla=cached=null;changedThisSession=false;
         release(applied);if(draft!=applied)release(draft);applied=draft=null;
         if(id==null)return;
         IO.execute(()->{try {var selection=SkinPixels.load(file(id));
@@ -112,7 +114,7 @@ public final class LocalSkins {
         IO.execute(()->{try {
             if(enabled)CosmeticCollection.local().addSkin(next);
             SkinPixels.save(file(id),next);mc.execute(()->{
-            busy=false;if(version!=generation){completion.accept(false);return;}
+            busy=false;if(version!=generation){completion.accept(false);return;}changedThisSession=true;
             try {var replacement=enabled?texture(next.rgba()):null;var previous=applied;applied=replacement;saved=next;vanilla=cached=null;release(previous);message=enabled?"Skin applied locally. Other players cannot see it yet.":"Vanilla skin restored locally.";
                 ClientNotifications.success("skin-applied","Skin saved","Local save complete. Online sync status is shown in the wardrobe.");}
             catch(Exception error){message="Skin saved; restart Minecraft to display it.";ClientNotifications.info("skin-restart","Skin saved","Restart Minecraft to see the changes.");}

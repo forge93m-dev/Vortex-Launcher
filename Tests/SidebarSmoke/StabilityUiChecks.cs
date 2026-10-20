@@ -23,7 +23,7 @@ static class StabilityUiChecks
         int realized = window.GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("InstanceCard"));
         Check(realized is > 0 and < 60, "500 instances realize only a bounded viewport of cards");
         var scroller = window.FindControl<ListBox>("instanceCards")!.GetVisualDescendants().OfType<ScrollViewer>().First();
-        scroller.Offset = new Vector(0, scroller.Extent.Height); pump(300);
+        scroller.Offset = new Vector(scroller.Extent.Width, 0); pump(300);
         Check(window.GetVisualDescendants().OfType<Border>().Any(b => b.Classes.Contains("InstanceCard") && (b.DataContext as InstanceModel)?.Name == "Instance 499"), "virtualized scrolling reaches the final instance");
         window.CaptureRenderedFrame()!.Save(Path.Combine(output, "virtualized-library.png"));
         large.InterruptedOperations.Add(new() { Kind = "Import", Name = "A very long interrupted modpack name that must fit safely in the recovery banner" });

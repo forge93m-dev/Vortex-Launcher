@@ -51,7 +51,7 @@ public partial class MainWindowViewModel
         try
         {
             string installed = await Task.Run(() => VortexClientService.InstalledVersion(instance));
-            if (!await TaskDialog.ConfirmAsync("Update Vortex Client", $"{instance.Name}\nInstalled: {installed}\nAvailable in this launcher: {VortexClientService.ClientVersion}\n\nOnly Minecraft {VortexClientService.MinecraftVersion} with Fabric 0.19.5+ is supported.\n\nThe previous JAR will be backed up in .vortex-client-backups. Your client settings and other mods are preserved. A disabled JAR will stay disabled.", "Install / update")) return;
+            if (!await TaskDialog.ConfirmAsync("Update Vortex Client", $"{instance.Name}\nInstalled: {installed}\nAvailable in this launcher: {VortexClientService.ClientVersion} for Minecraft {instance.Version}\n\nA version-specific client will be installed for this Fabric 0.19.5+ instance.\n\nThe previous JAR will be backed up in .vortex-client-backups. Your client settings and other mods are preserved. A disabled JAR will stay disabled.", "Install / update")) return;
             if (!instance.CanChangeFiles || IsGlobalLoading || IsDownloading) return;
             instance.IsInstalling = true;
             IsGlobalLoading = true;

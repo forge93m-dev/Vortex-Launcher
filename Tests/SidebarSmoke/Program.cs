@@ -71,6 +71,8 @@ try
 {
     if (args.Contains("--artwork")) { ArtworkChecks.Run(Pump, output); return; }
     ArtworkChecks.Run(Pump, output);
+    LauncherWardrobeChecks.Run(Pump,output);
+    if(args.Contains("--launcher-wardrobe")){Console.WriteLine("Rendered previews: "+output);return;}
     if(args.Contains("--session-consoles")){SessionConsoleUiChecks.Run(Pump);return;}
     if(args.Contains("--vortex-accounts-live")){VortexAccountLiveChecks.Run(Pump,output);return;}
     if(args.Contains("--vortex-accounts")){VortexAccountChecks.Run(Pump,output);Console.WriteLine("Rendered previews: "+output);return;}

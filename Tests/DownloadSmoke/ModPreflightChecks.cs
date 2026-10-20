@@ -75,6 +75,13 @@ internal static class ModPreflightChecks
         Check((await Scan(malformed)).Issues.Any(i => i.Code == "broken-jar" && i.IsError), "corrupt enabled archives are distinguished from unknown metadata");
         Check(!(await Scan(malformed, "Vanilla")).HasErrors, "unused mods folder does not block Vanilla startup");
         Check(!(await Scan(wrong, "Quilt")).HasErrors, "Fabric dependency rules are not treated as authoritative on Quilt/bridges");
+        foreach(var entry in new[]{("Forge","META-INF/mods.toml"),("NeoForge","META-INF/neoforge.mods.toml"),("Quilt","quilt.mod.json")}){
+            string root=NewRoot("matching-"+entry.Item1);
+            Directory.CreateDirectory(Path.Combine(root,"mods"));
+            using(var zip=ZipFile.Open(Path.Combine(root,"mods","correct-loader.jar"),ZipArchiveMode.Create))using(var writer=new StreamWriter(zip.CreateEntry(entry.Item2).Open()))writer.Write("{}");
+            var matching=await Scan(root,entry.Item1);Check(!matching.HasErrors&&!matching.NeedsReview&&matching.Unknown==1&&matching.Issues.All(i=>i.IsInformational),"matching "+entry.Item1+" metadata is informational, not a false launch interruption");
+            Check((await Scan(root,"Fabric")).NeedsReview,"foreign "+entry.Item1+" metadata remains a warning in Fabric");
+        }
         string oversized = NewRoot("bounded"); Jar(oversized, "large-metadata.jar", new string(' ', 524289));
         Check(!(await Scan(oversized)).HasErrors, "inspection size limits yield warnings rather than invented broken-JAR errors");
         bool? Match(string version, string predicate) { using var json = JsonDocument.Parse(JsonSerializer.Serialize(predicate)); return ModVersionRange.Matches(version, json.RootElement); }

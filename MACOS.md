@@ -30,10 +30,22 @@ globally. For normal public distribution, sign and notarize the application.
 
 ## Data and Minecraft
 
-Instances, accounts, settings and Java runtimes live in
-`~/Library/Application Support/VortexLauncher`, outside the application bundle.
-Replacing or moving the app does not move/delete your worlds or settings.
-Windows keeps its existing portable layout.
+Instances, accounts, settings and Java runtimes live in `Vortex Launcher Data`
+beside the installed `.app`, outside its signed bundle. Install the app in a
+permanent writable folder (for example `~/Applications/Vortex/`). Updating the
+app in that same folder reuses its library; moving to another folder starts a
+separate library. Old Application Support data is not automatically connected
+or deleted. Windows stores its portable library beside the executable.
+
+## Simple Voice Chat microphone access (0.2.4+)
+
+Launch a Minecraft instance containing an enabled Simple Voice Chat JAR and
+choose **Allow** when macOS asks whether Vortex Launcher may use the microphone.
+The launcher checks permission through its signed native helper; it does not
+record audio or disable the mod's permission checks. If access was denied,
+enable **Vortex Launcher** in **System Settings → Privacy & Security → Microphone**
+and restart Minecraft. Native package checks are automated on ARM64 and Intel;
+recording and inherited permission still need a real-device test.
 
 Java is selected/downloaded for the game version and native-library architecture.
 Modern versions with ARM natives use ARM Java on Apple Silicon. Older versions

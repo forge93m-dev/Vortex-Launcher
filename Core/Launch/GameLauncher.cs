@@ -524,6 +524,7 @@ public class GameLauncher
             }
         };
 
+        await MacMicrophonePermission.PrepareAsync(baseDir, logCallback, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         process.Start();
 

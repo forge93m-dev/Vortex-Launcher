@@ -134,13 +134,13 @@ public final class VortexMenuChrome {
             previousFrame = now;
             float entrance = UiMotion.progress(born);
             UiMotion.begin(g, getX(), getY(), getWidth(), getHeight(), pressScale(now), (1 - entrance) * 7 - (VortexClient.config.uiAnimations ? hover : 0));
-            int background = primary ? ClientUi.mix(0xFF293344, 0xFF35435A, hover) : ClientUi.mix(0xFF191B20, 0xFF262A33, hover);
+            int background = primary ? ClientUi.mix(0xFFD2E8C9, 0xFFE3F3DF, hover) : ClientUi.mix(0xFF15191F, 0xFF252D34, hover);
             ClientUi.panel(g, getX(), getY(), getWidth(), getHeight(), 6,
-                primary ? 0xFF46536B : ClientUi.mix(ClientUi.BORDER, 0xFF69758B, hover * .65f), active ? background : 0xFF13151A);
+                primary ? 0xFFD2E8C9 : ClientUi.mix(ClientUi.BORDER, 0xFF69758B, hover * .65f), active ? background : 0xFF13151A);
             var font = UiFonts.body();
             String label = font.plainSubstrByWidth(getMessage().getString(), getWidth() - 12);
             g.text(font, label, getX() + (getWidth() - font.width(label)) / 2, getY() + (getHeight() - 9) / 2,
-                !active ? 0xFF888A93 : ClientUi.TEXT, false);
+                !active ? 0xFF888A93 : primary ? 0xFF162319 : ClientUi.TEXT, false);
             g.pose().popMatrix();
         }
     }
@@ -225,7 +225,8 @@ public final class VortexMenuChrome {
         float fade = UiMotion.progress(opened);
         var font = UiFonts.heading();
         drawBrand(g, width / 2, y + (int)((1 - fade) * 4), layout.header() < 60, pause ? "Pause" : "VORTEX CLIENT");
-        g.text(UiFonts.body(), "Minecraft 26.3 / Vortex", 10, height - 14, 0xFFD5D7DE, false);
+        String gameVersion=net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer("minecraft").map(m->m.getMetadata().getVersion().getFriendlyString()).orElse("");
+        g.text(UiFonts.body(), "Minecraft " + gameVersion + " / Vortex", 10, height - 14, 0xFFD5D7DE, false);
         String hint = ClientBindings.label(VortexClient.config.menuKey) + " / Vortex Client";
         g.text(UiFonts.body(), hint, width - UiFonts.body().width(hint) - 10, height - 14, 0xFFD5D7DE, false);
     }

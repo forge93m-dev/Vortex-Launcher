@@ -99,7 +99,21 @@ public partial class InstanceModel : ObservableObject
     public bool HasCover => !string.IsNullOrWhiteSpace(CoverImagePath);
     [System.Text.Json.Serialization.JsonIgnore]
     public bool HasIcon => !string.IsNullOrWhiteSpace(IconPath);
-    partial void OnCoverImagePathChanged(string value) => OnPropertyChanged(nameof(HasCover));
+    partial void OnCoverImagePathChanged(string value) { OnPropertyChanged(nameof(HasCover)); OnPropertyChanged(nameof(DisplayCoverPath)); }
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string DisplayCoverPath => string.IsNullOrWhiteSpace(CoverImagePath)?_screenshotCover:CoverImagePath;
+    private string _screenshotCover="";
+    public void RefreshScreenshotCover()
+    {
+        string value="";
+        try{
+            var dir=System.IO.Path.Combine(InstancePath,"screenshots");
+            if(System.IO.Directory.Exists(dir)&&(System.IO.File.GetAttributes(dir)&System.IO.FileAttributes.ReparsePoint)==0)
+                value=System.Linq.Enumerable.FirstOrDefault(System.Linq.Enumerable.OrderByDescending(
+                    System.Linq.Enumerable.Where(System.Linq.Enumerable.Take(System.IO.Directory.EnumerateFiles(dir,"*.png"),500),p=>(System.IO.File.GetAttributes(p)&System.IO.FileAttributes.ReparsePoint)==0),System.IO.File.GetLastWriteTimeUtc))??"";
+        }catch(System.IO.IOException){}catch(UnauthorizedAccessException){}
+        if(_screenshotCover!=value){_screenshotCover=value;OnPropertyChanged(nameof(DisplayCoverPath));}
+    }
     partial void OnIconPathChanged(string value) => OnPropertyChanged(nameof(HasIcon));
 
     [System.Text.Json.Serialization.JsonIgnore]

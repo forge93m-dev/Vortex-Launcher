@@ -33,8 +33,10 @@ public partial class CreateInstanceViewModel : ObservableObject
 
     public bool CanUseVortexClient => VortexClientService.IsCompatible(SelectedVersion, SelectedLoader);
     public string VortexClientDescription => CanUseVortexClient
-        ? "FPS Counter, smooth Zoom and the Vortex module menu. No extra libraries required."
-        : "Available for Minecraft 26.3 with Fabric. Select that configuration to enable it.";
+        ? VortexClientService.IsExperimentalTarget(SelectedVersion)
+            ? $"Experimental client port for Minecraft {SelectedVersion}. Automated compatibility checks passed; in-game HUD and wardrobe testing is still required."
+            : "FPS Counter, smooth Zoom and the Vortex module menu. No extra libraries required."
+        : "Available for " + VortexClientService.SupportedVersionsDescription + ". Select a supported configuration to enable it.";
     public string ConfigurationSummary => $"Minecraft {SelectedVersion} · {SelectedLoader}";
     public string VortexClientStatus => VortexClientEnabled ? "Vortex Enabled" : "Optional";
 

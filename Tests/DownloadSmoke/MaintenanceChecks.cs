@@ -68,6 +68,30 @@ static class MaintenanceChecks
         Directory.CreateDirectory(Path.Combine(clientRoot, "config"));
         File.WriteAllText(Path.Combine(clientRoot, "config/vortex-client.json"), "settings");
         var service = new VortexClientService();
+        foreach (string minecraft in VortexClientService.SupportedMinecraftVersions)
+        {
+            var target = new InstanceModel { InstancePath = Directory.CreateDirectory(Path.Combine(work, "client-" + minecraft)).FullName,
+                Version = minecraft, Loader = "Fabric", LoaderVersion = "0.19.5", VortexClientEnabled = true };
+            Check(VortexClientService.IsCompatible(minecraft, "fabric") && !VortexClientService.IsCompatible(minecraft, "Forge"), "client catalog selects only a supported Fabric target: " + minecraft);
+            await service.InstallAsync(target);
+            string artifact = Directory.GetFiles(Path.Combine(target.InstancePath, "mods"), "*.jar").Single();
+            using var archive = ZipFile.OpenRead(artifact);
+            using var metadataStream = archive.GetEntry("fabric.mod.json")!.Open();
+            using var clientMetadata = JsonDocument.Parse(metadataStream);
+            Check(clientMetadata.RootElement.GetProperty("depends").GetProperty("minecraft").GetString() == minecraft,
+                "client installation embeds the exact game's JAR instead of reusing 26.3: " + minecraft);
+            using (var bytecode = archive.GetEntry("dev/vortex/client/VortexClient.class")!.Open())
+            {
+                byte[] header = new byte[8]; bytecode.ReadExactly(header);
+                int major = (header[6] << 8) | header[7];
+                Check(major == (minecraft == "1.21.11" ? 65 : 69), "target client uses the correct Java class version: " + minecraft);
+            }
+            Check(!archive.Entries.Any(e => e.FullName.StartsWith("net/minecraft/", StringComparison.Ordinal)), "client artifacts never bundle Minecraft classes: " + minecraft);
+            await service.InstallAsync(target);
+            Check(await service.UpdateAsync(target) == null, "repeat install/update of a matching client is idempotent: " + minecraft);
+        }
+        Check(!VortexClientService.IsCompatible("26.4", "Fabric") && !VortexClientService.IsCompatible("26.2-snapshot-1", "Fabric"), "untested releases and snapshots are never assumed binary compatible");
+        Check(!VortexClientService.IsExperimentalTarget("26.3") && VortexClientService.IsExperimentalTarget("1.21.11"), "new ports are distinguished from the existing tested 26.3 client");
         string? backup = await service.UpdateAsync(instance);
         string updated = Path.Combine(mods, $"vortex-client-26.3-fabric-{VortexClientService.ClientVersion}.jar.disabled");
         Check(backup != null && File.ReadAllBytes(backup).SequenceEqual(previous) && File.Exists(updated) && !File.Exists(old), "client update backs up the original JAR and preserves disabled state");
