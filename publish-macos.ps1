@@ -30,7 +30,7 @@ foreach ($target in $targets) {
     if ($IsMacOS) {
         $nativeArch = if ($target -eq 'osx-arm64') { 'arm64' } else { 'x86_64' }
         $permissionLibrary = Join-Path $binaryPath 'libVortexPermissions.dylib'
-        & /usr/bin/clang -arch $nativeArch -mmacosx-version-min=12.0 -dynamiclib -fobjc-arc -framework Foundation -framework AVFoundation (Join-Path $PSScriptRoot 'Installer/macOS/MicrophonePermission.m') -o $permissionLibrary
+        & /usr/bin/clang -arch $nativeArch '-mmacosx-version-min=12.0' -dynamiclib -fobjc-arc -fblocks -framework Foundation -framework AVFoundation (Join-Path $PSScriptRoot 'Installer/macOS/MicrophonePermission.m') -o $permissionLibrary
         if ($LASTEXITCODE -ne 0) { throw "Microphone permission helper build failed for $target." }
         $helperSign=@('--force','--sign',$SignIdentity)
         if($SignIdentity -ne '-'){ $helperSign+=@('--options','runtime','--timestamp') }
