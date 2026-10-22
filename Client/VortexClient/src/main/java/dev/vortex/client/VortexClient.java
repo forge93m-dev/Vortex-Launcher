@@ -20,7 +20,7 @@ public final class VortexClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         config = ClientConfig.load(FabricLoader.getInstance().getConfigDir().resolve("vortex-client.json"));
-        LoggerFactory.getLogger("Vortex Client").info("Vortex Client 0.2.1 initialized. Beta 2 public release; experimental visibility optimization removed.");
+        LoggerFactory.getLogger("Vortex Client").info("Vortex Client 0.2.2 initialized. Resource Counter and remembered storage tools; experimental visibility optimization remains disabled.");
     }
 
     public static void tick(Minecraft minecraft) {
@@ -30,6 +30,8 @@ public final class VortexClient implements ClientModInitializer {
         Capes.tick(minecraft);
         PartyFeature.tick(minecraft);
         WaypointsFeature.tick(minecraft);
+        ResourceCounter.tick(minecraft);
+        StorageMemory.tick(minecraft);
         DeathWaypoints.tick(minecraft);
         EntityHearts.tick(minecraft);
         MetricsHud.tick(minecraft);

@@ -103,6 +103,7 @@ public class FabricSmoke {
                 throw new AssertionError("Menu cards overlap the footer or leave the scaled window");
         }
         Class<?> moduleType = Class.forName("dev.vortex.client.ClientModule", true, target);
+        ResourceToolsSmoke.run(target,java.nio.file.Path.of(args[0]));
         Object[] modules = moduleType.getEnumConstants();
         Method matches = moduleType.getMethod("matches", String.class, String.class);
         int hudCount = 0, gameplayCount = 0, enabledCount = 0;
@@ -111,7 +112,7 @@ public class FabricSmoke {
             if ((boolean)matches.invoke(module, "", "Gameplay")) gameplayCount++;
             if ((boolean)matches.invoke(module, "", "Enabled")) enabledCount++;
         }
-        if (hudCount != 11 || gameplayCount != 12 || enabledCount != 13 ||
+        if (hudCount != 12 || gameplayCount != 13 || enabledCount != 13 ||
             !(boolean)matches.invoke(modules[0], "  fPs  ", "HUD") ||
             (boolean)matches.invoke(modules[1], "Zoom", "HUD") ||
             (boolean)matches.invoke(modules[0], "no such module", "All Modules"))
@@ -128,7 +129,7 @@ public class FabricSmoke {
         if ((boolean)matches.invoke(modules[0], "", "Enabled") || !(boolean)configType.getField("armorEnabled").get(current))
             throw new AssertionError("Module toggle isolation / stale enabled filter");
         moduleType.getMethod("toggle").invoke(modules[0]);
-        if (modules.length != 22) throw new AssertionError("New modules not registered");
+        if (modules.length != 24) throw new AssertionError("New modules not registered");
         for (Object module : modules) if (module.toString().equals("KEYS") || module.toString().equals("HELD_ITEM") || module.toString().equals("CPS"))
             throw new AssertionError("Excluded module exposed");
         for (Object module : modules) {
@@ -448,6 +449,8 @@ public class FabricSmoke {
                     int by = (int)panelType.getMethod("buttonY", int.class).invoke(panel, i);
                     if (bw < 24 || bh < 18 || bx < px || by < py || bx + bw > px + pw || by + bh > py + ph - 14)
                         throw new AssertionError("Title/pause button clips its panel");
+                    int primarySlots = (int)panelType.getMethod("primaryCount").invoke(panel);
+                    if (i >= primarySlots && bw < 64) throw new AssertionError("Utility actions regressed to unlabeled icon-sized targets");
                     for (int j = 0; j < i; j++) {
                         int ox = (int)panelType.getMethod("buttonX", int.class).invoke(panel, j);
                         int oy = (int)panelType.getMethod("buttonY", int.class).invoke(panel, j);
@@ -818,7 +821,67 @@ public class FabricSmoke {
                 }
             }
         }
-        System.out.println("PASS Compact dock and central Modules/Capes: unique accessible names, all vanilla callbacks and non-overlapping live widget bounds");
+        System.out.println("PASS Labeled utility grid and central actions: unique accessible names, all vanilla callbacks and non-overlapping live widget bounds");
+        for (int[] dims : new int[][] {{320,240}, {430,300}, {854,480}}) {
+            Object hub = home.getConstructor(screenBase).newInstance((Object)null);
+            screenBase.getField("width").setInt(hub, dims[0]); screenBase.getField("height").setInt(hub, dims[1]);
+            Method initialize = home.getDeclaredMethod("init"); initialize.setAccessible(true); initialize.invoke(hub);
+            var children = (java.util.List<?>)screenBase.getMethod("children").invoke(hub);
+            if (children.size() != 7) throw new AssertionError("Hub must expose six labeled destinations and Back");
+            var destinations = new java.util.HashSet<String>();
+            for (Object child : children) {
+                String name = (String)component.getMethod("getString").invoke(buttonClass.getMethod("getMessage").invoke(child));
+                destinations.add(name);
+                int bx = (int)buttonClass.getMethod("getX").invoke(child), by = (int)buttonClass.getMethod("getY").invoke(child);
+                int bw = (int)buttonClass.getMethod("getWidth").invoke(child), bh = (int)buttonClass.getMethod("getHeight").invoke(child);
+                if (bw < 130 || bx < 0 || by < 0 || bx + bw > dims[0] || by + bh > dims[1] - 14)
+                    throw new AssertionError("Actual labeled hub action clips or becomes icon-only: " + name);
+            }
+            if (!destinations.containsAll(java.util.List.of("Modules", "Edit HUD", "Wardrobe", "Party", "Key bindings", "Client settings", "Back")))
+                throw new AssertionError("Hub destination missing");
+        }
+        System.out.println("PASS Actual hub widgets expose six labeled destinations and Back at three GUI scales");
+        for (String tool : new String[]{"KeybindScreen", "DurabilitySettingsScreen", "ModuleHelpScreen"}) {
+            Class<?> page = Class.forName("dev.vortex.client." + tool, true, target);
+            if (page.getMethod("isInGameUi").getDeclaringClass() != page ||
+                page.getMethod("extractBackground", Class.forName("net.minecraft.client.gui.GuiGraphicsExtractor", false, target), int.class, int.class, float.class).getDeclaringClass() != page)
+                throw new AssertionError("Client tool falls back to a vanilla blur pass: " + tool);
+        }
+        Class<?> moduleScreen = Class.forName("dev.vortex.client.VortexScreen", true, target);
+        for (int[] dims : new int[][]{{320,240},{854,480}}) {
+            Object settings = moduleScreen.getMethod("settings", screenBase).invoke(null, (Object)null);
+            screenBase.getField("width").setInt(settings,dims[0]); screenBase.getField("height").setInt(settings,dims[1]);
+            Method initialize = moduleScreen.getDeclaredMethod("init"); initialize.setAccessible(true); initialize.invoke(settings);
+            var names = new java.util.HashSet<String>();
+            var children = (java.util.List<?>)screenBase.getMethod("children").invoke(settings);
+            for(Object child : children) if(buttonClass.isInstance(child)) {
+                names.add((String)component.getMethod("getString").invoke(buttonClass.getMethod("getMessage").invoke(child)));
+                int y=(int)buttonClass.getMethod("getY").invoke(child),h=(int)buttonClass.getMethod("getHeight").invoke(child);
+                if(y<0 || y+h>dims[1]) throw new AssertionError("General settings button leaves viewport");
+            }
+            if(!names.contains("Key bindings") || !names.contains("HUD Editor")) throw new AssertionError("General settings lost labeled destinations");
+            var pageOpened = moduleScreen.getDeclaredField("pageOpened"); pageOpened.setAccessible(true);
+            pageOpened.setLong(settings, 1234L);
+            Object firstWidgetBeforeSpam = children.get(0);
+            Object settingsButton = children.stream().filter(buttonClass::isInstance).filter(child -> {
+                try { return "Settings".equals(component.getMethod("getString").invoke(buttonClass.getMethod("getMessage").invoke(child))); }
+                catch (Exception ex) { throw new RuntimeException(ex); }
+            }).findFirst().orElseThrow();
+            for(int clickIndex=0; clickIndex<100; clickIndex++) press.invoke(settingsButton,nudgeEvent(keyType,inputs));
+            if(pageOpened.getLong(settings)!=1234L || ((java.util.List<?>)screenBase.getMethod("children").invoke(settings)).get(0)!=firstWidgetBeforeSpam)
+                throw new AssertionError("Repeated active Settings clicks restarted entrance or rebuilt widgets");
+            initialize.invoke(settings);
+            if(pageOpened.getLong(settings)!=1234L) throw new AssertionError("Widget rebuild restarted page entrance");
+        }
+        Object filteredMenu = moduleScreen.getConstructor(screenBase).newInstance((Object)null);
+        var filterMethod = moduleScreen.getDeclaredMethod("selectFilter",String.class); filterMethod.setAccessible(true);
+        var pageTime = moduleScreen.getDeclaredField("pageOpened"); pageTime.setAccessible(true); pageTime.setLong(filteredMenu,1234L);
+        var scrollTarget = moduleScreen.getDeclaredField("scrollTarget"); scrollTarget.setAccessible(true); scrollTarget.setDouble(filteredMenu,17d);
+        for(int clickIndex=0; clickIndex<100; clickIndex++) filterMethod.invoke(filteredMenu,"All Modules");
+        if(pageTime.getLong(filteredMenu)!=1234L || scrollTarget.getDouble(filteredMenu)!=17d)
+            throw new AssertionError("Repeated active module filter reset entrance or scrolling");
+        System.out.println("PASS Active-tab click spam preserves entrance timestamp, widgets and module scrolling; rebuilds do not restart entrance");
+        System.out.println("PASS Actual general-settings destinations and tool backgrounds preserve HUD without extra blur");
         System.out.println("PASS Custom menu buttons delegate to vanilla handlers and preserve active/visible restrictions");
         Object click = eventType.getConstructor(double.class, double.class, buttonType).newInstance(15d, 50d, button);
         if (!(boolean)editorType.getMethod("mouseClicked", eventType, boolean.class).invoke(editor, click, false))

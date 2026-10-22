@@ -26,7 +26,7 @@ public class GameDownloader
     }
 
     public async Task DownloadGameAsync(string instanceName, string version, string versionJsonUrl, Action<string, double> progressCallback,
-        CancellationToken cancellationToken = default, TransferProgress? transfer = null)
+        CancellationToken cancellationToken = default, TransferProgress? transfer = null, bool shareLibraries = true)
     {
         cancellationToken.ThrowIfCancellationRequested();
         string instancePath = Path.Combine(PlatformSupport.DataRoot, "instances", instanceName);
@@ -62,11 +62,16 @@ public class GameDownloader
                 clientProp.TryGetProperty("sha1", out var clientHash) ? clientHash.GetString() : null,
                 clientProp.TryGetProperty("size", out var clientSize) ? clientSize.GetInt64() : null));
 
-        string assetsDir = Path.Combine(instancePath, "assets");
+        var previousLayout = SharedGameFiles.Read(instancePath, allowDamaged: true);
+        var layout = new SharedGameFiles.Layout { Version = version, SharedLibraries = shareLibraries };
+        if (previousLayout?.Version == version && previousLayout.SharedLibraries == shareLibraries)
+            layout.LoaderLibraries = previousLayout.LoaderLibraries;
+        string assetsDir = SharedGameFiles.Assets;
         string assetsIndexesDir = Path.Combine(assetsDir, "indexes");
         string assetsObjectsDir = Path.Combine(assetsDir, "objects");
         Directory.CreateDirectory(assetsIndexesDir);
         Directory.CreateDirectory(assetsObjectsDir);
+        var assetPaths = new SharedGameFiles.AssetPaths();
 
         if (root.TryGetProperty("assetIndex", out var assetIndexProp))
         {
@@ -74,8 +79,9 @@ public class GameDownloader
                 assetIndexProp.TryGetProperty("id", out var indexIdProp))
             {
                 string indexUrl = indexUrlProp.GetString() ?? "";
-                string indexId = indexIdProp.GetString() ?? version;
-                string indexPath = Path.Combine(assetsIndexesDir, $"{indexId}.json");
+                string indexId = SharedGameFiles.Key(indexUrl + "|" + (assetIndexProp.TryGetProperty("sha1", out var indexIdentity) ? indexIdentity.GetString() : version));
+                layout.AssetIndex = indexId;
+                string indexPath = SharedGameFiles.Checked(Path.Combine(assetsIndexesDir, $"{indexId}.json"));
 
                 string indexJsonContent = string.Empty;
                 if (!string.IsNullOrEmpty(indexUrl))
@@ -98,17 +104,15 @@ public class GameDownloader
                             if (obj.Value.TryGetProperty("hash", out var hashProp))
                             {
                                 string hash = hashProp.GetString() ?? "";
-                                if (hash.Length >= 2)
+                                if (hash.Length == 40 && hash.All(Uri.IsHexDigit))
                                 {
                                     string prefix = hash.Substring(0, 2);
-                                    string objFolder = Path.Combine(assetsObjectsDir, prefix);
-                                    string objFile = Path.Combine(objFolder, hash);
 
                                     long? objectSize = obj.Value.TryGetProperty("size", out var sizeProp)
                                         ? sizeProp.GetInt64() : null;
                                     if (seenHashes.Add(hash))
                                     {
-                                        Directory.CreateDirectory(objFolder);
+                                        string objFile = assetPaths.Resolve(hash);
                                         assetTargets.Add(($"https://resources.download.minecraft.net/{prefix}/{hash}", objFile, hash, objectSize));
                                     }
                                 }
@@ -148,8 +152,11 @@ public class GameDownloader
 
                     if (!string.IsNullOrEmpty(url) && !string.IsNullOrEmpty(relativePath))
                     {
-                        // Сохраняем иерархию папок для библиотек
-                        string destPath = Path.Combine(librariesDir, relativePath.Replace('/', Path.DirectorySeparatorChar));
+                        // Forge needs its Maven hierarchy; other loaders use immutable shared inputs.
+                        string? expectedHash = artifact.TryGetProperty("sha1", out var artifactHash) ? artifactHash.GetString() : null;
+                        string destPath = shareLibraries ? SharedGameFiles.Library(url, relativePath, expectedHash)
+                            : Path.Combine(librariesDir, relativePath.Replace('/', Path.DirectorySeparatorChar));
+                        if (shareLibraries) layout.Libraries.Add(SharedGameFiles.Relative(destPath));
                         long? expectedSize = artifact.TryGetProperty("size", out var libSize) ? libSize.GetInt64() : null;
                         libTargets.Add((url, destPath,
                             artifact.TryGetProperty("sha1", out var libHash) ? libHash.GetString() : null, expectedSize));
@@ -180,9 +187,11 @@ public class GameDownloader
                         if (!string.IsNullOrEmpty(nativeUrl) &&
                             !string.IsNullOrEmpty(nativeRelativePath))
                         {
-                            string nativeDestPath = Path.Combine(
+                            string? expectedNativeHash = classifier.Value.TryGetProperty("sha1", out var classifierHash) ? classifierHash.GetString() : null;
+                            string nativeDestPath = shareLibraries ? SharedGameFiles.Library(nativeUrl, nativeRelativePath, expectedNativeHash) : Path.Combine(
                                 librariesDir,
                                 nativeRelativePath.Replace('/', Path.DirectorySeparatorChar));
+                            if (shareLibraries) layout.Libraries.Add(SharedGameFiles.Relative(nativeDestPath));
                             long? expectedNativeSize = classifier.Value.TryGetProperty("size", out var nativeSize)
                                 ? nativeSize.GetInt64() : null;
                             libTargets.Add((nativeUrl, nativeDestPath,
@@ -202,6 +211,7 @@ public class GameDownloader
         var transferTimer = System.Diagnostics.Stopwatch.StartNew();
         int ready = 0;
         long networkBytes = 0;
+        var assetVerification = new AssetVerification();
         transfer?.Begin("Minecraft files", pending.Length, pending.Sum(item => item.size ?? 0));
         progressCallback?.Invoke("Preparing Minecraft files...", 15);
         await Parallel.ForEachAsync(pending,
@@ -209,12 +219,16 @@ public class GameDownloader
             async (item, token) =>
             {
                 long received = 0;
-                await DownloadCache.EnsureAsync(item.url, item.path, token, item.hash, item.size, bytes =>
+                if (!assetVerification.IsUnchanged(item.path, item.hash, item.size))
                 {
-                    received += bytes;
-                    Interlocked.Add(ref networkBytes, bytes);
-                    transfer?.Received(bytes);
-                }, httpClient: _cacheRoot == null ? null : HttpClient, cacheRoot: _cacheRoot);
+                    await DownloadCache.EnsureAsync(item.url, item.path, token, item.hash, item.size, bytes =>
+                    {
+                        received += bytes;
+                        Interlocked.Add(ref networkBytes, bytes);
+                        transfer?.Received(bytes);
+                    }, httpClient: _cacheRoot == null ? null : HttpClient, cacheRoot: _cacheRoot);
+                    assetVerification.RememberVerified(item.path, item.hash);
+                }
                 transfer?.Complete(new FileInfo(item.path).Length, received);
                 int done = Interlocked.Increment(ref ready);
                 if (done % 20 == 0 || done == pending.Length)
@@ -222,6 +236,7 @@ public class GameDownloader
                         15 + (double)done / Math.Max(1, pending.Length) * 80);
             });
         transferTimer.Stop();
+        assetVerification.Save();
 
         string vanillaVersionJar = Path.Combine(versionsDir, $"{version}.jar");
         var clientTarget = targets.FirstOrDefault(item => item.path == clientJarPath);
@@ -253,11 +268,14 @@ public class GameDownloader
         }
 
         extractionTimer.Stop();
+        cancellationToken.ThrowIfCancellationRequested();
+        SharedGameFiles.Save(instancePath, layout);
         string timing = $"Version: {version}\nPlanning/index: {planningSeconds:0.000}s\n" +
             $"Download/cache/check/copy: {transferTimer.Elapsed.TotalSeconds:0.000}s\n" +
             $"Native extraction: {extractionTimer.Elapsed.TotalSeconds:0.000}s\n" +
             $"Total file preparation: {totalTimer.Elapsed.TotalSeconds:0.000}s\n" +
-            $"Files: {pending.Length}; downloaded bytes: {networkBytes}\n";
+            $"Files: {pending.Length}; downloaded bytes: {networkBytes}\n" +
+            $"Unchanged assets reused without rereading content: {assetVerification.Hits}\n";
         System.Diagnostics.Debug.WriteLine(timing);
         try { await File.WriteAllTextAsync(Path.Combine(instancePath, ".vortex-installation-timing.txt"), timing, cancellationToken); }
         catch (IOException) { }
@@ -328,6 +346,7 @@ public class GameDownloader
         var libs = profile.Libraries;
         if (libs == null) return;
 
+        var layout = SharedGameFiles.Read(instancePath);
         int total = libs.Count;
         int current = 0;
 
@@ -355,7 +374,7 @@ public class GameDownloader
                 throw new InvalidOperationException("No download URL for loader library: " + lib.Name);
 
             string fileName = Path.GetFileName(fileUrl);
-            string destinationPath = Path.Combine(librariesDir, fileName);
+            string destinationPath = layout?.SharedLibraries == true ? SharedGameFiles.Library(fileUrl, fileName) : Path.Combine(librariesDir, fileName);
 
             targets.Add((fileUrl, destinationPath));
         }
@@ -366,11 +385,18 @@ public class GameDownloader
         await Parallel.ForEachAsync(uniqueTargets, new ParallelOptions { MaxDegreeOfParallelism = 8, CancellationToken = cancellationToken }, async (item, token) =>
         {
             long received = 0;
-            await DownloadCache.EnsureAsync(item.url, item.path, token, received: bytes => { received += bytes; transfer?.Received(bytes); }, validateArchive: verifyArchives);
+            await DownloadCache.EnsureAsync(item.url, item.path, token, received: bytes => { received += bytes; transfer?.Received(bytes); },
+                httpClient: _cacheRoot == null ? null : HttpClient, cacheRoot: _cacheRoot, validateArchive: verifyArchives);
             transfer?.Complete(new FileInfo(item.path).Length, received);
             int done = Interlocked.Increment(ref current);
             progressCallback?.Invoke($"Preparing loader libraries ({done}/{total})...", (double)done / Math.Max(1, total) * 100);
         });
+        if (layout?.SharedLibraries == true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            layout.LoaderLibraries = uniqueTargets.Select(item => SharedGameFiles.Relative(item.path)).ToList();
+            SharedGameFiles.Save(instancePath, layout);
+        }
     }
 
     public async Task InstallForgeOrNeoForgeAsync(string installerUrl, string instancePath, string javaPath, Action<string, double> progressCallback)

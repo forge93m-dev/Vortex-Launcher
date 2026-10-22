@@ -8,7 +8,7 @@ public final class HudLayoutHistory {
     private static final List<Field> FIELDS=fields();
     private static List<Field> fields(){
         var fields=new ArrayList<Field>();
-        try{for(String prefix:new String[]{"fps","keys","armor","sprint","coordinates","heldItem","effects","ping","speed","clock","tps","blockInfo"})
+        try{for(String prefix:new String[]{"fps","keys","armor","sprint","coordinates","heldItem","effects","ping","speed","clock","tps","blockInfo","resource"})
             for(String suffix:new String[]{"X","Y","Scale","Opacity"})fields.add(ClientConfig.class.getField(prefix+suffix));}
         catch(ReflectiveOperationException error){throw new ExceptionInInitializerError(error);}
         return List.copyOf(fields);

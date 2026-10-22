@@ -16,6 +16,7 @@ public static class InstanceRepair
             OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
             throw new IOException("Repair is restricted to an instance inside this launcher's instances folder.");
         ArchiveImportPlan.ValidatePath(instance.Version);
+        SharedGameFiles.Checked(SharedGameFiles.Root);
         if (instance.Version.Contains('/') || instance.Version.Contains('\\')) throw new IOException("Invalid Minecraft version.");
         // Reject junctions rather than following them outside the scoped game directories.
         string dataRoot = Path.GetFullPath(PlatformSupport.DataRoot).TrimEnd(Path.DirectorySeparatorChar);
@@ -52,7 +53,8 @@ public static class InstanceRepair
             versions = Directory.Exists(forge) ? Directory.GetDirectories(forge).Select(Path.GetFileName)
                 .OfType<string>().Where(v => v.StartsWith(instance.Version + "-", StringComparison.Ordinal)).ToArray() : Array.Empty<string>();
         }
-        else versions = Directory.EnumerateFiles(libraries, prefix + "*.jar", SearchOption.AllDirectories)
+        else versions = (SharedGameFiles.LibrariesFor(instance.InstancePath, instance.Version) ?? Directory.EnumerateFiles(libraries, prefix + "*.jar", SearchOption.AllDirectories).ToArray())
+            .Where(p => Path.GetFileName(p).StartsWith(prefix, StringComparison.Ordinal))
             .Select(Path.GetFileNameWithoutExtension).OfType<string>().Select(n => n[prefix.Length..]).Where(v => Regex.IsMatch(v, @"^\d+(\.\d+)+([-.][\w.]+)?$")).Distinct().ToArray();
         if (versions.Length > 1) throw new InvalidOperationException("More than one loader version is installed. Select the intended loader version before repairing.");
         return versions.SingleOrDefault() ?? "";

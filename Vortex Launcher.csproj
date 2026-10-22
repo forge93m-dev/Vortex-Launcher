@@ -4,10 +4,10 @@
 		<TargetFramework>net8.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-		<Version>0.2.4</Version>
-		<AssemblyVersion>0.2.4.0</AssemblyVersion>
-		<FileVersion>0.2.4.0</FileVersion>
-		<InformationalVersion>0.2.4</InformationalVersion>
+		<Version>0.2.5</Version>
+		<AssemblyVersion>0.2.5.0</AssemblyVersion>
+		<FileVersion>0.2.5.0</FileVersion>
+		<InformationalVersion>0.2.5</InformationalVersion>
 		<ApplicationIcon>Assets/Branding/vortex-icon-v1.ico</ApplicationIcon>
 		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
@@ -18,12 +18,12 @@
 		<AvaloniaResource Include="Assets/Branding/vortex-icon-v1.ico" />
 		<AvaloniaResource Include="Assets/Branding/vortex-icon-v1.png" />
 		<AvaloniaResource Include="Assets/Capes/*.png" />
-		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-26.3-fabric-0.2.1.jar" LogicalName="VortexLauncher.Client.vortex-client-26.3-fabric-0.2.1.jar" />
-		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-26.2-fabric-0.2.1.jar" LogicalName="VortexLauncher.Client.vortex-client-26.2-fabric-0.2.1.jar" />
-		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-26.1.2-fabric-0.2.1.jar" LogicalName="VortexLauncher.Client.vortex-client-26.1.2-fabric-0.2.1.jar" />
-		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-26.1.1-fabric-0.2.1.jar" LogicalName="VortexLauncher.Client.vortex-client-26.1.1-fabric-0.2.1.jar" />
-		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-26.1-fabric-0.2.1.jar" LogicalName="VortexLauncher.Client.vortex-client-26.1-fabric-0.2.1.jar" />
-		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-1.21.11-fabric-0.2.1.jar" LogicalName="VortexLauncher.Client.vortex-client-1.21.11-fabric-0.2.1.jar" />
+		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-26.3-fabric-0.2.2.jar" LogicalName="VortexLauncher.Client.vortex-client-26.3-fabric-0.2.2.jar" />
+		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-26.2-fabric-0.2.2.jar" LogicalName="VortexLauncher.Client.vortex-client-26.2-fabric-0.2.2.jar" />
+		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-26.1.2-fabric-0.2.2.jar" LogicalName="VortexLauncher.Client.vortex-client-26.1.2-fabric-0.2.2.jar" />
+		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-26.1.1-fabric-0.2.2.jar" LogicalName="VortexLauncher.Client.vortex-client-26.1.1-fabric-0.2.2.jar" />
+		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-26.1-fabric-0.2.2.jar" LogicalName="VortexLauncher.Client.vortex-client-26.1-fabric-0.2.2.jar" />
+		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-1.21.11-fabric-0.2.2.jar" LogicalName="VortexLauncher.Client.vortex-client-1.21.11-fabric-0.2.2.jar" />
 	</ItemGroup>
 
 	<ItemGroup>

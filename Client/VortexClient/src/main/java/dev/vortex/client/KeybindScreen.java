@@ -12,6 +12,7 @@ public final class KeybindScreen extends Screen {
     private ClientBindings.Action capture;
     private String message = "Click a binding, then press a key.";
     private boolean dirty;
+    private final long opened = System.nanoTime();
     public KeybindScreen(Screen parent) { this(parent, null); }
     public KeybindScreen(Screen parent, ClientBindings.Action action) {
         super(Minecraft.getInstance(), UiFonts.body(), Component.literal("Keybinds")); this.parent = parent; capture = action;
@@ -58,15 +59,24 @@ public final class KeybindScreen extends Screen {
         dirty = false; return true;
     }
     @Override public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float delta) {
-        g.fill(0, 0, width, height, 0xA008090F);
         int x = panelX(), y = panelY(), w = panelWidth();
-        ClientUi.panel(g, x, y, w, panelHeight(), 10, ClientUi.BORDER, ClientUi.PANEL);
-        ClientUi.heading(g, "Keybinds", x + 12, y + 13, w - 24);
-        for (var action : ClientBindings.Action.values()) ClientUi.text(g, ClientBindings.title(action), x + 12, y + 46 + action.ordinal() * rowStep(), 84, ClientUi.TEXT);
+        ClientUi.beginPage(g, width, height, x, y, w, panelHeight(), "Key bindings", "keybinds", opened);
+        for (var action : ClientBindings.Action.values()) {
+            int rowY = y + 40 + action.ordinal() * rowStep();
+            ClientUi.rounded(g, x + 8, rowY, w - 16, Math.min(25, rowStep() - 2), 4,
+                capture == action ? 0xFF26372F : 0xFF171E23);
+            ClientUi.text(g, ClientBindings.title(action), x + 12, rowY + 6, 84, capture == action ? 0xFFD2E8C9 : ClientUi.TEXT);
+        }
         ClientUi.text(g, message, x + 12, y + panelHeight()-52, w - 24, ClientUi.ACCENT);
         super.extractRenderState(g, mx, my, delta);
+        g.pose().popMatrix();
     }
     @Override public void onClose() { if (save()) minecraft.gui.setScreen(parent); }
     @Override public void removed() { save(); }
     @Override public boolean isPauseScreen() { return false; }
+    @Override public boolean isInGameUi() { return minecraft.level != null; }
+    @Override public void extractBackground(GuiGraphicsExtractor g, int mx, int my, float delta) {
+        if (isInGameUi()) minecraft.gui.hud.extractDeferredSubtitles();
+        else extractPanorama(g, delta);
+    }
 }

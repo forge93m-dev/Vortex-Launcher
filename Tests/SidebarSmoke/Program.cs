@@ -69,6 +69,7 @@ VortexLauncher.Core.Media.ArtworkCache.DiskRoot = Path.Combine(output, "artwork-
 
 try
 {
+    if (args.Contains("--collection")) { GameLibraryChecks.Run(window, fixture, Pump, output); GridBrowsingChecks.Run(Pump, output); Console.WriteLine("Rendered previews: " + output); return; }
     if (args.Contains("--artwork")) { ArtworkChecks.Run(Pump, output); return; }
     ArtworkChecks.Run(Pump, output);
     LauncherWardrobeChecks.Run(Pump,output);
@@ -95,6 +96,7 @@ try
         return;
     }
     GameLibraryChecks.Run(window, fixture, Pump, output);
+    GridBrowsingChecks.Run(Pump, output);
     UnifiedWorkspaceChecks.Run(window, fixture, Pump, output);
     NavigationMotionChecks.Run(window, fixture, Pump, output);
     AlignmentSettingsChecks.Run(window, fixture, Pump, output);
@@ -434,6 +436,9 @@ sealed class SidebarFixture : INotifyPropertyChanged
     public int LaunchCount { get; private set; }
     public InstanceModel? LastLaunched { get; private set; }
     public ICommand LaunchSpecificInstanceCommand => new FixtureCommand(p => { LaunchCount++; LastLaunched = p as InstanceModel; });
+    public int ClientActionCount { get; private set; }
+    public InstanceModel? ClientActionTarget { get; private set; }
+    public ICommand UpdateVortexClientCommand => new FixtureCommand(p => { ClientActionCount++; ClientActionTarget = p as InstanceModel; });
     public ICommand SaveSettingsCommand => new FixtureCommand(_ => { });
     public ICommand SelectAccountCommand => new FixtureCommand(_ => { });
     public ICommand DeleteAccountCommand => new FixtureCommand(_ => { });

@@ -16,7 +16,7 @@ internal static class GameLibraryChecks
     internal static void Run(MainWindow window, SidebarFixture fixture, Action<int> pump, string output)
     {
         ThemeManager.SetTheme("Graphite", "#D7F36A", "#101214", "#15181B", "#1D2125", "#2E3439", "#F0F2EE", "#9BA49E");
-        var list = window.FindControl<ListBox>("instanceCards")!;
+        var list = window.FindControl<InstanceTileGrid>("instanceCards")!;
         var preview = window.FindControl<ContentControl>("librarySelection")!;
         var navs = new[] { ("libraryNav", "Instances"), ("modpacksNav", "Modpacks"), ("profilesNav", "Accounts"), ("settingsNav", "Settings") };
         foreach (var (name, tab) in navs)
@@ -40,7 +40,7 @@ internal static class GameLibraryChecks
         Check(fixture.Library.SelectedInstance == fixture.Instances[0] && preview.Content == fixture.Instances[0], "first instance is selected and featured automatically");
         list.SelectedIndex = 1; pump(80);
         Check(fixture.Library.SelectedInstance == fixture.Instances[1] && preview.Content == fixture.Instances[1], "list selection updates the large cover and metadata");
-        var selectedRow=list.GetVisualDescendants().OfType<Border>().Single(b=>b.Classes.Contains("LibraryRow") && ReferenceEquals(b.DataContext, fixture.Instances[1]));
+        var selectedRow=list.GetVisualDescendants().OfType<Border>().Single(b=>b.Classes.Contains("LibraryTile") && ReferenceEquals(b.DataContext, fixture.Instances[1]));
         Click(window,selectedRow); pump(40);
         list.Focus();pump(20);
         window.KeyPress(Key.Right,RawInputModifiers.None,PhysicalKey.ArrowRight, ""); window.KeyRelease(Key.Right,RawInputModifiers.None,PhysicalKey.ArrowRight, ""); pump(40);
@@ -66,14 +66,25 @@ internal static class GameLibraryChecks
         fixture.Library.SelectedInstance = fixture.Instances[0]; pump(80);
         foreach (var size in new[] { new Size(960,600), new Size(1280,800), new Size(1600,1000) })
         {
-            window.Width=size.Width; window.Height=size.Height;window.FindControl<ScrollViewer>("showcaseScroll")!.Offset=default; pump(180);
+            window.Width=size.Width; window.Height=size.Height;list.GetVisualDescendants().OfType<ScrollViewer>().First().Offset=default; pump(180);
             foreach (var name in navs.Select(n=>n.Item1).Concat(new[] { "activePlayerCard", "librarySearch", "downloadCenterButton" }))
                 if(name!="librarySearch")Fits(window, window.FindControl<Control>(name)!, name + " fits " + size);
             Fits(window, Play(window), "featured Play fits " + size);
-            var hero = window.GetVisualDescendants().OfType<Border>().Single(b=>b.Name=="libraryHero");
-            Fits(window, hero, "hero fits " + size);
-            Check(hero.Bounds.Height >= 150 && hero.Bounds.Width > 550, "cover remains usable at " + size);
-            Check(list.Bounds.Width > 800 && list.GetVisualDescendants().OfType<Border>().Where(b=>b.Classes.Contains("LibraryRow")).All(b=>b.Bounds.Height == 88), "Showcase collection spans the window and cards stay compact at " + size);
+            var clientButton = window.GetVisualDescendants().OfType<Button>().Single(b=>b.Name=="featuredClientButton");
+            Check(clientButton.IsEffectivelyVisible && clientButton.CommandParameter==fixture.Library.SelectedInstance && clientButton.Content?.ToString()?.Contains("Vortex Client")==true,"client install/update action is visible on the selected instance at " + size);
+            Fits(window,clientButton,"client install/update action fits " + size);
+            int beforeClientAction=fixture.ClientActionCount;
+            Click(window,clientButton);pump(25);
+            Check(fixture.ClientActionCount==beforeClientAction+1 && fixture.ClientActionTarget==fixture.Library.SelectedInstance,"prominent client button routes to the selected instance");
+            fixture.Library.SelectedInstance!.IsRunning=true;pump(25);
+            Check(!clientButton.IsEnabled,"client installation stays disabled while Minecraft is running");
+            fixture.Library.SelectedInstance.IsRunning=false;pump(25);
+            var bar = window.GetVisualDescendants().OfType<Border>().Single(b=>b.Name=="selectedInstanceBar");
+            Fits(window, bar, "selected instance toolbar fits " + size);
+            Check(bar.Bounds.Height < 160 && list.Bounds.Height >= 150, "compact toolbar leaves most space for browsing at " + size);
+            Check(list.Bounds.Width > 800 && list.GetVisualDescendants().OfType<Border>().Where(b=>b.Classes.Contains("LibraryTile")).All(b=>b.Bounds.Height == 156), "responsive collection spans the window with compact tiles at " + size);
+            var thumbnails = list.GetVisualDescendants().OfType<Border>().Where(b=>b.Classes.Contains("InstanceThumbnail")).ToArray();
+            Check(thumbnails.Length > 0 && thumbnails.All(b=>b.Bounds.Width == 48 && b.Bounds.Height == 48), "instance thumbnails remain square at " + size);
             window.CaptureRenderedFrame()!.Save(Path.Combine(output, $"game-library-{(int)size.Width}.png"));
         }
         window.Width=1280; window.Height=800; fixture.Library.SelectedInstance=fixture.Instances[2]; pump(120);
@@ -82,7 +93,7 @@ internal static class GameLibraryChecks
         fixture.Instances[2].CoverImagePath=Path.Combine(output,"does-not-exist.png"); pump(120);
         Check(window.GetVisualDescendants().OfType<WorldCover>().Any(c=>c.IsEffectivelyVisible && ReferenceEquals(c.DataContext, fixture.Instances[2])), "missing custom covers retain original built-in artwork");
         fixture.Instances[2].CoverImagePath=Path.Combine(output,"game-library-1280.png"); pump(300);
-        Check(window.GetVisualDescendants().OfType<VortexLauncher.Converters.AsyncImage>().Any(i=>i.DecodeWidth==1600 && i.Source!=null), "custom cover loads into the hero without changing row dimensions");
+        Check(window.GetVisualDescendants().OfType<VortexLauncher.Converters.AsyncImage>().Any(i=>i.DecodeWidth==128 && i.Source!=null), "custom cover loads into compact tiles without changing their dimensions");
         window.CaptureRenderedFrame()!.Save(Path.Combine(output,"game-library-custom-cover.png"));
         fixture.Instances[2].CoverImagePath=""; fixture.Library.SelectedInstance=fixture.Instances[0]; pump(80);
         SelectionModelChecks();

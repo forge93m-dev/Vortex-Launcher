@@ -54,12 +54,6 @@ public partial class MainWindow : Window
         Height = 800;
         MinHeight = 600;
         foreach (var tab in new[] { libraryNav, modpacksNav, profilesNav, settingsNav }) tab.Click += (_, _) => HideInstanceWorkspace();
-        instanceCards.AddHandler(KeyDownEvent, (_, e) => {
-            int offset=e.Key switch { Key.Right=>1,Key.Left=>-1,Key.Down=>1,Key.Up=>-1,_=>0 };
-            if(offset==0 || e.KeyModifiers!=KeyModifiers.None || instanceCards.ItemCount==0)return;
-            int index=Math.Clamp(instanceCards.SelectedIndex+offset,0,instanceCards.ItemCount-1);
-            instanceCards.SelectedIndex=index;instanceCards.ScrollIntoView(index);e.Handled=true;
-        },RoutingStrategies.Tunnel);
     }
 
     private void OnQuickProfileClick(object? sender, RoutedEventArgs e)

@@ -195,14 +195,18 @@ public class InstanceManager
                 await VerifiedCopy.FileAsync(source, destination, journal.Id, cancellationToken, target);
                 transfer?.Complete(entry.Length, 0);
             }
-            foreach (var file in plan.Downloads)
+            await DownloadBatch.RunAsync(plan.Downloads, async (file, downloadToken) =>
             {
                 string destination = Path.Combine(target, file.Path.Replace('/', Path.DirectorySeparatorChar));
                 // Explicit overrides take precedence over downloaded pack files.
                 if (!File.Exists(destination))
-                    await DownloadCache.EnsureAsync(file.Url, destination, cancellationToken, file.Sha1, file.Size, bytes => transfer?.Received(bytes));
-                transfer?.Complete(file.Size, 0);
-            }
+                {
+                    long received = 0;
+                    await DownloadCache.EnsureAsync(file.Url, destination, downloadToken, file.Sha1, file.Size, bytes => { received += bytes; transfer?.Received(bytes); });
+                    transfer?.Complete(file.Size, received);
+                }
+                else transfer?.Complete(file.Size, 0);
+            }, cancellationToken);
         }
         plan.Instance.InstancePath = target;
         SaveInstance(plan.Instance);

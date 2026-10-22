@@ -26,7 +26,9 @@ public enum ClientModule {
     ENTITY_HEARTS("Entity Hearts", "Mob health and server-shared player HP", "Gameplay", null),
     COMPACT_SHIELD("Compact Shield", "Smaller first-person shield; same blocking", "Gameplay", null),
     ENCHANTMENT_HINTS("Enchantment Hints", "Plain-English enchantment explanations", "Gameplay", null),
-    DEATH_WAYPOINTS("Death Waypoints", "Save death coordinates in the Deaths group", "Gameplay", null);
+    DEATH_WAYPOINTS("Death Waypoints", "Save death coordinates in the Deaths group", "Gameplay", null),
+    RESOURCE_COUNTER("Resource Counter", "Track inventory goals", "HUD", HudModules.Element.RESOURCES),
+    STORAGE_MEMORY("Storage Finder", "Find items in previously opened storage", "Gameplay", null);
 
     public final String title, description, category;
     public final HudModules.Element hud;
@@ -36,6 +38,7 @@ public enum ClientModule {
     public boolean enabled() {
         var c = VortexClient.config;
         return switch (this) {
+            case RESOURCE_COUNTER -> c.resourceCounterEnabled; case STORAGE_MEMORY -> c.storageMemoryEnabled;
             case FPS -> c.fpsEnabled; case ZOOM -> c.zoomEnabled;
             case ARMOR -> c.armorEnabled; case SPRINT -> c.toggleSprintEnabled;
             case COORDINATES -> c.coordinatesEnabled;
@@ -58,6 +61,8 @@ public enum ClientModule {
     public void toggle() {
         var c = VortexClient.config;
         switch (this) {
+            case RESOURCE_COUNTER -> c.resourceCounterEnabled=!c.resourceCounterEnabled;
+            case STORAGE_MEMORY -> c.storageMemoryEnabled=!c.storageMemoryEnabled;
             case FPS -> c.fpsEnabled = !c.fpsEnabled;
             case ZOOM -> c.zoomEnabled = !c.zoomEnabled;
             case ARMOR -> c.armorEnabled = !c.armorEnabled;

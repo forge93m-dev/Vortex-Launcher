@@ -14,6 +14,10 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 public final class ClientConfig {
+    public boolean resourceCounterEnabled, storageMemoryEnabled;
+    public java.util.List<ResourceCounter.Goal> resourceGoals = java.util.List.of();
+    public int resourceX = 10, resourceY = 180, storageMemoryRadius = 64;
+    public float resourceScale, resourceOpacity;
     public boolean capesEnabled = false;
     public String selectedCape = "none";
     // Read-only recovery data for the removed 0.1.24 preset; never applied automatically.
@@ -100,6 +104,10 @@ public final class ClientConfig {
             JsonObject document = JSON.fromJson(reader, JsonObject.class);
             if (document == null) return new ClientConfig();
             ClientConfig config = JSON.fromJson(document, ClientConfig.class);
+            config.resourceGoals = ResourceCounter.clean(config.resourceGoals);
+            config.storageMemoryRadius = Math.clamp(config.storageMemoryRadius,16,256);
+            config.resourceX = Math.max(0,config.resourceX); config.resourceY = Math.max(0,config.resourceY);
+            config.resourceScale = optionalClamp(config.resourceScale,.75f,2); config.resourceOpacity = optionalClamp(config.resourceOpacity,.25f,1);
             if (!CapeCatalog.valid(config.selectedCape)) config.selectedCape = "none";
             // One-time upgrade: move only the old factory defaults. After saving the
             // version marker, users can freely choose even the old default positions.

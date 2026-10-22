@@ -59,6 +59,21 @@ final class ClientUi {
         g.pose().popMatrix();
     }
 
+    /** Opt-in chrome for client tools only; never applied to inventory, HUD or wardrobe. */
+    static void beginPage(GuiGraphicsExtractor g, int screenWidth, int screenHeight, int x, int y, int w, int h,
+                          String title, String icon, long opened) {
+        float progress = UiMotion.progress(opened);
+        g.fill(0, 0, screenWidth, screenHeight, ((int)(150 * progress) << 24) | 0x080C10);
+        UiMotion.begin(g, x, y, w, h, 1, (1 - progress) * 6);
+        rounded(g, x - 2, y + 4, w + 4, h, 12, 0x44000000);
+        panel(g, x, y, w, h, 10, BORDER, 0xFF11171B);
+        rounded(g, x + 1, y + 1, w - 2, 32, 9, 0xFF1A2327);
+        g.fill(x + 1, y + 25, x + w - 1, y + 34, 0xFF1A2327);
+        icon(g, icon, x + 12, y + 10, 16, 0xFFD2E8C9);
+        heading(g, title, x + 36, y + 12, w - 135);
+        g.fill(x + 12, y + 34, x + w - 12, y + 35, BORDER);
+    }
+
     static void moduleIcon(GuiGraphicsExtractor g, ClientModule module, int x, int y, int color, int background) {
         icon(g, module.name().toLowerCase(java.util.Locale.ROOT), x + 2, y + 2, 21, color);
     }

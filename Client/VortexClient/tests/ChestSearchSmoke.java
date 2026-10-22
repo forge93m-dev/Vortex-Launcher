@@ -16,6 +16,13 @@ public final class ChestSearchSmoke {
         var set=simple.getMethod("setItem",int.class,stack);set.invoke(chest,0,d);set.invoke(chest,1,s);inventory.getMethod("setItem",int.class,stack).invoke(inv,0,d);
         Class<?> chestMenu=Class.forName("net.minecraft.world.inventory.ChestMenu",true,target),menu=Class.forName("net.minecraft.world.inventory.AbstractContainerMenu",true,target);
         Object opened=chestMenu.getMethod("threeRows",int.class,inventory,container).invoke(null,1,inv,chest);
+        Class<?> counter=Class.forName("dev.vortex.client.ResourceCounter",true,target),memory=Class.forName("dev.vortex.client.StorageMemory",true,target);
+        Map<?,?> counted=(Map<?,?>)counter.getMethod("count",Iterable.class).invoke(null,List.of(d,s,d));
+        if(!Integer.valueOf(2).equals(counted.get("minecraft:diamond")) || !Integer.valueOf(1).equals(counted.get("minecraft:stone")))throw new AssertionError("Resource counter did not sum real stacks by registry ID");
+        List<?> remembered=(List<?>)memory.getMethod("contents",menu).invoke(null,opened);
+        if(remembered.size()!=2)throw new AssertionError("Storage snapshot includes player inventory or empty slots");
+        Class<?> gameMode=Class.forName("net.minecraft.client.multiplayer.MultiPlayerGameMode",false,target);
+        if(Arrays.stream(gameMode.getDeclaredMethods()).noneMatch(m->m.getName().contains("vortex$storageInteraction")) || Arrays.stream(menu.getDeclaredMethods()).noneMatch(m->m.getName().contains("vortex$storageContents")))throw new AssertionError("Storage capture mixins were not applied to real interaction and menu updates");
         Class<?> state=Class.forName("dev.vortex.client.ChestSearch$State",true,target);Object filter=state.getConstructor().newInstance();
         state.getMethod("query",String.class).invoke(filter,"diamond");state.getMethod("refresh",menu).invoke(filter,opened);
         if((int)state.getMethod("found").invoke(filter)!=1 || (int)state.getMethod("total").invoke(filter)!=2 || (boolean)state.getMethod("matches",int.class).invoke(filter,27))throw new AssertionError("Search included player inventory/empty slots");

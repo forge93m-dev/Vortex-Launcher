@@ -476,7 +476,8 @@ public partial class MainWindowViewModel : ObservableObject
         {
             await Task.Run(async () =>
             {
-                if (repair) { InstanceRepair.ValidateTarget(instance); DownloadCache.ForgetVerification(instance.InstancePath); }
+                if (repair) { InstanceRepair.ValidateTarget(instance); DownloadCache.ForgetVerification(instance.InstancePath); DownloadCache.ForgetVerification(SharedGameFiles.Root); }
+                using var timing = new InstallationTiming(instance.InstancePath, repair ? "Repair" : "Install");
                 OperationJournal.Begin(instance.InstancePath, repair ? "Repair" : "Install");
                 await File.WriteAllTextAsync(Path.Combine(instance.InstancePath, ".vortex-installation-pending"), "Installing", cancellation.Token);
                 string instanceFolderName = Path.GetFileName(instance.InstancePath);
@@ -487,11 +488,16 @@ public partial class MainWindowViewModel : ObservableObject
                     throw new InvalidOperationException($"Minecraft {instance.Version} was not found.");
                 }
 
-                await _downloader.DownloadGameAsync(
+                Task<FabricProfile?> prefetchedFabric = instance.Loader.Equals("Fabric", StringComparison.OrdinalIgnoreCase)
+                    ? new FabricService().GetFabricProfileAsync(instance.Version, instance.LoaderVersion).WaitAsync(cancellation.Token)
+                    : Task.FromResult<FabricProfile?>(null);
+                timing.Mark("Version lookup");
+                await Task.WhenAll(_downloader.DownloadGameAsync(
                     instanceFolderName,
                     instance.Version,
                     versionJsonUrl,
-                    UpdateStatus, cancellation.Token, transfer);
+                    UpdateStatus, cancellation.Token, transfer, shareLibraries: !instance.Loader.Equals("Forge", StringComparison.OrdinalIgnoreCase)), prefetchedFabric);
+                timing.Mark("Minecraft files and Fabric metadata");
 
                 var gameArchitecture = PlatformSupport.GetGameArchitecture(instance.InstancePath, instance.Version);
                 string javaPath = string.IsNullOrWhiteSpace(CustomJavaPath) ||
@@ -500,12 +506,12 @@ public partial class MainWindowViewModel : ObservableObject
                     ? JavaResolver.GetJavaForVersion(instance.Version, gameArchitecture)
                     : CustomJavaPath;
                 PlatformSupport.ValidateJavaArchitecture(javaPath, gameArchitecture);
+                timing.Mark("Java selection");
 
                 if (instance.Loader.Equals("Fabric", StringComparison.OrdinalIgnoreCase))
                 {
                     UpdateStatus("Installing Fabric libraries...");
-                    var fabricService = new FabricService();
-                    FabricProfile? fabricProfile = await fabricService.GetFabricProfileAsync(instance.Version, instance.LoaderVersion).WaitAsync(cancellation.Token);
+                    FabricProfile? fabricProfile = await prefetchedFabric;
                     if (fabricProfile == null)
                     {
                         throw new InvalidOperationException($"Fabric is not available for Minecraft {instance.Version}.");
@@ -569,17 +575,20 @@ public partial class MainWindowViewModel : ObservableObject
                         $"The {instance.Loader} loader is not supported by this launcher yet.");
                 }
 
+                timing.Mark("Loader setup");
                 if (instance.VortexClientEnabled && !repair)
                 {
                     UpdateStatus("Installing Vortex Client...");
                     await new VortexClientService().InstallAsync(instance, cancellation.Token);
                 }
+                timing.Mark("Vortex Client setup");
                 cancellation.Token.ThrowIfCancellationRequested();
                 await File.WriteAllTextAsync(
                     Path.Combine(instance.InstancePath, InstallationMarkerFileName),
                     DateTimeOffset.UtcNow.ToString("O"), cancellation.Token);
                 _instanceManager.SaveInstance(instance);
                 OperationJournal.Complete(instance.InstancePath);
+                timing.Complete();
             });
 
             instance.IsInstalled = true;
@@ -755,21 +764,23 @@ public partial class MainWindowViewModel : ObservableObject
                     throw new InvalidOperationException($"Failed to resolve manifest URL for Minecraft {target.Version}.");
                 }
 
-                await _downloader.DownloadGameAsync(
+                Task<FabricProfile?> prefetchedFabric = target.Loader.Equals("Fabric", StringComparison.OrdinalIgnoreCase)
+                    ? new FabricService().GetFabricProfileAsync(target.Version, target.LoaderVersion).WaitAsync(cancellation.Token)
+                    : Task.FromResult<FabricProfile?>(null);
+                await Task.WhenAll(_downloader.DownloadGameAsync(
                     instanceFolderName,
                     target.Version,
                     versionJsonUrl,
                     (status, progress) =>
                     {
                         UpdateStatus(status, progress);
-                    }, cancellation.Token, transfer);
+                    }, cancellation.Token, transfer, shareLibraries: !target.Loader.Equals("Forge", StringComparison.OrdinalIgnoreCase)), prefetchedFabric);
 
                 FabricProfile? fabricProfile = null;
                 if (target.Loader.Equals("Fabric", StringComparison.OrdinalIgnoreCase))
                 {
                     UpdateStatus("Checking Fabric loader...");
-                    var fabricService = new FabricService();
-                    fabricProfile = await fabricService.GetFabricProfileAsync(target.Version, target.LoaderVersion).WaitAsync(cancellation.Token);
+                    fabricProfile = await prefetchedFabric;
                     if (fabricProfile == null)
                         throw new InvalidOperationException($"Fabric is not available for Minecraft {target.Version}. Retry installation or select another loader version.");
                     if (fabricProfile != null)

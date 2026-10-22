@@ -16,9 +16,10 @@ import net.minecraft.network.chat.contents.TranslatableContents;
 public final class VortexMenuChrome {
     public record Layout(int x, int y, int width, int height, int columns, int rows, int buttonWidth, int buttonHeight,
                          int gap, int header, int primaryCount, int utilityHeight, int utilityY) {
-        public int widthFor(int index) { return index < primaryCount ? buttonWidth : utilityHeight; }
+        public int utilityWidth() { return (width - (columns - 1) * gap) / columns; }
+        public int widthFor(int index) { return index < primaryCount ? buttonWidth : utilityWidth(); }
         public int heightFor(int index) { return index < primaryCount ? buttonHeight : utilityHeight; }
-        public int buttonX(int index) { return index < primaryCount ? x + (width - buttonWidth) / 2 : x + (width - columns * (utilityHeight + gap) + gap) / 2 + (index - primaryCount) % columns * (utilityHeight + gap); }
+        public int buttonX(int index) { return index < primaryCount ? x + (width - buttonWidth) / 2 : x + (index - primaryCount) % columns * (utilityWidth() + gap); }
         public int buttonY(int index) { return index < primaryCount ? y + header + index * (buttonHeight + gap) : y + utilityY + (index - primaryCount) / columns * (utilityHeight + gap); }
     }
     private final Screen owner;
@@ -49,19 +50,24 @@ public final class VortexMenuChrome {
         return layout(screenWidth, screenHeight, buttonCount, false);
     }
     public static Layout layout(int screenWidth, int screenHeight, int buttonCount, boolean pause) {
-        int count = Math.max(1, buttonCount), w = Math.min(440, Math.max(40, screenWidth - 24));
+        int count = Math.max(1, buttonCount), w = Math.min(520, Math.max(40, screenWidth - 24));
         int primaryCount = Math.min(count, pause ? 1 : 2);
-        int header = screenHeight < 300 ? 38 : 64, gap = 4;
-        int buttonHeight = screenHeight < 300 ? 20 : 24, utilityHeight = 24;
+        int header = screenHeight < 300 ? 38 : 64, gap = screenHeight < 300 ? 2 : 6;
+        int buttonHeight = screenHeight < 300 ? 20 : 28, utilityHeight = screenHeight < 300 ? 20 : 28;
         int utilityCount = count - primaryCount;
-        int columns = Math.max(1, Math.min(Math.max(1, utilityCount), (w + gap) / (utilityHeight + gap)));
+        int columns = Math.max(1, Math.min(Math.max(1, utilityCount), (w + gap) / 112));
+        // Keep readable labels at ordinary scales; a denser grid fits unusual mod-added actions.
+        int available = screenHeight - 38 - header - primaryCount * (buttonHeight + gap) - 28;
+        while (columns < Math.max(1, utilityCount) &&
+               ((utilityCount + columns - 1) / columns) * (utilityHeight + gap) > available &&
+               (w - columns * gap) / (columns + 1) >= 64) columns++;
         int rows = (utilityCount + columns - 1) / columns;
         int centerHeight = header + primaryCount * (buttonHeight + gap) + 28;
         int dockTop = screenHeight - 22 - rows * (utilityHeight + gap);
         int y = Math.max(8, Math.min((screenHeight - centerHeight) / 2 - 12, dockTop - centerHeight - 8));
         int utilityY = dockTop - y;
         return new Layout((screenWidth - w) / 2, y, w, screenHeight - y - 4, columns, rows,
-            Math.min(220, w), buttonHeight, gap, header, primaryCount, utilityHeight, utilityY);
+            Math.min(260, w), buttonHeight, gap, header, primaryCount, utilityHeight, utilityY);
     }
     public List<Button> widgets(int width, int height) {
         layout = layout(width, height, sources.size() + 1, pause);
@@ -76,7 +82,7 @@ public final class VortexMenuChrome {
             wrapped.add(button); result.add(button);
         }
         int last = Math.min(layout.primaryCount(), sources.size());
-        result.add(new DockButton(layout.buttonX(last), layout.buttonY(last), "brand", "Vortex Client",
+        result.add(new ShortcutButton(layout.buttonX(last), layout.buttonY(last), layout.widthFor(last), layout.heightFor(last), "brand", "Vortex Client",
             b -> Minecraft.getInstance().gui.setScreen(new VortexHomeScreen(owner))));
         int pairWidth = (layout.buttonWidth() - 4) / 2;
         int centerX = (width - layout.buttonWidth()) / 2;
@@ -158,6 +164,29 @@ public final class VortexMenuChrome {
             drawDock(g, getX(), getY(), icon, active, motion.hover, pressScale(System.nanoTime()));
         }
     }
+    /** Visible labels, distinct artwork and the same keyboard/narration support as regular buttons. */
+    static final class ShortcutButton extends GlassButton {
+        private final String icon;
+        private final UiMotion.Feedback motion = new UiMotion.Feedback();
+        ShortcutButton(int x, int y, int w, int h, String icon, String label, Button.OnPress press) {
+            super(x, y, w, h, Component.literal(label), press, false);
+            this.icon = icon;
+            setTooltip(Tooltip.create(Component.literal(label)));
+        }
+        @Override protected void extractContents(GuiGraphicsExtractor g, int mx, int my, float delta) {
+            motion.frame(active && isHoveredOrFocused(), false);
+            drawShortcut(g, getX(), getY(), getWidth(), getHeight(), icon, getMessage().getString(), active, motion.hover, pressScale(System.nanoTime()));
+        }
+    }
+    private static void drawShortcut(GuiGraphicsExtractor g, int x, int y, int w, int h, String icon, String label, boolean active, float hover, float scale) {
+        UiMotion.begin(g, x, y, w, h, scale, 0);
+        ClientUi.panel(g, x, y, w, h, 6, ClientUi.mix(ClientUi.BORDER, 0xFF657568, hover * .65f),
+            ClientUi.mix(0xEE151A1D, 0xFF29332D, active ? hover : 0));
+        int color = active ? ClientUi.TEXT : ClientUi.MUTED;
+        ClientUi.icon(g, icon, x + 8, y + (h - 14) / 2, 14, color);
+        ClientUi.text(g, label, x + 28, y + (h - 9) / 2, w - 34, color);
+        g.pose().popMatrix();
+    }
     private static void drawDock(GuiGraphicsExtractor g, int x, int y, String icon, boolean active, float hover, float scale) {
         UiMotion.begin(g, x, y, 24, 24, scale, VortexClient.config.uiAnimations ? -hover : 0);
         ClientUi.rounded(g, x, y, 24, 24, 6, ClientUi.mix(0xFF181D25,0xFF353E4A,hover));
@@ -207,7 +236,7 @@ public final class VortexMenuChrome {
         }
         @Override protected void extractContents(GuiGraphicsExtractor g, int mx, int my, float delta) {
             sync();
-            if (dock) {motion.frame(isHoveredOrFocused(),false);drawDock(g, getX(), getY(), shortcutIcon(key(source.getMessage())), active, motion.hover, pressScale(System.nanoTime()));}
+            if (dock) {motion.frame(active && isHoveredOrFocused(),false);drawShortcut(g, getX(), getY(), getWidth(), getHeight(), shortcutIcon(key(source.getMessage())), getMessage().getString(), active, motion.hover, pressScale(System.nanoTime()));}
             else super.extractContents(g, mx, my, delta);
         }
     }
@@ -223,8 +252,14 @@ public final class VortexMenuChrome {
         g.fill(0, 0, width, height, shade);
         int x = layout.x(), y = layout.y(), w = layout.width(), h = layout.height();
         float fade = UiMotion.progress(opened);
-        var font = UiFonts.heading();
+        int centerWidth = layout.buttonWidth() + 20;
+        int centerHeight = layout.header() + layout.primaryCount() * (layout.buttonHeight() + layout.gap()) + 30;
+        ClientUi.panel(g, (width - centerWidth) / 2, y - 6, centerWidth, centerHeight + 8, 10, 0x6644534B, 0xC011191C);
         drawBrand(g, width / 2, y + (int)((1 - fade) * 4), layout.header() < 60, pause ? "Pause" : "VORTEX CLIENT");
+        if (layout.utilityY() > 18) {
+            int top = y + layout.utilityY();
+            ClientUi.rounded(g, x, top - 8, w, 1, 0, 0x55697770);
+        }
         String gameVersion=net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer("minecraft").map(m->m.getMetadata().getVersion().getFriendlyString()).orElse("");
         g.text(UiFonts.body(), "Minecraft " + gameVersion + " / Vortex", 10, height - 14, 0xFFD5D7DE, false);
         String hint = ClientBindings.label(VortexClient.config.menuKey) + " / Vortex Client";

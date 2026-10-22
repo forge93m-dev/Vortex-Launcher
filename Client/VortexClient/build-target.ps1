@@ -127,7 +127,7 @@ if ($legacy) {
     [IO.File]::WriteAllText($mixinPath, ($mixinMetadata | ConvertTo-Json -Depth 12), [Text.UTF8Encoding]::new($false))
 }
 [IO.File]::WriteAllText((Join-Path $resources 'fabric.mod.json'), ($modMetadata | ConvertTo-Json -Depth 12), [Text.UTF8Encoding]::new($false))
-$candidate = Join-Path $targetRoot "vortex-client-$MinecraftVersion-fabric-0.2.1-candidate.jar"
+$candidate = Join-Path $targetRoot "vortex-client-$MinecraftVersion-fabric-0.2.2-candidate.jar"
 & (Join-Path $JdkPath 'bin/jar.exe') --create --file $candidate -C $classes . -C $resources .
 if ($LASTEXITCODE -ne 0) { throw 'Candidate packaging failed.' }
 $smokeRoot = Join-Path $targetRoot ('smoke-' + [Guid]::NewGuid().ToString('N'))
@@ -135,7 +135,7 @@ New-Item -ItemType Directory -Path (Join-Path $smokeRoot 'mods') -Force | Out-Nu
 Copy-Item -LiteralPath $candidate -Destination (Join-Path $smokeRoot 'mods')
 $smokeClasses = Join-Path $smokeRoot 'classes'
 New-Item -ItemType Directory -Path $smokeClasses -Force | Out-Null
-& (Join-Path $JdkPath 'bin/javac.exe') --release 21 -proc:none -classpath $classPath -d $smokeClasses (Join-Path $PSScriptRoot 'tests/TargetMixinSmoke.java') (Join-Path $PSScriptRoot 'tests/CollectionSmoke.java')
+& (Join-Path $JdkPath 'bin/javac.exe') --release 21 -proc:none -classpath $classPath -d $smokeClasses (Join-Path $PSScriptRoot 'tests/TargetMixinSmoke.java') (Join-Path $PSScriptRoot 'tests/CollectionSmoke.java') (Join-Path $PSScriptRoot 'tests/ResourceToolsSmoke.java')
 if ($LASTEXITCODE -ne 0) { throw 'Target mixin test compilation failed.' }
 Push-Location $smokeRoot
 try {
@@ -148,9 +148,9 @@ if ($legacy) {
     & $GradlePath "-Dorg.gradle.java.home=$JdkPath" -p $legacyProject remapJar "-PvortexResources=$resources" --no-daemon
     if ($LASTEXITCODE -ne 0) { throw 'Production client remapping failed.' }
     & (Join-Path $PSScriptRoot 'test-legacy-production.ps1') -JdkPath $JdkPath
-    $candidate = Join-Path $legacyProject 'build/libs/vortex-client-1.21.11-fabric-0.2.1.jar'
+    $candidate = Join-Path $legacyProject 'build/libs/vortex-client-1.21.11-fabric-0.2.2.jar'
 }
 $dist = Join-Path $PSScriptRoot 'dist'
 New-Item -ItemType Directory -Path $dist -Force | Out-Null
-Copy-Item -LiteralPath $candidate -Destination (Join-Path $dist "vortex-client-$MinecraftVersion-fabric-0.2.1.jar") -Force
+Copy-Item -LiteralPath $candidate -Destination (Join-Path $dist "vortex-client-$MinecraftVersion-fabric-0.2.2.jar") -Force
 Write-Host "Verified experimental Minecraft $MinecraftVersion candidate: $candidate. Full GUI/gameplay testing is still required."

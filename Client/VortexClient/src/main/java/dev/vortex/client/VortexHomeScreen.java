@@ -20,24 +20,27 @@ public final class VortexHomeScreen extends Screen {
         public int backY() { return y + 3 * (buttonHeight + gap) + 6; }
     }
     public static Layout layout(int width, int height) {
-        int w = Math.min(300, Math.max(40, width - 24));
-        return new Layout((width - w) / 2, Math.max(64, (height - 180) / 2 + 60), w, 22, 5);
+        int w = Math.min(380, Math.max(40, width - 24));
+        return new Layout((width - w) / 2, Math.max(64, (height - 222) / 2 + 60), w, 32, 5);
     }
     @Override protected void init() {
         var l = layout(width, height);
-        int w = Math.min(220, l.width()), x = (width - w) / 2;
-        addRenderableWidget(new VortexMenuChrome.GlassButton(x, l.y(), w, 26, Component.literal("Modules"),
-            b -> minecraft.gui.setScreen(new VortexScreen(this)), false));
-        int half = (w - 4) / 2;
-        addRenderableWidget(new VortexMenuChrome.GlassButton(x, l.y() + 30, half, 22, Component.literal("Edit HUD"),
-            b -> minecraft.gui.setScreen(new HudEditorScreen(this)), false));
-        addRenderableWidget(new VortexMenuChrome.GlassButton(x + half + 4, l.y() + 30, half, 22, Component.literal("Wardrobe"),
-            b -> minecraft.gui.setScreen(new WardrobeScreen(this)), false));
-        int dockX = (width - 108) / 2, dockY = height - 44;
-        addRenderableWidget(new VortexMenuChrome.DockButton(dockX, dockY, "social", "Party", b -> minecraft.gui.setScreen(new PartyScreen(this))));
-        addRenderableWidget(new VortexMenuChrome.DockButton(dockX + 28, dockY, "keybinds", "Key bindings", b -> minecraft.gui.setScreen(new KeybindScreen(this))));
-        addRenderableWidget(new VortexMenuChrome.DockButton(dockX + 56, dockY, "settings", "Client settings", b -> minecraft.gui.setScreen(VortexScreen.settings(this))));
-        addRenderableWidget(new VortexMenuChrome.DockButton(dockX + 84, dockY, "back", "Back", b -> onClose()));
+        String[] labels = {"Modules", "Edit HUD", "Wardrobe", "Party", "Key bindings", "Client settings"};
+        String[] icons = {"modules", "hud", "capes", "social", "keybinds", "settings"};
+        Runnable[] actions = {
+            () -> minecraft.gui.setScreen(new VortexScreen(this)),
+            () -> minecraft.gui.setScreen(new HudEditorScreen(this)),
+            () -> minecraft.gui.setScreen(new WardrobeScreen(this)),
+            () -> minecraft.gui.setScreen(new PartyScreen(this)),
+            () -> minecraft.gui.setScreen(new KeybindScreen(this)),
+            () -> minecraft.gui.setScreen(VortexScreen.settings(this))
+        };
+        for (int i = 0; i < labels.length; i++) {
+            final int index = i;
+            addRenderableWidget(new VortexMenuChrome.ShortcutButton(l.buttonX(i), l.buttonY(i), l.columnWidth(), l.buttonHeight(),
+                icons[i], labels[i], b -> actions[index].run()));
+        }
+        addRenderableWidget(new VortexMenuChrome.GlassButton(l.x(), l.backY(), l.width(), l.buttonHeight(), Component.literal("Back"), b -> onClose(), false));
     }
     @Override public boolean isInGameUi() { return minecraft.level != null; }
     @Override public void extractBackground(GuiGraphicsExtractor g, int mx, int my, float delta) {
@@ -46,10 +49,13 @@ public final class VortexHomeScreen extends Screen {
     }
     @Override public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float delta) {
         var l = layout(width, height);
-        g.fill(0, 0, width, height, 0x1806090C);
+        g.fill(0, 0, width, height, 0x8506090C);
+        float entrance = UiMotion.progress(opened);
+        UiMotion.begin(g, l.x(), l.y() - 60, l.width(), l.backY() + l.buttonHeight() - l.y() + 60, 1, (1 - entrance) * 6);
         int y = l.y() - 60 + (int)((1 - UiMotion.progress(opened)) * 5);
         VortexMenuChrome.drawBrand(g, width / 2, y, false, "VORTEX CLIENT");
         super.extractRenderState(g, mx, my, delta);
+        g.pose().popMatrix();
     }
     @Override public boolean isPauseScreen() { return false; }
     @Override public void onClose() { minecraft.gui.setScreen(parent); }

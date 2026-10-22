@@ -126,11 +126,12 @@ public class GameLauncher
             File.Delete(staleMinecraftLibrary);
         }
 
-        var libJars = Directory.Exists(librariesDir)
+        var libJars = SharedGameFiles.LibrariesFor(baseDir, version) ?? (Directory.Exists(librariesDir)
             ? Directory.GetFiles(librariesDir, "*.jar", SearchOption.AllDirectories)
                 .Where(IsCompatibleLibrary)
                 .ToArray()
-            : Array.Empty<string>();
+            : Array.Empty<string>());
+        libJars = libJars.Where(IsCompatibleLibrary).ToArray();
 
         if (isForge && !string.IsNullOrEmpty(forgeVersion))
         {
@@ -179,7 +180,7 @@ public class GameLauncher
 
         string assetIndex = version;
         string indexesDir = Path.Combine(baseDir, "assets", "indexes");
-        if (Directory.Exists(indexesDir))
+        if (SharedGameFiles.Read(baseDir) == null && Directory.Exists(indexesDir))
         {
             var files = Directory.GetFiles(indexesDir, "*.json");
             if (files.Length > 0)
@@ -188,6 +189,7 @@ public class GameLauncher
             }
         }
 
+        assetIndex = SharedGameFiles.IndexFor(baseDir, assetIndex);
         var sb = new StringBuilder();
         sb.AppendLine(FormatArgument($"-Xmx{ramGb}G"));
         if (OperatingSystem.IsMacOS()) sb.AppendLine("-XstartOnFirstThread");
@@ -386,7 +388,7 @@ public class GameLauncher
         sb.AppendLine("--gameDir");
         sb.AppendLine(FormatArgument(baseDir));
         sb.AppendLine("--assetsDir");
-        sb.AppendLine(FormatArgument(Path.Combine(baseDir, "assets")));
+        sb.AppendLine(FormatArgument(SharedGameFiles.AssetsFor(baseDir)));
         sb.AppendLine("--assetIndex");
         sb.AppendLine(FormatArgument(assetIndex));
         sb.AppendLine("--uuid");
@@ -780,9 +782,9 @@ public class GameLauncher
                 StringComparison.OrdinalIgnoreCase)
             .Replace("${game_directory}", baseDir.Replace('\\', '/'),
                 StringComparison.OrdinalIgnoreCase)
-            .Replace("${assets_root}", Path.Combine(baseDir, "assets").Replace('\\', '/'),
+            .Replace("${assets_root}", SharedGameFiles.AssetsFor(baseDir).Replace('\\', '/'),
                 StringComparison.OrdinalIgnoreCase)
-            .Replace("${assets_index_name}", minecraftVersion,
+            .Replace("${assets_index_name}", SharedGameFiles.IndexFor(baseDir, minecraftVersion),
                 StringComparison.OrdinalIgnoreCase)
             .Replace("${version_name}", profileId,
                 StringComparison.OrdinalIgnoreCase)

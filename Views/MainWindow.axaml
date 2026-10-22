@@ -86,110 +86,79 @@
                                     </Grid>
                                 </DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
                             </Border>
-                            <ScrollViewer x:Name="showcaseScroll" Grid.Row="2" HorizontalScrollBarVisibility="Disabled">
-                            <Grid RowDefinitions="Auto,18,170">
-                                <Grid x:Name="libraryCollection" Grid.Row="2" RowDefinitions="Auto,*">
-                                    <TextBox x:Name="librarySearch" Text="{Binding Library.SearchQuery, Mode=TwoWay}" Watermark="Search your library" Width="300" HorizontalAlignment="Left" Margin="0,0,0,12" AutomationProperties.Name="Search instances"/>
-                                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="4" Margin="0,0,0,12">
-                                        <Button x:Name="allInstancesFilter" Classes="LibraryFilter" Classes.active="{Binding Library.IsAllSelected}" Content="All games" Command="{Binding Library.ShowAllCommand}"/>
+                            <Grid Grid.Row="2" RowDefinitions="Auto,*,Auto">
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+                                    <TextBox x:Name="librarySearch" Text="{Binding Library.SearchQuery, Mode=TwoWay}" Watermark="Search by name, version or loader…" Width="430" HorizontalAlignment="Left" Margin="0,0,24,0" AutomationProperties.Name="Search instances"/>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                        <Button x:Name="allInstancesFilter" Classes="LibraryFilter" Classes.active="{Binding Library.IsAllSelected}" Content="All instances" Command="{Binding Library.ShowAllCommand}"/>
                                         <Button x:Name="favoritesFilter" Classes="LibraryFilter" Classes.active="{Binding Library.FavoritesOnly}" Content="★  Favorites" Command="{Binding Library.ShowFavoritesCommand}"/>
                                     </StackPanel>
-                                    <Panel Grid.Row="1">
-                                        <ListBox x:Name="instanceCards" Classes="LibraryList" ItemsSource="{Binding Library.VisibleInstances}" SelectedItem="{Binding Library.SelectedInstance, Mode=TwoWay}" SelectionMode="Single" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled" Height="115" VerticalAlignment="Top" AutomationProperties.Name="Installed instances">
-                                            <ListBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListBox.ItemsPanel>
-                                            <ListBox.ItemTemplate><DataTemplate DataType="models:InstanceModel">
-                                                <Border Classes="InstanceCard LibraryRow" Height="88" Padding="7" PointerPressed="OnInstanceCardPointerPressed" Opacity="{Binding CardOpacity}">
-                                                    <Grid ColumnDefinitions="64,*,24">
-                                                        <Border CornerRadius="5" ClipToBounds="True" views:RoundedClip.IsEnabled="True" Margin="0,0,10,0">
-                                                            <Panel>
-                                                                <views:WorldCover Seed="{Binding Name}"/>
-                                                                <conv:AsyncImage SourcePath="{Binding DisplayCoverPath}" DecodeWidth="160" Stretch="UniformToFill"/>
-                                                                <Border Background="#20000000"/>
-                                                                <Border Width="26" Height="26" CornerRadius="5" Background="#99131518" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="5" IsVisible="{Binding HasIcon}" ClipToBounds="True"><conv:AsyncImage SourcePath="{Binding IconPath}" DecodeWidth="64" Stretch="UniformToFill"/></Border>
+                                </Grid>
+                                <Panel Grid.Row="1">
+                                    <views:InstanceTileGrid x:Name="instanceCards" ItemsSource="{Binding Library.VisibleInstances}" SelectedItem="{Binding Library.SelectedInstance, Mode=TwoWay}" AutomationProperties.Name="Installed instances">
+                                        <views:InstanceTileGrid.ItemTemplate><DataTemplate DataType="models:InstanceModel">
+                                            <Border Classes="InstanceCard LibraryTile" Height="156" Padding="14" PointerPressed="OnInstanceCardPointerPressed" Opacity="{Binding CardOpacity}">
+                                                <Grid RowDefinitions="*,Auto">
+                                                    <Grid ColumnDefinitions="60,*,24">
+                                                        <Border Classes="InstanceThumbnail" Width="48" Height="48" HorizontalAlignment="Left" VerticalAlignment="Top" CornerRadius="8" ClipToBounds="True" views:RoundedClip.IsEnabled="True">
+                                                            <Panel><views:WorldCover Seed="{Binding Name}"/><conv:AsyncImage SourcePath="{Binding DisplayCoverPath}" DecodeWidth="128" Stretch="UniformToFill"/>
+                                                                <Border Width="20" Height="20" CornerRadius="4" Background="#CC131518" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="3" IsVisible="{Binding HasIcon}" ClipToBounds="True"><conv:AsyncImage SourcePath="{Binding IconPath}" DecodeWidth="48" Stretch="UniformToFill"/></Border>
                                                             </Panel>
                                                         </Border>
-                                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="5" Margin="0,0,4,0">
-                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}"/>
-                                                            <TextBlock Text="{Binding SummaryText}" Classes="Muted" FontSize="10" LineHeight="14" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
-                                                            <TextBlock Text="{Binding StatusText}" Classes="Muted" FontSize="10" LineHeight="14" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                        <StackPanel Grid.Column="1" Spacing="5" Margin="0,0,4,0">
+                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}"/>
+                                                            <TextBlock Text="{Binding SummaryText}" Classes="Muted" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Text="{Binding StatusText}" Classes="Muted" FontSize="10" TextTrimming="CharacterEllipsis"/>
                                                         </StackPanel>
-                                                        <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="7">
-                                                            <Button Classes="IconButton"  Width="24" Height="26" Padding="0" Click="OnOpenInstanceMenuClick" Tag="{Binding}" ToolTip.Tip="Instance actions" AutomationProperties.Name="Instance actions"><PathIcon Classes="CenteredGlyph" Width="16" Height="4" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M4,10 A2,2 0 1 0 4,14 A2,2 0 1 0 4,10 Z M12,10 A2,2 0 1 0 12,14 A2,2 0 1 0 12,10 Z M20,10 A2,2 0 1 0 20,14 A2,2 0 1 0 20,10 Z"/></Button>
-                                                            <TextBlock Text="★" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsFavorite}" HorizontalAlignment="Center" FontSize="11"/>
+                                                        <StackPanel Grid.Column="2" Spacing="4">
+                                                            <Button Classes="IconButton" Width="24" Height="24" Padding="0" Click="OnOpenInstanceMenuClick" Tag="{Binding}" ToolTip.Tip="More actions" AutomationProperties.Name="Instance actions"><PathIcon Width="16" Height="4" Data="M4,10 A2,2 0 1 0 4,14 A2,2 0 1 0 4,10 Z M12,10 A2,2 0 1 0 12,14 A2,2 0 1 0 12,10 Z M20,10 A2,2 0 1 0 20,14 A2,2 0 1 0 20,10 Z"/></Button>
+                                                            <TextBlock Text="★" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsFavorite}" HorizontalAlignment="Center" FontSize="12"/>
                                                         </StackPanel>
                                                     </Grid>
-                                                </Border>
-                                            </DataTemplate></ListBox.ItemTemplate>
-                                        </ListBox>
-                                        <TextBlock Text="Loading library…" IsVisible="{Binding IsInitializing}" Classes="Muted" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                        <TextBlock Text="Nothing here yet." Classes="Muted" IsVisible="{Binding Library.IsEmpty}" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,24"/>
-                                    </Panel>
-                                </Grid>
-                                <Panel>
-                                    <ContentControl x:Name="librarySelection" Content="{Binding Library.SelectedInstance}" IsVisible="{Binding Library.HasSelection}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
-                                        <ContentControl.ContentTemplate><DataTemplate DataType="models:InstanceModel">
-                                            <Grid RowDefinitions="Auto,Auto,*">
-                                                <Border x:Name="libraryHero" views:SurfaceMotion.Kind="Content" CornerRadius="10" ClipToBounds="True" views:RoundedClip.IsEnabled="True" Height="260" MinHeight="150">
-                                                    <Panel>
-                                                        <views:WorldCover Seed="{Binding Name}"/>
-                                                        <conv:AsyncImage SourcePath="{Binding DisplayCoverPath}" DecodeWidth="1600" Stretch="UniformToFill"/>
-                                                        <Border><Border.Background><LinearGradientBrush StartPoint="0%,0%" EndPoint="70%,100%"><GradientStop Offset="0" Color="#14101316"/><GradientStop Offset="0.6" Color="#55101316"/><GradientStop Offset="1" Color="#EE101316"/></LinearGradientBrush></Border.Background></Border>
-                                                        <Grid Margin="26" RowDefinitions="Auto,*,Auto,Auto" ColumnDefinitions="*,Auto">
-                                                            <TextBlock Text="MINECRAFT  /  JAVA EDITION" Foreground="#E6EFEB" FontSize="10" FontWeight="SemiBold" LetterSpacing="2" VerticalAlignment="Top"/>
-                                                            <Button Grid.Column="1" Classes="HeroFavorite" Classes.active="{Binding IsFavorite}" Command="{Binding #root.DataContext.ToggleFavoriteCommand}" CommandParameter="{Binding}" ToolTip.Tip="Pin / unpin favorite" AutomationProperties.Name="Toggle favorite"><Path Classes="CenteredGlyph" Width="17" Height="17" HorizontalAlignment="Center" VerticalAlignment="Center" Stretch="Uniform" Data="M12,2 L15.1,8.3 L22,9.3 L17,14.2 L18.2,21 L12,17.8 L5.8,21 L7,14.2 L2,9.3 L8.9,8.3 Z" Stroke="White" StrokeThickness="1.5"/></Button>
-                                                            <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Spacing="8">
-                                                                <TextBlock Text="{Binding Name}" Foreground="White" FontSize="32" FontWeight="Bold" LetterSpacing="-0.9" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="82" ToolTip.Tip="{Binding Name}"/>
-                                                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                                                    <Border Background="#660D1518" CornerRadius="4" Padding="8,4"><TextBlock Foreground="#E5EEEA" FontSize="10" Text="{Binding Version}"/></Border>
-                                                                    <Border Background="#660D1518" CornerRadius="4" Padding="8,4"><TextBlock Foreground="#E5EEEA" FontSize="10" Text="{Binding Loader}"/></Border>
-                                                                    <Border Background="#D7F36A" CornerRadius="4" Padding="8,4" IsVisible="{Binding VortexClientEnabled}"><TextBlock Foreground="#18200B" FontSize="10" Text="VORTEX CLIENT" FontWeight="SemiBold"/></Border>
-                                                                </StackPanel>
-                                                            </StackPanel>
-                                                <Grid Grid.Row="3" Grid.ColumnSpan="2" ColumnDefinitions="Auto,*,Auto" Margin="0,16,0,0">
-                                                    <Button x:Name="featuredPlayButton" Classes="PlayButton LibraryPlay" Command="{Binding #root.DataContext.LaunchSpecificInstanceCommand}" CommandParameter="{Binding}" IsEnabled="{Binding CanLaunch}" AutomationProperties.Name="Play selected instance">
-                                                        <StackPanel Orientation="Horizontal" Spacing="12"><PathIcon Width="13" Height="13" Data="M4,2 L21,12 L4,22 Z"/><TextBlock Text="{Binding LaunchButtonText}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/></StackPanel>
-                                                    </Button>
-                                                    <StackPanel Grid.Column="1" Spacing="3" Margin="16,0,8,0" VerticalAlignment="Center"><TextBlock Text="{Binding StatusText}" FontSize="12" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding PlayTimeText}" Classes="Muted" FontSize="10" LineHeight="14" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/></StackPanel>
-                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                        <Button Classes="SecondaryBtn" Content="Open instance" Click="OnManageInstanceClick" Tag="{Binding}" AutomationProperties.Name="Manage selected instance"/>
-                                                        <Button Classes="IconButton"  Click="OnOpenInstanceMenuClick" Tag="{Binding}" ToolTip.Tip="Instance actions" AutomationProperties.Name="Selected instance actions"><PathIcon Classes="CenteredGlyph" Width="16" Height="4" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M4,10 A2,2 0 1 0 4,14 A2,2 0 1 0 4,10 Z M12,10 A2,2 0 1 0 12,14 A2,2 0 1 0 12,10 Z M20,10 A2,2 0 1 0 20,14 A2,2 0 1 0 20,10 Z"/></Button>
-                                                    </StackPanel>
+                                                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,12,0,0">
+                                                        <Button Classes="LibraryTextButton" Content="Manage" Click="OnManageInstanceClick" Tag="{Binding}" HorizontalAlignment="Left" AutomationProperties.Name="Manage instance"/>
+                                                        <Button Grid.Column="1" Classes="PrimaryBtn TilePlay" Content="Play" Command="{Binding #root.DataContext.LaunchSpecificInstanceCommand}" CommandParameter="{Binding}" IsEnabled="{Binding CanLaunch}" Width="84" Padding="0" AutomationProperties.Name="Play instance"/>
+                                                    </Grid>
                                                 </Grid>
-                                                        </Grid>
-                                                    </Panel>
-                                                </Border>
-                                                <Border Grid.Row="2" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="0,1,0,0" Margin="0,14,0,0" Padding="0,10,0,0" VerticalAlignment="Top">
-                                                    <Grid ColumnDefinitions="*,Auto">
-                                                        <Button Grid.Column="1" Classes="LibraryTextButton" Click="OnSetCoverClick" VerticalAlignment="Top" AutomationProperties.Name="Change selected cover">
-                                                            <StackPanel Orientation="Horizontal" Spacing="7"><TextBlock Text="Change cover" FontSize="11" VerticalAlignment="Center"/><PathIcon Width="11" Height="11" Data="M5,2 L20,2 L20,17 L18,17 L18,6 L4,20 L2,18 L16,4 L5,4 Z"/></StackPanel>
-                                                        </Button>
-                                                        <WrapPanel>
-                                                            <Button Content="Mods" CommandParameter="Mods" Tag="{Binding}" Click="OnWorkspaceShortcut" Classes="SecondaryBtn" Margin="0,0,8,8"/>
-                                                            <Button Content="Resource packs" CommandParameter="Resource packs" Tag="{Binding}" Click="OnWorkspaceShortcut" Classes="SecondaryBtn" Margin="0,0,8,8"/>
-                                                            <Button Content="Worlds" CommandParameter="Worlds" Tag="{Binding}" Click="OnWorkspaceShortcut" Classes="SecondaryBtn" Margin="0,0,8,8"/>
-                                                            <Button Content="Settings &amp; tools" CommandParameter="Settings" Tag="{Binding}" Click="OnWorkspaceShortcut" Classes="SecondaryBtn" Margin="0,0,0,8"/>
-                                                        </WrapPanel>
-                                                    </Grid>
-                                                </Border>
-                                            </Grid>
-                                        </DataTemplate></ContentControl.ContentTemplate>
-                                    </ContentControl>
-                                    <Border IsVisible="{Binding !Library.HasSelection}" CornerRadius="10" ClipToBounds="True" views:RoundedClip.IsEnabled="True">
-                                        <Panel>
-                                            <views:WorldCover Seed="A new world"/>
-                                            <Border Background="#C9101316"/>
-                                            <StackPanel x:Name="libraryEmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="360" Margin="24" Spacing="14">
-                                                <TextBlock Text="MAKE ROOM FOR ADVENTURE" Foreground="#D7F36A" FontSize="10" LetterSpacing="2" TextWrapping="Wrap" TextAlignment="Center"/>
-                                                <TextBlock Text="{Binding Library.EmptyTitle}" FontSize="28" FontWeight="SemiBold" Foreground="White" TextWrapping="Wrap" TextAlignment="Center"/>
-                                                <TextBlock Text="{Binding Library.EmptyDescription}" Foreground="#BBC8C2" FontSize="12" LineHeight="19" TextWrapping="Wrap" TextAlignment="Center"/>
-                                                <Button Content="Clear filters" Command="{Binding Library.ClearFiltersCommand}" Classes="SecondaryBtn" IsVisible="{Binding Library.HasInstances}" HorizontalAlignment="Center"/>
-                                                <Button Content="+  Create your first instance" Click="OnAddInstanceClick" Classes="PrimaryBtn" IsVisible="{Binding !Library.HasInstances}" IsEnabled="{Binding !IsInitializing}" HorizontalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Panel>
+                                            </Border>
+                                        </DataTemplate></views:InstanceTileGrid.ItemTemplate>
+                                    </views:InstanceTileGrid>
+                                    <TextBlock Text="Loading library…" IsVisible="{Binding IsInitializing}" Classes="Muted" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <Border IsVisible="{Binding !Library.HasSelection}" Background="{DynamicResource ThemeSidebarBrush}" CornerRadius="12" Margin="0,0,14,0">
+                                        <StackPanel x:Name="libraryEmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="360" Margin="24" Spacing="14">
+                                            <TextBlock Text="{Binding Library.EmptyTitle}" FontSize="25" FontWeight="SemiBold" TextWrapping="Wrap" TextAlignment="Center"/>
+                                            <TextBlock Text="{Binding Library.EmptyDescription}" Classes="Muted" FontSize="12" TextWrapping="Wrap" TextAlignment="Center"/>
+                                            <Button Content="Clear filters" Command="{Binding Library.ClearFiltersCommand}" Classes="SecondaryBtn" IsVisible="{Binding Library.HasInstances}" HorizontalAlignment="Center"/>
+                                            <Button Content="+  Create your first instance" Click="OnAddInstanceClick" Classes="PrimaryBtn" IsVisible="{Binding !Library.HasInstances}" IsEnabled="{Binding !IsInitializing}" HorizontalAlignment="Center"/>
+                                        </StackPanel>
                                     </Border>
                                 </Panel>
+                                <ContentControl x:Name="librarySelection" Grid.Row="2" Content="{Binding Library.SelectedInstance}" IsVisible="{Binding Library.HasSelection}" HorizontalContentAlignment="Stretch" Margin="0,12,0,0">
+                                    <ContentControl.ContentTemplate><DataTemplate DataType="models:InstanceModel">
+                                        <Border x:Name="selectedInstanceBar" Background="{DynamicResource ThemeSidebarBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16,12">
+                                            <Grid RowDefinitions="Auto,Auto">
+                                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,10">
+                                                    <StackPanel Spacing="4" Margin="0,0,16,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding SummaryText}" Classes="Muted" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" Classes="SecondaryBtn" Content="Favorite" Command="{Binding #root.DataContext.ToggleFavoriteCommand}" CommandParameter="{Binding}" AutomationProperties.Name="Toggle favorite" Margin="0,0,8,0"/>
+                                                    <Button Grid.Column="2" Classes="SecondaryBtn" Content="Open instance" Click="OnManageInstanceClick" Tag="{Binding}" AutomationProperties.Name="Manage selected instance" Margin="0,0,8,0"/>
+                                                    <Button x:Name="featuredPlayButton" Grid.Column="3" Classes="LibraryPlay" Content="Play" Command="{Binding #root.DataContext.LaunchSpecificInstanceCommand}" CommandParameter="{Binding}" IsEnabled="{Binding CanLaunch}" Width="112" Height="40" AutomationProperties.Name="Play selected instance"/>
+                                                </Grid>
+                                                <WrapPanel Grid.Row="1">
+                                                    <Button Content="Mods" CommandParameter="Mods" Tag="{Binding}" Click="OnWorkspaceShortcut" Classes="LibraryTextButton" Margin="0,0,14,0"/>
+                                                    <Button Content="Resource packs" CommandParameter="Resource packs" Tag="{Binding}" Click="OnWorkspaceShortcut" Classes="LibraryTextButton" Margin="0,0,14,0"/>
+                                                    <Button Content="Worlds" CommandParameter="Worlds" Tag="{Binding}" Click="OnWorkspaceShortcut" Classes="LibraryTextButton" Margin="0,0,14,0"/>
+                                                    <Button Content="Settings" CommandParameter="Settings" Tag="{Binding}" Click="OnWorkspaceShortcut" Classes="LibraryTextButton" Margin="0,0,14,0"/>
+                                                    <Button Content="Change cover" Click="OnSetCoverClick" Classes="LibraryTextButton" AutomationProperties.Name="Change selected cover" Margin="0,0,14,0"/>
+                                                    <Button x:Name="featuredClientButton" Content="{Binding VortexClientActionText}" Command="{Binding #root.DataContext.UpdateVortexClientCommand}" CommandParameter="{Binding}" IsVisible="{Binding SupportsVortexClient}" IsEnabled="{Binding CanChangeFiles}" Classes="LibraryTextButton" ToolTip.Tip="Your HUD settings and other mods are kept."/>
+                                                </WrapPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate></ContentControl.ContentTemplate>
+                                </ContentControl>
                             </Grid>
-                            </ScrollViewer>
                         </Grid>
                         <Grid x:Name="modpacksPage" Classes="PagePanel" views:SurfaceMotion.Kind="Page" RowDefinitions="*" IsVisible="{Binding IsModpacksTab}">
                             <Grid Grid.Row="0" x:Name="modpacksContentGrid" DataContext="{Binding ModpacksVm}" RowDefinitions="Auto, *">

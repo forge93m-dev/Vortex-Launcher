@@ -376,55 +376,66 @@ public partial class DownloadModsViewModel : ObservableObject
         var transfer = new TransferProgress(snapshot => DownloadCenter.Current?.Report(snapshot));
         transfer.Begin(ContentTitle, selected.Count, 0);
         var failed = new List<string>();
+        var jobs = new List<(ModrinthModItemViewModel Item, ModrinthFileItem File, string Temporary, string Destination)>();
+        var destinations = new HashSet<string>(OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        // Resolve observable version lists on the owning UI thread, then stage only bytes in parallel.
         foreach (var item in selected)
         {
             token.ThrowIfCancellationRequested();
-            StatusMessage = $"Installing {installed + 1}/{selected.Count}: {item.Item.Title}...";
             try
             {
-                await EnsureVersionsAsync(item);
+                await EnsureVersionsAsync(item).WaitAsync(token);
                 var version = item.SelectedVersion;
                 if (version == null || !IsCompatibleVersion(version))
-                {
-                    failed.Add($"{item.Item.Title}: no compatible version for Minecraft {_gameVersion} / {_loader}");
-                    continue;
-                }
-
+                    throw new IOException($"No compatible version for Minecraft {_gameVersion} / {_loader}.");
                 var file = version.Files.FirstOrDefault(f => f.Primary) ?? version.Files.First();
-                string url = file.Url;
-
-                string fileName = Path.GetFileName(string.IsNullOrWhiteSpace(file.Filename)
-                    ? new Uri(url).AbsolutePath : file.Filename);
-                if (string.IsNullOrWhiteSpace(fileName))
-                {
-                    failed.Add(item.Item.Title);
-                    continue;
-                }
-
-                string destination = Path.Combine(targetDir, fileName);
-                string temporary = destination + "." + Guid.NewGuid().ToString("N") + ".part";
-                try
-                {
-                    file.Hashes.TryGetValue("sha1", out string? hash);
-                    long received = 0;
-                    await DownloadCache.EnsureAsync(url, temporary, token, hash, received: bytes => { received += bytes; transfer.Received(bytes); }, httpClient: _downloadClient, cacheRoot: _downloadCacheRoot);
-                    if (file.Hashes.Count > 0 && !await MatchesHashAsync(temporary, file)) throw new IOException("Downloaded file checksum is invalid.");
-                    token.ThrowIfCancellationRequested();
-                    CheckFileAccess();
-                    File.Move(temporary, destination, overwrite: false);
-                    transfer.Complete(new FileInfo(destination).Length, received);
-                }
-                finally { if (File.Exists(temporary)) File.Delete(temporary); }
-                item.IsSelected = false;
-                installed++;
+                string name = Path.GetFileName(string.IsNullOrWhiteSpace(file.Filename) ? new Uri(file.Url).AbsolutePath : file.Filename);
+                if (string.IsNullOrWhiteSpace(name)) throw new IOException("Missing download filename.");
+                string destination = Path.Combine(targetDir, name);
+                if (!destinations.Add(destination)) throw new IOException("Another selection uses the same filename.");
+                if (File.Exists(destination)) throw new IOException("This file already exists; it was not overwritten.");
+                jobs.Add((item, file, destination + "." + Guid.NewGuid().ToString("N") + ".part", destination));
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
-            catch (Exception ex)
+            catch (Exception ex) { failed.Add($"{item.Item.Title}: {ex.Message}"); }
+        }
+        var errors = new System.Collections.Concurrent.ConcurrentDictionary<string, string>();
+        var receivedBytes = new System.Collections.Concurrent.ConcurrentDictionary<string, long>();
+        StatusMessage = $"Downloading {jobs.Count} {ContentTitle.ToLowerInvariant()}...";
+        try
+        {
+            await DownloadBatch.RunAsync(jobs.OrderByDescending(job => job.File.Size), async (job, downloadToken) =>
             {
-                failed.Add($"{item.Item.Title}: {ex.Message}");
+                try
+                {
+                    job.File.Hashes.TryGetValue("sha1", out string? hash);
+                    long received = 0;
+                    await DownloadCache.EnsureAsync(job.File.Url, job.Temporary, downloadToken, hash, received: bytes => { received += bytes; transfer.Received(bytes); }, httpClient: _downloadClient, cacheRoot: _downloadCacheRoot);
+                    if (job.File.Hashes.Count > 0 && !await MatchesHashAsync(job.Temporary, job.File)) throw new IOException("Downloaded file checksum is invalid.");
+                    receivedBytes[job.Temporary] = received;
+                }
+                catch (OperationCanceledException) when (downloadToken.IsCancellationRequested) { throw; }
+                catch (Exception ex) { errors[job.Temporary] = ex.Message; }
+            }, token);
+            foreach (var job in jobs)
+            {
+                token.ThrowIfCancellationRequested();
+                if (errors.TryGetValue(job.Temporary, out string? error)) { failed.Add($"{job.Item.Item.Title}: {error}"); continue; }
+                try
+                {
+                    CheckFileAccess();
+                    File.Move(job.Temporary, job.Destination, overwrite: false);
+                    transfer.Complete(new FileInfo(job.Destination).Length, receivedBytes[job.Temporary]);
+                    job.Item.IsSelected = false;
+                    installed++;
+                }
+                catch (Exception ex) { failed.Add($"{job.Item.Item.Title}: {ex.Message}"); }
             }
         }
-
+        finally
+        {
+            foreach (var job in jobs) if (File.Exists(job.Temporary)) File.Delete(job.Temporary);
+        }
         OnPropertyChanged(nameof(SelectedCount));
         StatusMessage = failed.Count == 0
             ? $"Installed {installed} {ContentTitle.ToLowerInvariant()} successfully."
@@ -466,9 +477,9 @@ public partial class DownloadModsViewModel : ObservableObject
         Directory.CreateDirectory(folder);
         try
         {
-            int count = 0;
             var transfer = new TransferProgress(snapshot => DownloadCenter.Current?.Report(snapshot));
             transfer.Begin("Mods and approved dependencies", plan.Count, 0);
+            var jobs = new List<(ModInstallEntry Entry, ModrinthFileItem File, string Temporary)>();
             foreach (var entry in plan)
             {
                 token.ThrowIfCancellationRequested();
@@ -486,14 +497,19 @@ public partial class DownloadModsViewModel : ObservableObject
                 }
                 string temporary = destination + "." + Guid.NewGuid().ToString("N") + ".part";
                 staged.Add((temporary, destination));
-                StatusMessage = $"Downloading {++count}/{plan.Count}: {entry.Title} {entry.Version.DisplayName}...";
+                jobs.Add((entry, file, temporary));
+            }
+            StatusMessage = $"Downloading {jobs.Count} mods and dependencies...";
+            await DownloadBatch.RunAsync(jobs.OrderByDescending(job => job.File.Size), async (job, downloadToken) =>
+            {
+                var file = job.File;
                 file.Hashes.TryGetValue("sha1", out string? hash);
                 long received = 0;
-                await DownloadCache.EnsureAsync(file.Url, temporary, token, hash, received: bytes => { received += bytes; transfer.Received(bytes); }, httpClient: _downloadClient, cacheRoot: _downloadCacheRoot);
-                if (file.Hashes.Count > 0 && !await MatchesHashAsync(temporary, file))
-                    throw new IOException($"Download verification failed for {entry.Title}.");
-                transfer.Complete(new FileInfo(temporary).Length, received);
-            }
+                await DownloadCache.EnsureAsync(file.Url, job.Temporary, downloadToken, hash, received: bytes => { received += bytes; transfer.Received(bytes); }, httpClient: _downloadClient, cacheRoot: _downloadCacheRoot);
+                if (file.Hashes.Count > 0 && !await MatchesHashAsync(job.Temporary, file))
+                    throw new IOException($"Download verification failed for {job.Entry.Title}.");
+                transfer.Complete(new FileInfo(job.Temporary).Length, received);
+            }, token);
             token.ThrowIfCancellationRequested();
             CheckFileAccess();
             foreach (var file in staged)

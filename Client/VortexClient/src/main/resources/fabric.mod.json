@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "vortex_client",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "name": "Vortex Client",
   "description": "Client-side HUD modules, Zoom and Freelook, with a transparent Vortex hub, searchable module menu, bottom icon dock and drag/resize HUD Editor.",
   "environment": "client",

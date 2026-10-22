@@ -38,10 +38,9 @@ internal static class AlignmentSettingsChecks
             window.CaptureRenderedFrame()!.Save(System.IO.Path.Combine(output,$"alignment-library-{(int)size.Width}.png"));
         }
         var favorite=window.GetVisualDescendants().OfType<Button>().Single(b=>AutomationProperties.GetName(b)=="Toggle favorite");
-        var star=favorite.GetVisualDescendants().OfType<Path>().Single();
         var wasFavorite=fixture.Library.SelectedInstance!.IsFavorite;
         favorite.Command!.Execute(favorite.CommandParameter); pump(40);
-        Check(fixture.Library.SelectedInstance.IsFavorite!=wasFavorite && star.Fill is ISolidColorBrush fill && fill.Color.A==(wasFavorite?0:255),"vector favorite retains its command and filled/outline states");
+        Check(fixture.Library.SelectedInstance.IsFavorite!=wasFavorite && favorite.Content?.ToString()=="Favorite","labeled favorite action retains its command without an ambiguous standalone icon");
         favorite.Command.Execute(favorite.CommandParameter); pump(40);
 
         fixture.Select("Settings"); pump(250);

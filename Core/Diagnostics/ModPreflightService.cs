@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using VortexLauncher.Core.Management;
+using VortexLauncher.Core.Launch;
 
 namespace VortexLauncher.Core.Diagnostics;
 
@@ -174,6 +175,8 @@ public sealed class ModPreflightService
         if (loaderVersion != null && Regex.IsMatch(loaderVersion, @"\A[A-Za-z0-9_.+-]{1,96}\z"))
         {
             string loaderJar = Path.Combine(root, "libraries", "fabric-loader-" + loaderVersion + ".jar");
+            loaderJar = SharedGameFiles.LibrariesFor(root, minecraft)?.FirstOrDefault(p =>
+                Path.GetFileName(p) == "fabric-loader-" + loaderVersion + ".jar") ?? loaderJar;
             if (File.Exists(loaderJar))
             {
                 try

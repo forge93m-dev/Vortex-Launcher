@@ -21,7 +21,8 @@ internal static class DownloadCache
     }) { Timeout = TimeSpan.FromMinutes(5), DefaultRequestVersion = HttpVersion.Version20,
         DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower };
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> Locks = new();
-    private sealed record VerifiedFile(long Length, long Written, long Created, string Sha1);
+    private sealed record VerifiedFile(long Length, long Written, long Created, string Sha1, bool ArchiveValidated);
+    internal static long ArchiveValidationPasses;
     private static readonly ConcurrentDictionary<string, VerifiedFile> Verified = new(
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
     internal static string Root => Path.Combine(PlatformSupport.DataRoot, "cache", "downloads");
@@ -47,7 +48,7 @@ internal static class DownloadCache
             {
                 if (size.HasValue && !File.Exists(cached + ".partial")) DiskSpace.EnsureAvailable(cached, size.Value);
                 string actualHash = await ResumableTransfer.DownloadAsync(httpClient ?? Client, url, cached, sha1, size, validateArchive, received, token);
-                Remember(cached, actualHash);
+                Remember(cached, actualHash, validateArchive);
             }
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             token.ThrowIfCancellationRequested();
@@ -58,7 +59,7 @@ internal static class DownloadCache
                 await CopyVerifiedFileAsync(cached, localTemporary, token);
                 token.ThrowIfCancellationRequested();
                 File.Move(localTemporary, destination, true);
-                if (Verified.TryGetValue(cached, out var checkedFile)) Remember(destination, checkedFile.Sha1);
+                if (Verified.TryGetValue(cached, out var checkedFile)) Remember(destination, checkedFile.Sha1, checkedFile.ArchiveValidated);
             }
             finally
             {
@@ -83,13 +84,20 @@ internal static class DownloadCache
 
     internal static async Task<bool> IsValidAsync(string path, string? sha1, long? size, CancellationToken token, bool validateArchive = false)
     {
+        token.ThrowIfCancellationRequested();
         if (!File.Exists(path)) return false;
-        long length = new FileInfo(path).Length;
+        var info = new FileInfo(path);
+        long length = info.Length;
         if (length == 0 || (size.HasValue && length != size.Value)) return false;
+        if (Verified.TryGetValue(path, out var verified) && verified.Length == length &&
+            verified.Written == info.LastWriteTimeUtc.Ticks && verified.Created == info.CreationTimeUtc.Ticks &&
+            (!validateArchive || verified.ArchiveValidated) &&
+            (string.IsNullOrEmpty(sha1) || verified.Sha1.Equals(sha1, StringComparison.OrdinalIgnoreCase))) return true;
         if (validateArchive)
         {
             try
             {
+                Interlocked.Increment(ref ArchiveValidationPasses);
                 using var archive = System.IO.Compression.ZipFile.OpenRead(path);
                 if (archive.Entries.Count == 0) return false;
                 foreach (var entry in archive.Entries)
@@ -101,15 +109,11 @@ internal static class DownloadCache
             }
             catch (System.IO.InvalidDataException) { return false; }
         }
-        if (string.IsNullOrEmpty(sha1)) return true;
-        var info = new FileInfo(path);
-        if (Verified.TryGetValue(path, out var verified) && verified.Length == length &&
-            verified.Written == info.LastWriteTimeUtc.Ticks && verified.Created == info.CreationTimeUtc.Ticks &&
-            verified.Sha1.Equals(sha1, StringComparison.OrdinalIgnoreCase)) return true;
+        if (string.IsNullOrEmpty(sha1)) { if (validateArchive) Remember(path, "", true); return true; }
         await using var stream = File.OpenRead(path);
         string hash = Convert.ToHexString(await SHA1.HashDataAsync(stream, token));
         bool valid = hash.Equals(sha1, StringComparison.OrdinalIgnoreCase);
-        if (valid) Remember(path, hash);
+        if (valid) Remember(path, hash, validateArchive);
         return valid;
     }
 
@@ -124,14 +128,15 @@ internal static class DownloadCache
         }
     }
 
-    private static void Remember(string path, string hash)
+    private static void Remember(string path, string hash, bool archiveValidated = false)
     {
         var info = new FileInfo(path);
-        Verified[path] = new VerifiedFile(info.Length, info.LastWriteTimeUtc.Ticks, info.CreationTimeUtc.Ticks, hash);
+        Verified[path] = new VerifiedFile(info.Length, info.LastWriteTimeUtc.Ticks, info.CreationTimeUtc.Ticks, hash, archiveValidated);
     }
 
     internal static void ForgetVerification(string directory)
     {
+        AssetVerification.Invalidate(directory);
         string prefix = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
         foreach (string path in Verified.Keys)
             if (path.StartsWith(prefix, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))

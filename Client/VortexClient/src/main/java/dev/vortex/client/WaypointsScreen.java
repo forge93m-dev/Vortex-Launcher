@@ -8,6 +8,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 public final class WaypointsScreen extends Screen {
+    private final long opened = System.nanoTime();
     private final Screen parent;
     private final WaypointsFeature.Scope scope;
     private UUID selected;
@@ -54,15 +55,16 @@ public final class WaypointsScreen extends Screen {
     @Override public void tick(){if(wasBusy!=WaypointsFeature.busy() || !shown.equals(filtered()))rebuildWidgets();}
     @Override public void extractBackground(GuiGraphicsExtractor g,int mx,int my,float delta){if(minecraft.level!=null)minecraft.gui.hud.extractDeferredSubtitles();else extractPanorama(g,delta);}
     @Override public void extractRenderState(GuiGraphicsExtractor g,int mx,int my,float delta){
-        var l=layout(width,height);g.fill(0,0,width,height,0x9007090D);ClientUi.panel(g,l.x(),l.y(),l.width(),l.height(),10,ClientUi.BORDER,ClientUi.PANEL);
-        ClientUi.heading(g,"Waypoints",l.x()+12,l.y()+13,l.width()-100);g.fill(l.x()+l.sidebar(),l.y()+35,l.x()+l.sidebar()+1,l.y()+l.height()-22,ClientUi.BORDER);
-        ClientUi.text(g,selected==null?"New waypoint":"Edit waypoint",l.editorX(),l.y()+34,l.editorWidth(),ClientUi.MUTED);
+        var l=layout(width,height);ClientUi.beginPage(g,width,height,l.x(),l.y(),l.width(),l.height(),"Waypoints","waypoints",opened);
+        g.fill(l.x()+l.sidebar(),l.y()+35,l.x()+l.sidebar()+1,l.y()+l.height()-22,ClientUi.BORDER);
+        ClientUi.text(g,selected==null?"New waypoint":"Edit waypoint",l.editorX(),l.y()+38,l.editorWidth(),ClientUi.MUTED);
         ClientUi.text(g,"Group",l.editorX(),l.y()+114,l.editorWidth()-50,ClientUi.MUTED);
         int third=(l.editorWidth()-8)/3;for(int i=0;i<3;i++)ClientUi.text(g,new String[]{"X","Y","Z"}[i],l.editorX()+i*(third+4),l.y()+79,third,ClientUi.MUTED);
         for(int row=0;row<l.rows() && scroll+row<shown.size();row++){var p=shown.get(scroll+row);ClientUi.rounded(g,l.x()+11,l.y()+93+row*32,3,18,1,(p.hidden() || WaypointsFeature.groupHidden(p.group())?0x66000000:0xFF000000)|p.color());}
         ClientUi.text(g,WaypointsFeature.busy()?"Saving / loading…":WaypointsFeature.message,l.x()+12,l.y()+l.height()-14,l.width()-24,ClientUi.MUTED);
         super.extractRenderState(g,mx,my,delta);
         ClientUi.rounded(g,l.editorX()+l.editorWidth()-4,l.y()+131,3,10,1,0xFF000000|color);
+        g.pose().popMatrix();
     }
     @Override public boolean isPauseScreen(){return false;}
     @Override public boolean isInGameUi(){return minecraft.level!=null;}

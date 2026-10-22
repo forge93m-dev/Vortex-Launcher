@@ -29,6 +29,11 @@ public partial class InstanceModel : ObservableObject
 
     [ObservableProperty]
     private bool _vortexClientEnabled;
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool SupportsVortexClient => VortexLauncher.Core.Network.VortexClientService.IsCompatible(Version, Loader);
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string VortexClientActionText => VortexClientEnabled ? "Update Vortex Client" : "Install Vortex Client";
+    partial void OnVortexClientEnabledChanged(bool value) => OnPropertyChanged(nameof(VortexClientActionText));
 
     [ObservableProperty]
     private string _instancePath = string.Empty;
@@ -93,8 +98,8 @@ public partial class InstanceModel : ObservableObject
     public bool CanManageMods => IsInstalled && CanChangeFiles;
 
     public string SummaryText => $"{Version} ({Loader})";
-    partial void OnVersionChanged(string value) => OnPropertyChanged(nameof(SummaryText));
-    partial void OnLoaderChanged(string value) => OnPropertyChanged(nameof(SummaryText));
+    partial void OnVersionChanged(string value) { OnPropertyChanged(nameof(SummaryText)); OnPropertyChanged(nameof(SupportsVortexClient)); }
+    partial void OnLoaderChanged(string value) { OnPropertyChanged(nameof(SummaryText)); OnPropertyChanged(nameof(SupportsVortexClient)); }
     [System.Text.Json.Serialization.JsonIgnore]
     public bool HasCover => !string.IsNullOrWhiteSpace(CoverImagePath);
     [System.Text.Json.Serialization.JsonIgnore]

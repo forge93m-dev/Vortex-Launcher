@@ -149,14 +149,17 @@ public sealed class ModUpdateService
                 throw new IOException("An enabled version already uses this filename.");
             if (File.Exists(Path.Combine(preview.Root, "mods", change.Item.File.Filename + ".disabled")) && !ModFiles.IsDisabled(change.Destination))
                 throw new IOException("A disabled version already uses this filename.");
+        }
+        await DownloadBatch.RunAsync(changes, async (change, downloadToken) =>
+        {
             progress?.Report("Downloading " + change.Item.File.Filename);
-            await DownloadCache.EnsureAsync(change.Item.File.Url, change.Staged, token,
+            await DownloadCache.EnsureAsync(change.Item.File.Url, change.Staged, downloadToken,
                 change.Item.File.Hashes.GetValueOrDefault("sha1"), change.Item.File.Size, httpClient: _http, cacheRoot: _cache, validateArchive: true);
-            if (!string.Equals(await HashAsync(change.Staged, token), change.Item.File.Hashes["sha512"], StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(await HashAsync(change.Staged, downloadToken), change.Item.File.Hashes["sha512"], StringComparison.OrdinalIgnoreCase))
                 throw new IOException("SHA-512 mismatch. Original mods were not changed.");
             using var archive = System.IO.Compression.ZipFile.OpenRead(change.Staged);
             if (archive.Entries.Count == 0 || VortexClientService.HasClientId(change.Staged)) throw new IOException("Invalid mod update archive.");
-        }
+        }, token);
         await ValidateInventoryAsync(preview, token);
         // Keep explicit old/new paths and hashes beside the backups if the process
         // is terminated between filesystem renames. Never auto-delete old mods.

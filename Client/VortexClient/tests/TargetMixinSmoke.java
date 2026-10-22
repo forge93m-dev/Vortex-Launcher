@@ -51,9 +51,23 @@ public final class TargetMixinSmoke {
             if(x<0 || y<0 || x+w>size[0] || y+h>size[1]) throw new AssertionError("Menu layout outside target viewport");
         }
         float zoom=(float)client.getMethod("adjustZoomStrength",float.class,double.class).invoke(null,4f,1d);
+        Class<?> chrome = Class.forName("dev.vortex.client.VortexMenuChrome", true, loader);
+        for (int[] size : new int[][]{{320,240},{430,300},{640,360},{854,480}})
+            for (boolean paused : new boolean[]{false,true}) for (int count : new int[]{6,9,12,16}) {
+                Object layout=chrome.getMethod("layout",int.class,int.class,int.class,boolean.class).invoke(null,size[0],size[1],count,paused);
+                Class<?> geometry=layout.getClass();
+                int primary=(int)geometry.getMethod("primaryCount").invoke(layout);
+                for(int i=0;i<count;i++) {
+                    int x=(int)geometry.getMethod("buttonX",int.class).invoke(layout,i),y=(int)geometry.getMethod("buttonY",int.class).invoke(layout,i);
+                    int w=(int)geometry.getMethod("widthFor",int.class).invoke(layout,i),h=(int)geometry.getMethod("heightFor",int.class).invoke(layout,i);
+                    if(x<0 || y<0 || x+w>size[0] || y+h>size[1]-14 || (i>=primary && w<64))
+                        throw new AssertionError("Labeled title/pause menu clips target viewport");
+                }
+            }
         if(!Float.isFinite(zoom) || zoom<=4f) throw new AssertionError("Target zoom math failed");
         System.out.println("PASS " + args[1] + " module-menu layouts and zoom logic");
         CollectionSmoke.run(loader,Path.of(args[0]));
+        ResourceToolsSmoke.run(loader,Path.of(args[0]));
         System.out.println("TARGET_MIXINS_OK " + args[1] + " (not a full GUI/gameplay test)");
     }
 }

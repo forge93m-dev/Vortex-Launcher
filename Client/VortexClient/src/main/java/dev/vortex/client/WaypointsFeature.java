@@ -49,9 +49,12 @@ public final class WaypointsFeature {
         if(VortexClient.config.waypointsEnabled && down && !keyDown && mc.player!=null && mc.gui.screen()==null && mc.gui.overlay()==null)open(null,true);keyDown=down;
     }
     public static void draw(GuiGraphicsExtractor g){
-        var mc=Minecraft.getInstance();if(!VortexClient.config.waypointsEnabled || mc.level==null || mc.player==null || mc.gui.hud.isHidden() || mc.gui.screen() instanceof HudEditorScreen)return;
+        var mc=Minecraft.getInstance();var storageMarker=StorageMemory.marker();
+        if(!VortexClient.config.waypointsEnabled && storageMarker==null || mc.level==null || mc.player==null || mc.gui.hud.isHidden() || mc.gui.screen() instanceof HudEditorScreen)return;
         var camera=mc.gameRenderer.mainCamera();var origin=camera.position();var matrix=camera.getViewRotationProjectionMatrix(new Matrix4f());var font=UiFonts.body();
-        for(var point:visible){
+        List<WaypointsStore.Point> renderPoints=VortexClient.config.waypointsEnabled?visible:List.of();
+        if(storageMarker!=null){renderPoints=new ArrayList<>(renderPoints);renderPoints.add(storageMarker);}
+        for(var point:renderPoints){
             double dx=point.x()+.5-origin.x,dy=point.y()+1-origin.y,dz=point.z()+.5-origin.z;
             var pin=WaypointProjection.project(dx,dy,dz,matrix,g.guiWidth(),g.guiHeight());if(pin==null)continue;
             int x=pin.x(),y=pin.y(),color=0xFF000000|point.color();

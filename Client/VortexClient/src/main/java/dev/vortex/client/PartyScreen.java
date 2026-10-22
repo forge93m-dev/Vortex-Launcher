@@ -8,6 +8,7 @@ import net.minecraft.network.chat.Component;
 
 /** Explicit opt-in. Clipboard contains only the invite, never the private session token. */
 public final class PartyScreen extends Screen {
+    private final long opened = System.nanoTime();
     private final Screen parent;
     private String url = VortexClient.config.partyServiceUrl, code = "";
     private boolean wasConnected;
@@ -38,7 +39,7 @@ public final class PartyScreen extends Screen {
             button(x + 12, y + 119, (w - 32) / 2, "Create party", () -> connect(true), true);
             button(x + 20 + (w - 32) / 2, y + 119, (w - 32) / 2, "Join party", () -> connect(false), false);
         } else {
-            button(x + 12, y + 43, w - 24, "Copy invite code", () -> minecraft.keyboardHandler.setClipboard(PartyFeature.invite()), false);
+            button(x + 12, y + 52, w - 24, "Copy invite code", () -> minecraft.keyboardHandler.setClipboard(PartyFeature.invite()), false);
             int part = (w - 40) / 3;
             button(x + 12, y + 140, part, "I'm here", () -> PartyFeature.mark("HERE"), true);
             button(x + 20 + part, y + 140, part, "Come here", () -> PartyFeature.mark("COME"), false);
@@ -66,19 +67,17 @@ public final class PartyScreen extends Screen {
         else extractPanorama(g, delta);
     }
     @Override public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float delta) {
-        g.fill(0, 0, width, height, 0xA008090F);
         int x = x(), y = y(), w = w();
-        ClientUi.panel(g, x, y, w, 232, 10, ClientUi.BORDER, ClientUi.PANEL);
-        ClientUi.heading(g, "Vortex Party", x + 12, y + 12, w - 90);
+        ClientUi.beginPage(g, width, height, x, y, w, 232, "Vortex Party", "social", opened);
         if (!PartyFeature.connected()) {
-            ClientUi.text(g, "Service URL (HTTPS)", x + 12, y + 34, w - 24, ClientUi.MUTED);
+            ClientUi.text(g, "Service URL (HTTPS)", x + 12, y + 37, w - 24, ClientUi.MUTED);
             ClientUi.text(g, "Invite code (only needed to join)", x + 12, y + 74, w - 24, ClientUi.MUTED);
             ClientUi.text(g, "Only manual markers share coordinates.", x + 12, y + 157, w - 24, ClientUi.MUTED);
             ClientUi.text(g, "No public chat messages. No player tracking.", x + 12, y + 171, w - 24, ClientUi.MUTED);
             ClientUi.text(g, "Your service must be hosted before online use.", x + 12, y + 185, w - 24, ClientUi.MUTED);
         } else {
             var members = PartyFeature.members();
-            ClientUi.text(g, "Friends: " + members.size() + "/8 · Local names, not verified accounts", x + 12, y + 31, w - 24, ClientUi.MUTED);
+            ClientUi.text(g, "Friends: " + members.size() + "/8 · Local names, not verified accounts", x + 12, y + 38, w - 24, ClientUi.MUTED);
             for (int i = 0; i < members.size(); i++) {
                 var member = members.get(i);
                 ClientUi.text(g, member.name() + (member.owner() ? " *" : ""), x + 12 + i % 2 * ((w - 24) / 2), y + 76 + i / 2 * 14, (w - 32) / 2, ClientUi.TEXT);
@@ -86,6 +85,7 @@ public final class PartyScreen extends Screen {
         }
         ClientUi.text(g, PartyFeature.busy() ? "Connecting..." : PartyFeature.message, x + 12, y + 214, w - 24, ClientUi.ACCENT);
         super.extractRenderState(g, mx, my, delta);
+        g.pose().popMatrix();
     }
     @Override public boolean isPauseScreen() { return false; }
     @Override public void onClose() { minecraft.gui.setScreen(parent); }

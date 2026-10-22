@@ -9,6 +9,7 @@ public final class DurabilitySettingsScreen extends Screen {
     private final Screen parent;
     private boolean dirty;
     private boolean saveFailed;
+    private final long opened = System.nanoTime();
     public DurabilitySettingsScreen(Screen parent) {
         super(Minecraft.getInstance(), UiFonts.body(), Component.literal("Durability alerts")); this.parent = parent;
     }
@@ -28,13 +29,17 @@ public final class DurabilitySettingsScreen extends Screen {
     }
     private void save() { if (dirty) { saveFailed = !VortexClient.config.save(); if (!saveFailed) dirty = false; } }
     @Override public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float delta) {
-        g.fill(0, 0, width, height, 0xA008090F);
-        ClientUi.panel(g, x(), y(), w(), 186, 10, ClientUi.BORDER, ClientUi.PANEL);
-        ClientUi.heading(g, "Durability alerts", x() + 12, y() + 13, w() - 24);
+        ClientUi.beginPage(g, width, height, x(), y(), w(), 186, "Durability alerts", "armor", opened);
         ClientUi.text(g, saveFailed ? "Could not save. See game log." : "Armor and held items / no repeated spam", x() + 12, y() + 125, w() - 24, saveFailed ? ClientUi.ACCENT : ClientUi.MUTED);
         super.extractRenderState(g, mx, my, delta);
+        g.pose().popMatrix();
     }
     @Override public void onClose() { save(); if (!dirty) minecraft.gui.setScreen(parent); }
     @Override public void removed() { save(); }
     @Override public boolean isPauseScreen() { return false; }
+    @Override public boolean isInGameUi() { return minecraft.level != null; }
+    @Override public void extractBackground(GuiGraphicsExtractor g, int mx, int my, float delta) {
+        if (isInGameUi()) minecraft.gui.hud.extractDeferredSubtitles();
+        else extractPanorama(g, delta);
+    }
 }

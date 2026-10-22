@@ -36,6 +36,10 @@ internal static class UnifiedWorkspaceChecks
                 var selected = workspace.FindControl<WrapPanel>("SectionTabs")!.Children.OfType<Button>().Count(b => b.Classes.Contains("active"));
                 Check(selected == 1, "one selected workspace tab");
                 if (section == "Mods") Check(workspace.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("ModRow")).All(b => b.Bounds.Height <= 60), "installed mod rows stay compact");
+                if(section=="Overview"){
+                    var clientAction=workspace.FindControl<Button>("OverviewClientButton")!;
+                    Check(clientAction.IsEffectivelyVisible && clientAction.Command!=null,"client install/update is discoverable without opening Settings or More");
+                }
                 host.CaptureRenderedFrame()!.Save(Path.Combine(output, $"unified-{section.Replace(' ', '-')}-{(int)size.Width}.png"));
             }
             foreach (string type in new[] { "mod", "resourcepack", "shader" }) {

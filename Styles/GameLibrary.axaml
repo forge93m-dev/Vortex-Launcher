@@ -1,4 +1,4 @@
-<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:views="using:VortexLauncher.Views">
     <!-- This scope belongs to the launcher, not the Minecraft client's HUD. -->
     <Style Selector="Button">
         <Setter Property="CornerRadius" Value="10"/>
@@ -82,6 +82,17 @@
     </Style>
     <Style Selector="Border.LibraryRow:pointerover"><Setter Property="RenderTransform" Value="translate(0px,0px)"/></Style>
     <Style Selector="Border.LibraryRow Button"><Setter Property="Height" Value="26"/><Setter Property="MinHeight" Value="0"/></Style>
+    <Style Selector="Border.LibraryTile">
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Background" Value="{DynamicResource ThemeSidebarBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="RenderTransform" Value="translate(0px,0px)"/>
+    </Style>
+    <Style Selector="Border.LibraryTile:pointerover"><Setter Property="Background" Value="{DynamicResource ThemePanelBrush}"/></Style>
+    <Style Selector="views|InstanceTileGrid ScrollBar"><Setter Property="AllowAutoHide" Value="False"/><Setter Property="Width" Value="12"/></Style>
+    <Style Selector="Border.LibraryTile.selected"><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/><Setter Property="Background" Value="{DynamicResource ThemePanelBrush}"/></Style>
+    <Style Selector="Border.LibraryTile Button.TilePlay"><Setter Property="Height" Value="32"/><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
     <Style Selector="Button.LibraryPlay">
         <Setter Property="Width" Value="156"/><Setter Property="Height" Value="48"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>

@@ -7,6 +7,12 @@ using System.Text;
 using System.Text.Json;
 using VortexLauncher.Core.Launch;
 
+if (args.Length == 2 && args[0] == "--profile-assets")
+{
+    await AssetVerificationChecks.ProfileAsync(Path.GetFullPath(args[1]));
+    return;
+}
+
 SessionWindowChecks.Run();
 if (args.Contains("--session-windows")) return;
 
@@ -133,8 +139,8 @@ timer.Stop();
 handler.MinimumBatchOverlap = 0;
 string instance = Path.Combine(PlatformSupport.DataRoot, "instances", instanceName);
 Check(handler.Peak > 16 && handler.Peak <= 24, "one bounded queue overlaps independent file transfers");
-Check(Directory.GetFiles(Path.Combine(instance, "assets", "objects"), "*", SearchOption.AllDirectories).Length == 32,
-    "assets and libraries are materialized in the existing portable layout");
+Check(Directory.GetFiles(Path.Combine(SharedGameFiles.Assets, "objects"), "*", SearchOption.AllDirectories).Length == 32 &&
+    !Directory.Exists(Path.Combine(instance, "assets")), "assets are shared beside the launcher, not copied into each instance");
 Check(File.Exists(Path.Combine(instance, "natives", fixtureNativeName)) && File.Exists(Path.Combine(instance, "versions", "fixture", "fixture.jar")),
     "native extraction and Forge-compatible vanilla copy still work");
 Check(progress.Last().Percent == 100 && !progress.Any(p => p.Percent < 0 || p.Percent > 100), "aggregate progress finishes at 100 percent");
@@ -146,17 +152,20 @@ using (var writer = new StreamWriter(staleZip.CreateEntry(fixtureNativeName).Ope
 await downloader.DownloadGameAsync(instanceName, "fixture", manifestUrl, (_, _) => { });
 Check(handler.Requests == requests + 1, "repeat preparation fetches only version metadata, not game files");
 Check(File.ReadAllText(Path.Combine(instance, "natives", fixtureNativeName)) == "native fixture", "obsolete native archives are not extracted over current binaries");
-string corruptLibrary = Path.Combine(instance, "libraries", "fixture", "lib0", "1", "lib0-1.jar");
-string corruptAsset = Directory.GetFiles(Path.Combine(instance, "assets", "objects"), "*", SearchOption.AllDirectories)[0];
+string corruptLibrary = SharedGameFiles.Library("https://fixture.test/lib-0.jar", "lib0-1.jar", Sha(handler.Files["https://fixture.test/lib-0.jar"]));
+string corruptAsset = Directory.GetFiles(Path.Combine(SharedGameFiles.Assets, "objects"), "*", SearchOption.AllDirectories)[0];
 byte[] originalAsset = File.ReadAllBytes(corruptAsset);
 File.WriteAllBytes(corruptLibrary, new byte[new FileInfo(corruptLibrary).Length]);
 File.WriteAllBytes(corruptAsset, new byte[originalAsset.Length]);
 DownloadCache.ForgetVerification(instance);
+DownloadCache.ForgetVerification(SharedGameFiles.Root);
 requests = handler.Requests;
 await downloader.DownloadGameAsync(instanceName, "fixture", manifestUrl, (_, _) => { });
 Check(File.ReadAllBytes(corruptLibrary).SequenceEqual(handler.Files["https://fixture.test/lib-0.jar"]) &&
     File.ReadAllBytes(corruptAsset).SequenceEqual(originalAsset) && handler.Requests == requests + 1,
     "installer repairs same-size corrupted assets and libraries from cache without redownloading");
+await SharedGameFilesChecks.RunAsync(downloader, handler, instance, manifestUrl);
+await AssetVerificationChecks.RunAsync(downloader, instanceName, manifestUrl);
 await InstallationPolishChecks.RunAsync(testRoot, handler, client, downloader, fixtureClassifier, fixtureNativeName);
 string vanillaJar = Path.Combine(instance, "versions", "fixture", "fixture.jar");
 File.WriteAllText(vanillaJar, "corrupt vanilla copy");

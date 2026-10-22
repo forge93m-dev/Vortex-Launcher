@@ -65,7 +65,6 @@ public final class VortexScreen extends Screen {
     @Override protected void init() {
         cards.clear();
         scrollbarDragging = false;
-        pageOpened = System.nanoTime();
         layout = menuLayout(width, height);
         String[] filters = {"All Modules", "HUD", "Gameplay", "Enabled"};
         String[] labels = {"All", "HUD", "Gameplay", "Enabled"};
@@ -74,18 +73,18 @@ public final class VortexScreen extends Screen {
             int tabWidth = (layout.contentWidth() - 12) / 4;
             addRenderableWidget(new ClientUi.ActionButton(layout.contentX() + i * (tabWidth + 4), layout.y() + 43,
                 tabWidth, 22, Component.literal(labels[i]), button -> {
-                    filter = category; resetScroll(); settingsPage = false; selectedModule = null; rebuildWidgets();
+                    selectFilter(category);
                 }));
         }
         addRenderableWidget(new ClientUi.ActionButton(layout.contentX(), layout.y() + layout.height() - 28,
             80, 20, Component.literal(settingsPage ? "Modules" : "Edit HUD"), button -> {
-                if (settingsPage) { selectedModule = null; settingsPage = false; rebuildWidgets(); }
+                if (settingsPage) changePage(false, null);
                 else
                 minecraft.gui.setScreen(new HudEditorScreen(this));
             }, true));
         addRenderableWidget(new ClientUi.ActionButton(layout.contentX() + 86, layout.y() + layout.height() - 28,
             80, 20, Component.literal("Settings"), button -> {
-                selectedModule = null; settingsPage = true; rebuildWidgets();
+                changePage(true, null);
             }));
         addRenderableWidget(new ClientUi.ActionButton(layout.x() + layout.width() - 31, layout.y() + 12,
             22, 22, Component.literal("×"), button -> onClose()));
@@ -105,6 +104,19 @@ public final class VortexScreen extends Screen {
         }
     }
 
+    private void changePage(boolean settings, ClientModule module) {
+        if (settingsPage == settings && selectedModule == module) return;
+        settingsPage = settings; selectedModule = module;
+        pageOpened = System.nanoTime();
+        rebuildWidgets();
+    }
+    private void selectFilter(String category) {
+        if (!settingsPage && selectedModule == null && filter.equals(category)) return;
+        filter = category; resetScroll();
+        // Filters update content, not the entrance animation of the entire window.
+        settingsPage = false; selectedModule = null;
+        rebuildWidgets();
+    }
     private int viewportTop() { return layout.y() + 112; }
     private int viewportBottom() { return layout.y() + layout.height() - 34; }
     private int viewportHeight() { return Math.max(1, viewportBottom() - viewportTop()); }
@@ -126,7 +138,7 @@ public final class VortexScreen extends Screen {
                 layout.cardWidth(), layout.cardHeight(), module, () -> {
                     module.toggle(); dirtySettings = true; saveSettings();
                     if (filter.equals("Enabled")) rebuildCards();
-                }, () -> { selectedModule = module; settingsPage = true; rebuildWidgets(); });
+                }, () -> changePage(true, module));
             cards.add(addWidget(card)); // Input/narration only; render visible cards inside the scissor.
         }
         updateCardPositions();
@@ -187,6 +199,32 @@ public final class VortexScreen extends Screen {
         help.setTooltip(Tooltip.create(Component.literal("Explain this module, settings and controls")));addRenderableWidget(help);
         int x = layout.contentX(), y = layout.y() + 66, w = layout.contentWidth();
         ClientModule module = selectedModule;
+        if (module == null) {
+            int half = (w - 8) / 2;
+            addRenderableWidget(new ClientUi.Slider(x, y, half, "Default HUD size", .75, 2, VortexClient.config.hudScale,
+                value -> Math.round(value * 100) + "%", value -> { VortexClient.config.hudScale = (float)value; dirtySettings = true; }, this::saveSettings));
+            addRenderableWidget(new ClientUi.Slider(x + half + 8, y, half, "Default opacity", .25, 1, VortexClient.config.hudOpacity,
+                value -> Math.round(value * 100) + "%", value -> { VortexClient.config.hudOpacity = (float)value; dirtySettings = true; }, this::saveSettings));
+            addRenderableWidget(new ClientUi.ActionButton(x, y + 44, half, 26,
+                Component.literal(VortexClient.config.uiAnimations ? "Animations: ON" : "Animations: OFF"), b -> {
+                    VortexClient.config.uiAnimations = !VortexClient.config.uiAnimations;
+                    b.setMessage(Component.literal(VortexClient.config.uiAnimations ? "Animations: ON" : "Animations: OFF"));
+                    dirtySettings = true; saveSettings();
+                }));
+            addRenderableWidget(new ClientUi.ActionButton(x + half + 8, y + 44, half, 26,
+                Component.literal(VortexClient.config.clientNotifications ? "Notifications: ON" : "Notifications: OFF"), b -> {
+                    VortexClient.config.clientNotifications = !VortexClient.config.clientNotifications;
+                    b.setMessage(Component.literal(VortexClient.config.clientNotifications ? "Notifications: ON" : "Notifications: OFF"));
+                    dirtySettings = true; saveSettings();
+                }));
+            addRenderableWidget(new VortexMenuChrome.ShortcutButton(x, y + 78, half, 26, "keybinds", "Key bindings", b -> minecraft.gui.setScreen(new KeybindScreen(this))));
+            addRenderableWidget(new VortexMenuChrome.ShortcutButton(x + half + 8, y + 78, half, 26, "hud", "HUD Editor", b -> minecraft.gui.setScreen(new HudEditorScreen(this))));
+            if (VortexClient.config.performanceBackup != null)
+                addRenderableWidget(new ClientUi.ActionButton(x, y + 110, w, 20, Component.literal("Restore graphics from removed preset"), b -> {
+                    saveMessage = PerformanceProfile.restore(minecraft); rebuildWidgets();
+                }));
+            return;
+        }
         if (module != null) {
             var enable = new ClientUi.ActionButton(x, y, module == ClientModule.ARMOR ? (w - 8) / 3 : module == ClientModule.CROSSHAIR ? w / 2 - 4 : w, 24,
                 Component.literal(module.enabled() ? "Enabled" : "Disabled"), button -> {
@@ -254,6 +292,12 @@ public final class VortexScreen extends Screen {
                 VortexClient.config.crosshairColor = CustomCrosshair.nextColor(VortexClient.config.crosshairColor);
                 b.setMessage(Component.literal("Color: " + CustomCrosshair.colorName(VortexClient.config.crosshairColor))); dirtySettings = true; saveSettings();
             }));
+        } else if (module == ClientModule.RESOURCE_COUNTER) {
+            addRenderableWidget(new ClientUi.ActionButton(x,y,w,24,Component.literal("Manage resource goals"),b->minecraft.gui.setScreen(new ResourceGoalsScreen(this)),true));
+            addRenderableWidget(new ClientUi.ActionButton(x,y+32,w,24,Component.literal("Position in HUD Editor"),b->minecraft.gui.setScreen(new HudEditorScreen(this))));
+        } else if (module == ClientModule.STORAGE_MEMORY) {
+            addRenderableWidget(new ClientUi.ActionButton(x,y,w,24,Component.literal("Search remembered storage"),b->minecraft.gui.setScreen(new StorageFinderScreen(this)),true));
+            addRenderableWidget(new ClientUi.Slider(x,y+34,w,"Nearby radius",16,256,VortexClient.config.storageMemoryRadius,value->Math.round(value)+" m",value->{VortexClient.config.storageMemoryRadius=(int)Math.round(value);dirtySettings=true;},this::saveSettings));
         } else if (module == ClientModule.CHAT) {
             addRenderableWidget(new ClientUi.ActionButton(x, y, w, 26,
                 Component.literal(VortexClient.config.chatTimestamps ? "Timestamps: ON" : "Timestamps: OFF"), b -> {
@@ -319,27 +363,6 @@ public final class VortexScreen extends Screen {
                 addRenderableWidget(new ClientUi.ActionButton(x + (w + 8) / 2, y + 80, (w - 8) / 2, 22,
                     Component.literal("Durability alerts"), b -> minecraft.gui.setScreen(new DurabilitySettingsScreen(this))));
             }
-            if (module == null) {
-                addRenderableWidget(new ClientUi.ActionButton(x, y + 80, (w - 8) / 2, 22,
-                    Component.literal(VortexClient.config.uiAnimations ? "Animations: ON" : "Animations: OFF"), b -> {
-                        VortexClient.config.uiAnimations = !VortexClient.config.uiAnimations;
-                        b.setMessage(Component.literal(VortexClient.config.uiAnimations ? "Animations: ON" : "Animations: OFF"));
-                        dirtySettings = true; saveSettings();
-                    }));
-                addRenderableWidget(new ClientUi.ActionButton(x + (w + 8) / 2, y + 80, (w - 8) / 2, 22,
-                    Component.literal("Keybinds"), b -> minecraft.gui.setScreen(new KeybindScreen(this))));
-                int noticeWidth=VortexClient.config.performanceBackup==null?w:(w-8)/2;
-                addRenderableWidget(new ClientUi.ActionButton(x,y+108,noticeWidth,22,
-                    Component.literal(VortexClient.config.clientNotifications?"Notifications: ON":"Notifications: OFF"),b->{
-                        VortexClient.config.clientNotifications=!VortexClient.config.clientNotifications;
-                        b.setMessage(Component.literal(VortexClient.config.clientNotifications?"Notifications: ON":"Notifications: OFF"));dirtySettings=true;saveSettings();
-                    }));
-                if (VortexClient.config.performanceBackup != null)
-                    addRenderableWidget(new ClientUi.ActionButton(x+noticeWidth+8, y + 108, w-noticeWidth-8, 22,
-                        Component.literal("Restore graphics from removed preset"), b -> {
-                            saveMessage = PerformanceProfile.restore(minecraft); rebuildWidgets();
-                        }));
-            }
         }
     }
 
@@ -359,16 +382,20 @@ public final class VortexScreen extends Screen {
     @Override public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float delta) {
         float progress = UiMotion.progress(opened);
         int alpha = (int)(170 * (1 - Math.pow(1 - progress, 3))) << 24;
-        g.fill(0, 0, width, height, alpha | 0x08090F);
+        if (!settingsPage) g.fill(0, 0, width, height, alpha | 0x08090F);
         int x = layout.x(), y = layout.y(), w = layout.width(), h = layout.height();
         float entrance = UiMotion.progress(pageOpened);
-        UiMotion.begin(g, x, y, w, h, .985f + .015f * entrance, (1 - entrance) * 6);
-        ClientUi.rounded(g, x - 2, y + 3, w + 4, h + 2, 12, 0x44000000);
-        ClientUi.panel(g, x, y, w, h, 10, ClientUi.BORDER, ClientUi.PANEL);
-        ClientUi.icon(g, "brand", x + 14, y + 12, 21, ClientUi.TEXT);
         String title = !settingsPage ? "Modules" : selectedModule == null ? "Client settings" : selectedModule.title;
-        String subtitle = !settingsPage ? "Make it yours" : selectedModule == null ? "Defaults for your HUD" : selectedModule.description;
-        ClientUi.heading(g, title, layout.contentX() + 29, y + 14, layout.contentWidth() - 60);
+        if (settingsPage) ClientUi.beginPage(g, width, height, x, y, w, h, title,
+            selectedModule == null ? "settings" : selectedModule.name().toLowerCase(Locale.ROOT), pageOpened);
+        else {
+            UiMotion.begin(g, x, y, w, h, .985f + .015f * entrance, (1 - entrance) * 6);
+            ClientUi.rounded(g, x - 2, y + 3, w + 4, h + 2, 12, 0x44000000);
+            ClientUi.panel(g, x, y, w, h, 10, ClientUi.BORDER, ClientUi.PANEL);
+            ClientUi.icon(g, "brand", x + 14, y + 12, 21, ClientUi.TEXT);
+            ClientUi.heading(g, title, layout.contentX() + 29, y + 14, layout.contentWidth() - 60);
+        }
+        String subtitle = !settingsPage ? "Make it yours" : selectedModule == null ? "Appearance, notifications and controls" : selectedModule.description;
         boolean crosshairPreview = settingsPage && selectedModule == ClientModule.CROSSHAIR && w >= 500;
         if (settingsPage) ClientUi.text(g, subtitle, layout.contentX(), y + 42, layout.contentWidth() - (crosshairPreview ? 100 : 0), ClientUi.MUTED);
         if (crosshairPreview) {
@@ -461,7 +488,8 @@ public final class VortexScreen extends Screen {
             hover = ClientUi.approach(hover, isHoveredOrFocused() ? 1 : 0, seconds);
             state = ClientUi.approach(state, module.enabled() ? 1 : 0, seconds);
             int x = getX(), y = getY(), w = getWidth(), h = getHeight();
-            UiMotion.begin(g, x, y, w, h, motion.scale(), VortexClient.config.uiAnimations ? -hover * 2 : 0);
+            // Hover changes color only: lifting the first row would cross the viewport scissor.
+            UiMotion.begin(g, x, y, w, h, motion.scale(), 0);
             ClientUi.panel(g, x, y, w, h, 4, ClientUi.mix(ClientUi.BORDER, ClientUi.ACCENT, hover * .65f),
                 ClientUi.mix(0xFF191B20, 0xFF262A33, hover));
             ClientUi.moduleIcon(g, module, x + 10, y + 12, ClientUi.mix(ClientUi.MUTED, ClientUi.TEXT, state), 0);

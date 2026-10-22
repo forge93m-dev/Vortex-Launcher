@@ -13,7 +13,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import java.util.Locale;
 
 public final class HudModules {
-    public enum Element { FPS, KEYS, ARMOR, SPRINT, COORDINATES, HELD_ITEM, EFFECTS, PING, SPEED, CLOCK, TPS, BLOCK_INFO }
+    public enum Element { FPS, KEYS, ARMOR, SPRINT, COORDINATES, HELD_ITEM, EFFECTS, PING, SPEED, CLOCK, TPS, BLOCK_INFO, RESOURCES }
     public record Bounds(int x, int y, int width, int height) {
         public boolean contains(double mx, double my) {
             return mx >= x && my >= y && mx < x + width && my < y + height;
@@ -29,12 +29,12 @@ public final class HudModules {
 
     public static float scale(Element element) {
         var c = VortexClient.config;
-        float value = switch (element) { case FPS -> c.fpsScale; case KEYS -> c.keysScale; case ARMOR -> c.armorScale; case SPRINT -> c.sprintScale; case COORDINATES -> c.coordinatesScale; case HELD_ITEM -> c.heldItemScale; case EFFECTS -> c.effectsScale; case PING -> c.pingScale; case SPEED -> c.speedScale; case CLOCK -> c.clockScale; case TPS -> c.tpsScale; case BLOCK_INFO -> c.blockInfoScale; };
+        float value = switch (element) { case FPS -> c.fpsScale; case KEYS -> c.keysScale; case ARMOR -> c.armorScale; case SPRINT -> c.sprintScale; case COORDINATES -> c.coordinatesScale; case HELD_ITEM -> c.heldItemScale; case EFFECTS -> c.effectsScale; case PING -> c.pingScale; case SPEED -> c.speedScale; case CLOCK -> c.clockScale; case TPS -> c.tpsScale; case BLOCK_INFO -> c.blockInfoScale; case RESOURCES -> c.resourceScale; };
         return value == 0 ? c.hudScale : value;
     }
     public static float opacity(Element element) {
         var c = VortexClient.config;
-        float value = switch (element) { case FPS -> c.fpsOpacity; case KEYS -> c.keysOpacity; case ARMOR -> c.armorOpacity; case SPRINT -> c.sprintOpacity; case COORDINATES -> c.coordinatesOpacity; case HELD_ITEM -> c.heldItemOpacity; case EFFECTS -> c.effectsOpacity; case PING -> c.pingOpacity; case SPEED -> c.speedOpacity; case CLOCK -> c.clockOpacity; case TPS -> c.tpsOpacity; case BLOCK_INFO -> c.blockInfoOpacity; };
+        float value = switch (element) { case FPS -> c.fpsOpacity; case KEYS -> c.keysOpacity; case ARMOR -> c.armorOpacity; case SPRINT -> c.sprintOpacity; case COORDINATES -> c.coordinatesOpacity; case HELD_ITEM -> c.heldItemOpacity; case EFFECTS -> c.effectsOpacity; case PING -> c.pingOpacity; case SPEED -> c.speedOpacity; case CLOCK -> c.clockOpacity; case TPS -> c.tpsOpacity; case BLOCK_INFO -> c.blockInfoOpacity; case RESOURCES -> c.resourceOpacity; };
         return value == 0 ? c.hudOpacity : value;
     }
     public static void appearance(Element element, float scale, float opacity) {
@@ -53,10 +53,11 @@ public final class HudModules {
             case CLOCK -> { c.clockScale = scale; c.clockOpacity = opacity; }
             case TPS -> { c.tpsScale = scale; c.tpsOpacity = opacity; }
             case BLOCK_INFO -> { c.blockInfoScale = scale; c.blockInfoOpacity = opacity; }
+            case RESOURCES -> { c.resourceScale = scale; c.resourceOpacity = opacity; }
         }
     }
     public static String name(Element element) {
-        return switch (element) { case FPS -> "FPS Counter"; case KEYS -> "Keystrokes"; case ARMOR -> "Armor HUD"; case SPRINT -> "Toggle Sprint"; case COORDINATES -> "Coordinates"; case HELD_ITEM -> "Held Item"; case EFFECTS -> "Potion Effects"; case PING -> "Ping"; case SPEED -> "Speed"; case CLOCK -> "Clock"; case TPS -> "TPS"; case BLOCK_INFO -> "Block Info"; };
+        return switch (element) { case FPS -> "FPS Counter"; case KEYS -> "Keystrokes"; case ARMOR -> "Armor HUD"; case SPRINT -> "Toggle Sprint"; case COORDINATES -> "Coordinates"; case HELD_ITEM -> "Held Item"; case EFFECTS -> "Potion Effects"; case PING -> "Ping"; case SPEED -> "Speed"; case CLOCK -> "Clock"; case TPS -> "TPS"; case BLOCK_INFO -> "Block Info"; case RESOURCES -> "Resource Counter"; };
     }
     public static boolean isDragButton(int button) { return button == InputConstants.MOUSE_BUTTON_LEFT; }
     public static String armorDurability(int maximum, int damage) {
@@ -117,6 +118,7 @@ public final class HudModules {
         var c = VortexClient.config;
         return switch (element) {
             case FPS -> c.fpsEnabled;
+            case RESOURCES -> c.resourceCounterEnabled;
             case KEYS -> false; // Legacy enum value is never rendered or exposed in the editor.
             case ARMOR -> c.armorEnabled;
             case SPRINT -> c.toggleSprintEnabled;
@@ -129,9 +131,10 @@ public final class HudModules {
     public static Bounds bounds(Element element, int screenWidth, int screenHeight) {
         var c = VortexClient.config;
         var mc = Minecraft.getInstance();
-        int x = switch (element) { case FPS -> c.fpsX; case KEYS -> c.keysX; case ARMOR -> c.armorX; case SPRINT -> c.sprintX; case COORDINATES -> c.coordinatesX; case HELD_ITEM -> c.heldItemX; case EFFECTS -> c.effectsX; case PING -> c.pingX; case SPEED -> c.speedX; case CLOCK -> c.clockX; case TPS -> c.tpsX; case BLOCK_INFO -> c.blockInfoX; };
-        int y = switch (element) { case FPS -> c.fpsY; case KEYS -> c.keysY; case ARMOR -> c.armorY; case SPRINT -> c.sprintY; case COORDINATES -> c.coordinatesY; case HELD_ITEM -> c.heldItemY; case EFFECTS -> c.effectsY; case PING -> c.pingY; case SPEED -> c.speedY; case CLOCK -> c.clockY; case TPS -> c.tpsY; case BLOCK_INFO -> c.blockInfoY; };
+        int x = switch (element) { case FPS -> c.fpsX; case KEYS -> c.keysX; case ARMOR -> c.armorX; case SPRINT -> c.sprintX; case COORDINATES -> c.coordinatesX; case HELD_ITEM -> c.heldItemX; case EFFECTS -> c.effectsX; case PING -> c.pingX; case SPEED -> c.speedX; case CLOCK -> c.clockX; case TPS -> c.tpsX; case BLOCK_INFO -> c.blockInfoX; case RESOURCES -> c.resourceX; };
+        int y = switch (element) { case FPS -> c.fpsY; case KEYS -> c.keysY; case ARMOR -> c.armorY; case SPRINT -> c.sprintY; case COORDINATES -> c.coordinatesY; case HELD_ITEM -> c.heldItemY; case EFFECTS -> c.effectsY; case PING -> c.pingY; case SPEED -> c.speedY; case CLOCK -> c.clockY; case TPS -> c.tpsY; case BLOCK_INFO -> c.blockInfoY; case RESOURCES -> c.resourceY; };
         int w = switch (element) {
+            case RESOURCES -> Math.min(230,Math.max(1,(int)(screenWidth/scale(element))));
             case FPS -> mc == null || mc.font == null ? 60 : mc.font.width(mc.getFps() + " FPS") + 14;
             case PING, SPEED, CLOCK, TPS -> mc == null || mc.font == null ? 100 : mc.font.width(MetricsHud.readout(element, mc, mc.player == null)) + 14;
             case BLOCK_INFO -> Math.min(190, Math.max(1, (int)(screenWidth / scale(element))));
@@ -139,7 +142,7 @@ public final class HudModules {
             case HELD_ITEM, EFFECTS -> Math.min(ExtraHud.width(element, mc), Math.max(1, (int)(screenWidth / scale(element))));
             case COORDINATES -> Math.min(coordinateWidth(mc, coordinates(mc)), Math.max(1, (int)(screenWidth / scale(element))));
         };
-        int h = switch (element) { case FPS, SPRINT, PING, SPEED, CLOCK, TPS -> 22; case KEYS -> 94; case BLOCK_INFO -> 32; case ARMOR -> armorLayout(c.armorHorizontal, armorTextWidths(mc)).height(); case COORDINATES -> 64; case HELD_ITEM, EFFECTS -> ExtraHud.height(element, mc, screenHeight); };
+        int h = switch (element) { case FPS, SPRINT, PING, SPEED, CLOCK, TPS -> 22; case KEYS -> 94; case BLOCK_INFO -> 32; case RESOURCES -> ResourceCounter.height(); case ARMOR -> armorLayout(c.armorHorizontal, armorTextWidths(mc)).height(); case COORDINATES -> 64; case HELD_ITEM, EFFECTS -> ExtraHud.height(element, mc, screenHeight); };
         if (element == Element.BLOCK_INFO && x == -1) x = (screenWidth - (int)Math.ceil(w * scale(element))) / 2;
         if (element == Element.HELD_ITEM && x == -1) x = 10;
         if (element == Element.ARMOR || element == Element.HELD_ITEM || element == Element.EFFECTS) return anchoredBounds(x, y, w, h, scale(element), screenWidth, screenHeight);
@@ -170,6 +173,7 @@ public final class HudModules {
             case CLOCK -> { c.clockX = x; c.clockY = y; }
             case TPS -> { c.tpsX = x; c.tpsY = y; }
             case BLOCK_INFO -> { c.blockInfoX = x; c.blockInfoY = y; }
+            case RESOURCES -> { c.resourceX = x; c.resourceY = y; }
         }
     }
     /** Preserve automatic corner anchoring when changing size/opacity, but not when dragging. */
@@ -199,6 +203,7 @@ public final class HudModules {
         position(Element.PING, 110, 38); position(Element.SPEED, 110, 66);
         position(Element.CLOCK, 110, 94); position(Element.TPS, 110, 122);
         VortexClient.config.blockInfoX = -1; VortexClient.config.blockInfoY = 92;
+        position(Element.RESOURCES,10,180);
     }
     public static void draw(GuiGraphicsExtractor g, boolean preview) {
         var mc = Minecraft.getInstance();
@@ -250,6 +255,7 @@ public final class HudModules {
                 }
                 case PING, SPEED, CLOCK, TPS -> g.text(mc.font, MetricsHud.readout(element, mc, preview), 7, 7, alpha | 0xFFFFFF, true);
                 case BLOCK_INFO -> BlockInfo.draw(g, mc, preview, alpha, (int)(b.width() / scale(element)));
+                case RESOURCES -> ResourceCounter.draw(g,preview,alpha,(int)(b.width()/scale(element)));
                 case HELD_ITEM, EFFECTS -> ExtraHud.draw(g, mc, element, preview, alpha, (int)(b.width() / scale(element)));
                 default -> { }
             }
