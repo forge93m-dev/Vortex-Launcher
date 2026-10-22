@@ -1,30 +1,30 @@
 {
-  "version": "0.2.4",
-  "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.4/VortexLauncherSetup-0.2.4.exe",
+  "version": "0.2.5",
+  "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.5/VortexLauncherSetup-0.2.5.exe",
   "platforms": {
-    "win-x64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.4/VortexLauncherSetup-0.2.4.exe",
-    "osx-arm64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.4/VortexLauncher-0.2.4-osx-arm64.zip",
-    "osx-x64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.4/VortexLauncher-0.2.4-osx-x64.zip"
+    "win-x64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.5/VortexLauncherSetup-0.2.5.exe",
+    "osx-arm64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.5/VortexLauncher-0.2.5-osx-arm64.zip",
+    "osx-x64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.5/VortexLauncher-0.2.5-osx-x64.zip"
   },
   "packages": {
     "win-x64": {
-      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.4/VortexLauncher-0.2.4-win-x64.zip",
-      "sha256": "64f67c78c5385bca69211a8275952a319db607aa504d62be83000e9a1ab6174b",
-      "size": 49315736,
+      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.5/VortexLauncher-0.2.5-win-x64.zip",
+      "sha256": "b4017a5eeb8c064d4bd5a604aaffddd2dd135920d51860bdb3f82f1a4060f865",
+      "size": 49533995,
       "kind": "windows-singlefile-zip"
     },
     "osx-arm64": {
-      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.4/VortexLauncher-0.2.4-osx-arm64.zip",
-      "sha256": "7351e3614163e1923731d474d531394ccd47be807894b397914eacf629eca273",
-      "size": 49800506,
+      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.5/VortexLauncher-0.2.5-osx-arm64.zip",
+      "sha256": "7ace95de7cdb99f5dd0e8e291c435617d5a86fddf69dbf0d596e75618912a1e6",
+      "size": 50019535,
       "kind": "mac-app-zip"
     },
     "osx-x64": {
-      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.4/VortexLauncher-0.2.4-osx-x64.zip",
-      "sha256": "06741f663ac09d90f4b50c8b57671faab312c0643f68854639c9d6f87232a7b6",
-      "size": 51173290,
+      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.5/VortexLauncher-0.2.5-osx-x64.zip",
+      "sha256": "f7cee10e096db3215c337ffb3786a2dece43899e10113b5ff3bb5e36a123ec40",
+      "size": 51394904,
       "kind": "mac-app-zip"
     }
   },
-  "notes": "Vortex Launcher 0.2.4 — Showcase library and online launcher wardrobe. Import and save skins/capes, preview textures and apply to your Vortex nickname. Includes Vortex Client 0.2.1, experimental exact Fabric ports for 26.1–26.3 and 1.21.11, matching-loader warning improvements, and native macOS microphone permission support for voice chat. Existing instances: use Update Vortex Client in instance tools. Mac packages are ad-hoc signed, not notarized; Open Anyway may be required. Actual recording still needs a real-device test."
+  "notes": "Vortex Launcher 0.2.5 - Compact vertically scrolling library with direct Play/Manage actions, shared Minecraft assets and libraries, remembered verification for unchanged assets, parallel content downloads and clearer client install/update buttons. Includes Vortex Client 0.2.2: Resource Counter, remembered Storage Finder with a temporary marker, clearer labeled menus and animation fixes. Exact Fabric builds for 26.1-26.3 and 1.21.11; ports remain experimental. Existing instances: use Update Vortex Client. Worlds, mods and settings are preserved. Mac ARM64/Intel packages are ad-hoc signed, not notarized; Open Anyway may be required."
 }
