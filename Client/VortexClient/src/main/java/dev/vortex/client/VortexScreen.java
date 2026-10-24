@@ -219,8 +219,10 @@ public final class VortexScreen extends Screen {
                 }));
             addRenderableWidget(new VortexMenuChrome.ShortcutButton(x, y + 78, half, 26, "keybinds", "Key bindings", b -> minecraft.gui.setScreen(new KeybindScreen(this))));
             addRenderableWidget(new VortexMenuChrome.ShortcutButton(x + half + 8, y + 78, half, 26, "hud", "HUD Editor", b -> minecraft.gui.setScreen(new HudEditorScreen(this))));
+            int utilityWidth=VortexClient.config.performanceBackup==null?w:(w-8)/2;
+            addRenderableWidget(new VortexMenuChrome.ShortcutButton(x, y + 110, utilityWidth, 24, "social", "Discord", b -> minecraft.gui.setScreen(new DiscordPresenceScreen(this))));
             if (VortexClient.config.performanceBackup != null)
-                addRenderableWidget(new ClientUi.ActionButton(x, y + 110, w, 20, Component.literal("Restore graphics from removed preset"), b -> {
+                addRenderableWidget(new ClientUi.ActionButton(x + utilityWidth + 8, y + 110, utilityWidth, 24, Component.literal("Restore"), b -> {
                     saveMessage = PerformanceProfile.restore(minecraft); rebuildWidgets();
                 }));
             return;

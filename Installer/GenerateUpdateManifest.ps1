@@ -41,4 +41,16 @@ $clientMetadata = Get-Content -LiteralPath (Join-Path $PSScriptRoot '../Client/V
 $manifest = [ordered]@{ version=$version; url=$legacyUrl; platforms=$platforms; packages=$packages; notes="Vortex Launcher $version - Compact vertically scrolling library with direct Play/Manage actions, shared Minecraft assets and libraries, remembered verification for unchanged assets, parallel content downloads and clearer client install/update buttons. Includes Vortex Client $($clientMetadata.version): Resource Counter, remembered Storage Finder with a temporary marker, clearer labeled menus and animation fixes. Exact Fabric builds for 26.1-26.3 and 1.21.11; ports remain experimental. Existing instances: use Update Vortex Client. Worlds, mods and settings are preserved. Mac ARM64/Intel packages are ad-hoc signed, not notarized; Open Anyway may be required." }
 $target = Join-Path $releasePath $(if ($AllowPartial) { 'latest.partial.json' } else { 'latest.json' })
 [IO.File]::WriteAllText($target, ($manifest | ConvertTo-Json -Depth 5), [Text.UTF8Encoding]::new($false))
+if (!$AllowPartial) {
+    # Installed launchers (0.2.6+) only offer updates from a feed signed with the release key.
+    if (!$env:VORTEX_UPDATE_SIGNING_KEY -or !$env:VORTEX_UPDATE_KEY_ID) {
+        Remove-Item -LiteralPath $target
+        throw 'VORTEX_UPDATE_SIGNING_KEY and VORTEX_UPDATE_KEY_ID are required to produce a release manifest.'
+    }
+    $signer = Join-Path $PSScriptRoot '../tools/UpdateSigner/UpdateSigner.csproj'
+    dotnet run --project $signer -- sign $target
+    if ($LASTEXITCODE -ne 0) { Remove-Item -LiteralPath $target; throw 'Update manifest signing failed.' }
+    dotnet run --project $signer -- verify $target
+    if ($LASTEXITCODE -ne 0) { Remove-Item -LiteralPath $target; throw 'Signed manifest is not trusted by this launcher build (key id/public key mismatch).' }
+}
 Write-Host "Prepared manifest: $target. Nothing has been published." -ForegroundColor Green

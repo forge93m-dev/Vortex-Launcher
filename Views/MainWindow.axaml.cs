@@ -76,7 +76,9 @@ public partial class MainWindow : Window
     {
         if(DataContext is not MainWindowViewModel vm)return;
         HideInstanceWorkspace();
-        await vm.OpenWardrobeAsync(this);
+        vm.SetDiscordSection("Wardrobe");
+        try { await vm.OpenWardrobeAsync(this); }
+        finally { vm.SetDiscordSection(null); }
     }
 
     private void OnWindowOpened(object? sender, EventArgs e)
@@ -322,12 +324,14 @@ public partial class MainWindow : Window
         }
         if (DataContext is MainWindowViewModel viewModel) viewModel.SelectTabCommand.Execute("Instances");
         LibraryAndPages.IsVisible = false; InstanceWorkspaceHost.IsVisible = true;
+        (DataContext as MainWindowViewModel)?.SetDiscordSection("Instance");
         ActiveWorkspace!.SelectSection(section ?? ActiveWorkspace.SelectedSection); ActiveWorkspace.RefreshAvailability();
     }
     public void HideInstanceWorkspace()
     {
         if (ActiveWorkspace?.IsBusy == true) return;
         InstanceWorkspaceHost.IsVisible = false; LibraryAndPages.IsVisible = true;
+        (DataContext as MainWindowViewModel)?.SetDiscordSection(null);
     }
     private void OnWorkspaceBusy()
     {

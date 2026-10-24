@@ -1,0 +1,12 @@
+{
+  "name":"vortex-accounts",
+  "account_id":"77c6bcb1c4b618a04ffee7da8c4f3de7",
+  "main":"accounts-public-worker.mjs",
+  "compatibility_date":"2026-10-12",
+  "compatibility_flags":["nodejs_compat"],
+  "workers_dev":true,
+  "preview_urls":false,
+  "vars":{"VORTEX_ACCOUNTS_ENABLED":"true"},
+  "d1_databases":[{"binding":"DB","database_name":"vortex-accounts","database_id":"12549530-ca39-48d5-a345-be88c196276f"},{"binding":"LEGACY_DB","database_name":"vortex-cosmetics","database_id":"433866a6-82a1-4674-9522-3264cd04a0b2"}],
+  "observability":{"enabled":true,"logs":{"enabled":true,"invocation_logs":false},"traces":{"enabled":false}}
+}

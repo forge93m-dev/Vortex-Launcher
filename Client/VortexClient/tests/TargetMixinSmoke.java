@@ -68,6 +68,7 @@ public final class TargetMixinSmoke {
         System.out.println("PASS " + args[1] + " module-menu layouts and zoom logic");
         CollectionSmoke.run(loader,Path.of(args[0]));
         ResourceToolsSmoke.run(loader,Path.of(args[0]));
+        WaypointsSmoke.run(loader,Path.of(args[0]));
         System.out.println("TARGET_MIXINS_OK " + args[1] + " (not a full GUI/gameplay test)");
     }
 }

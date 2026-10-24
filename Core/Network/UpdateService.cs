@@ -19,9 +19,10 @@ public sealed class UpdateService
     private readonly HttpClient _client;
     public string CurrentVersion { get; }
     private readonly string _runtimeId;
+    private readonly IReadOnlyDictionary<string, string> _trustedKeys;
     public UpdateService() : this(DefaultClient, typeof(UpdateService).Assembly.GetName().Version?.ToString(3) ?? "0.1.0", PlatformSupport.RuntimeId) { }
-    internal UpdateService(HttpClient client, string currentVersion, string runtimeId)
-    { _client = client; CurrentVersion = currentVersion; _runtimeId = runtimeId; }
+    internal UpdateService(HttpClient client, string currentVersion, string runtimeId, IReadOnlyDictionary<string, string>? trustedKeys = null)
+    { _client = client; CurrentVersion = currentVersion; _runtimeId = runtimeId; _trustedKeys = trustedKeys ?? UpdateManifestSignature.ProductionKeys; }
 
     public async Task<UpdateCheckResult> CheckForUpdateAsync(string manifestUrl, CancellationToken token = default)
     {
@@ -49,6 +50,9 @@ public sealed class UpdateService
                 return new(null, "The publisher's update version is invalid.");
             if (!Version.TryParse(CurrentVersion, out var current)) return new(null, "The installed launcher version could not be read.");
             if (remote <= current) return new(null, $"Vortex Launcher {CurrentVersion} is up to date.");
+            // Only a feed signed by the publisher's release key may offer an update.
+            if (!UpdateManifestSignature.Verify(update, _trustedKeys))
+                return new(null, $"Version {update.Version} was found, but the update feed is not signed by the Vortex Launcher publisher. The update was not offered.");
             if (update.GetDownloadUrl(_runtimeId) == null)
                 return new(null, $"Version {update.Version} is published, but no package is available for {_runtimeId}. Contact the publisher.");
             update.Url = update.GetDownloadUrl(_runtimeId)!;
@@ -115,48 +119,5 @@ public sealed class UpdateService
         token.ThrowIfCancellationRequested();
         transfer?.Complete(1, 0);
         return await LauncherUpdateInstaller.StartAsync(staged, directory, update.Version, package.Kind, token);
-    }
-}
-
-public sealed class LauncherUpdatePackage
-{
-    [JsonPropertyName("url")] public string Url { get; set; } = "";
-    [JsonPropertyName("sha256")] public string Sha256 { get; set; } = "";
-    [JsonPropertyName("size")] public long Size { get; set; }
-    [JsonPropertyName("kind")] public string Kind { get; set; } = "";
-}
-
-public sealed class LauncherUpdate
-{
-    [JsonPropertyName("platforms")] public Dictionary<string, string> Platforms { get; set; } = new();
-    [JsonPropertyName("packages")] public Dictionary<string, LauncherUpdatePackage> Packages { get; set; } = new();
-    [JsonPropertyName("version")] public string Version { get; set; } = "";
-    [JsonPropertyName("url")] public string Url { get; set; } = "";
-    [JsonPropertyName("notes")] public string Notes { get; set; } = "";
-
-    internal static bool IsHttps(string value) => Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
-        uri.Scheme == "https" && uri.IsDefaultPort && string.IsNullOrEmpty(uri.UserInfo);
-
-    public string? GetDownloadUrl(string runtimeId)
-    {
-        string candidate = Packages.TryGetValue(runtimeId, out var package) ? package.Url :
-            Platforms.TryGetValue(runtimeId, out var url) ? url : Platforms.Count == 0 ? Url : "";
-        if (!IsHttps(candidate)) return null;
-        string extension = Path.GetExtension(new Uri(candidate).AbsolutePath).ToLowerInvariant();
-        return runtimeId.StartsWith("osx-", StringComparison.Ordinal)
-            ? extension is ".zip" or ".dmg" or ".pkg" ? candidate : null
-            : runtimeId.StartsWith("win-", StringComparison.Ordinal) && extension is ".exe" or ".zip" ? candidate : null;
-    }
-
-    public LauncherUpdatePackage RequireVerifiedPackage(string runtimeId)
-    {
-        if (!Packages.TryGetValue(runtimeId, out var package) || GetDownloadUrl(runtimeId) == null ||
-            package.Size <= 0 || package.Size > 2147483648L ||
-            package.Sha256.Length != 64 || !System.Text.RegularExpressions.Regex.IsMatch(package.Sha256, "^[0-9a-fA-F]{64}$"))
-            throw new InvalidDataException("The publisher must provide a platform package with its SHA-256 checksum and size. This old/incomplete manifest cannot be installed safely.");
-        string expectedKind = runtimeId.StartsWith("osx-", StringComparison.Ordinal) ? "mac-app-zip" : "windows-singlefile-zip";
-        if (package.Kind != expectedKind || !new Uri(package.Url).AbsolutePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidDataException("This updater requires a verified app ZIP for the current platform.");
-        return package;
     }
 }

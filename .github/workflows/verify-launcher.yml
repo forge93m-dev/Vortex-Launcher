@@ -28,7 +28,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
       - name: Storage, interrupted operations and HTTP resume regression tests
         shell: pwsh
         run: |

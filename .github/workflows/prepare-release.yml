@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
       - name: Build and test update/download safety
         shell: pwsh
         run: |
@@ -58,7 +58,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
       - name: Verify storage, downloads and interface on macOS
         shell: pwsh
         run: |
@@ -113,13 +113,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
       - uses: actions/download-artifact@v4
         with:
           pattern: '*-release'
           path: release
           merge-multiple: true
-      - name: Generate matching checksummed platform manifest
+      - name: Generate and sign the checksummed platform manifest
         shell: pwsh
+        env:
+          VORTEX_UPDATE_SIGNING_KEY: ${{ secrets.VORTEX_UPDATE_SIGNING_KEY }}
+          VORTEX_UPDATE_KEY_ID: vortex-2026-10b
         run: |
           ./Installer/GenerateUpdateManifest.ps1
           Copy-Item -LiteralPath 'Installer/macOS/OPEN-FIRST.txt' -Destination 'release/OPEN-FIRST.txt'

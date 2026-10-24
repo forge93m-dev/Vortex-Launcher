@@ -17,6 +17,18 @@ public final class ResourceToolsSmoke {
         java.nio.file.Path saved=root.resolve("resource-goal-config.json");
         java.nio.file.Files.writeString(saved,"{\"hudScale\":1.25,\"resourceCounterEnabled\":true,\"storageMemoryRadius\":999,\"resourceGoals\":[{\"item\":\"minecraft:stone\",\"target\":640},{\"item\":\"minecraft:stone\",\"target\":640},null,{\"item\":\"minecraft:iron_ingot\",\"target\":128}]}");
         Object loaded=config.getMethod("load",java.nio.file.Path.class).invoke(null,saved);
+        for(String removed:new String[]{"CompanionMusic","YtmdClient","YtmdDesktop","YtmdSecret","YtmdProtocol","MusicArtwork","MusicMiniScreen","MusicPlaylistsScreen","MediaCenterScreen","EmbeddedMedia","EmbeddedPlayerScreen","MediaComponent","MediaSources","MediaPlaybackState","YouTubePlaylist","SystemMedia","WindowsMediaKeys","MediaBrowser"}){
+            try{Class.forName("dev.vortex.client."+removed,false,loader);throw new AssertionError("Removed music integration still packaged: "+removed);}catch(ClassNotFoundException expected){}
+        }
+        for(String field:new String[]{"companionMusicEnabled","musicServiceChosen","musicKey","mediaProvider","mediaLinks","systemMediaControls","musicVolume"}){
+            try{config.getField(field);throw new AssertionError("Removed media setting still exposed: "+field);}catch(NoSuchFieldException expected){}
+        }
+        if(loader.getResource("assets/vortex_client/media/bridge.jar")!=null||loader.getResource("assets/vortex_client/media/dependencies.json")!=null)throw new AssertionError("Optional browser engine still packaged");
+        Class<?> bindings=Class.forName("dev.vortex.client.ClientBindings$Action",false,loader);
+        for(Object action:bindings.getEnumConstants())if(action.toString().equals("MUSIC"))throw new AssertionError("Removed music key still registered");
+        java.nio.file.Path removedMusic=root.resolve("removed-music-config.json");java.nio.file.Files.writeString(removedMusic,"{\"companionMusicEnabled\":true,\"musicServiceChosen\":true,\"musicKey\":77,\"hudScale\":1.5}");
+        Object migrated=config.getMethod("load",java.nio.file.Path.class).invoke(null,removedMusic);
+        if(config.getField("hudScale").getFloat(migrated)!=1.5f)throw new AssertionError("Old music settings reset unrelated config");
         if(((List<?>)config.getField("resourceGoals").get(loaded)).size()!=2 || !config.getField("resourceCounterEnabled").getBoolean(loaded) || config.getField("hudScale").getFloat(loaded)!=1.25f || config.getField("storageMemoryRadius").getInt(loaded)!=256)
             throw new AssertionError("Saved goal migration reset unrelated settings or lost goals");
         Class<?> gson=Class.forName("com.google.gson.Gson",true,loader);

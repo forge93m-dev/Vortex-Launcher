@@ -56,7 +56,7 @@ foreach ($library in $fabric.libraries) {
     Get-VerifiedFile $url (Join-Path $libraryRoot $file) $sha1
 }
 }
-$generated = Join-Path $targetRoot 'generated'
+$generated = Join-Path $targetRoot ('generated-' + [Guid]::NewGuid().ToString('N'))
 $classes = Join-Path $targetRoot ('classes-' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $generated,$classes -Force | Out-Null
 foreach ($source in Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'src/main/java') -Filter '*.java' -Recurse -File) {
@@ -135,7 +135,7 @@ New-Item -ItemType Directory -Path (Join-Path $smokeRoot 'mods') -Force | Out-Nu
 Copy-Item -LiteralPath $candidate -Destination (Join-Path $smokeRoot 'mods')
 $smokeClasses = Join-Path $smokeRoot 'classes'
 New-Item -ItemType Directory -Path $smokeClasses -Force | Out-Null
-& (Join-Path $JdkPath 'bin/javac.exe') --release 21 -proc:none -classpath $classPath -d $smokeClasses (Join-Path $PSScriptRoot 'tests/TargetMixinSmoke.java') (Join-Path $PSScriptRoot 'tests/CollectionSmoke.java') (Join-Path $PSScriptRoot 'tests/ResourceToolsSmoke.java')
+& (Join-Path $JdkPath 'bin/javac.exe') --release 21 -proc:none -classpath $classPath -d $smokeClasses (Join-Path $PSScriptRoot 'tests/TargetMixinSmoke.java') (Join-Path $PSScriptRoot 'tests/CollectionSmoke.java') (Join-Path $PSScriptRoot 'tests/ResourceToolsSmoke.java') (Join-Path $PSScriptRoot 'tests/WaypointsSmoke.java')
 if ($LASTEXITCODE -ne 0) { throw 'Target mixin test compilation failed.' }
 Push-Location $smokeRoot
 try {
@@ -145,7 +145,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Minecraft $MinecraftVersion mixin verification failed. Candidate remains experimental and is not installed." }
 } finally { Pop-Location }
 if ($legacy) {
-    & $GradlePath "-Dorg.gradle.java.home=$JdkPath" -p $legacyProject remapJar "-PvortexResources=$resources" --no-daemon
+    & $GradlePath "-Dorg.gradle.java.home=$JdkPath" -p $legacyProject remapJar "-PvortexResources=$resources" "-PvortexSources=$generated" --no-daemon
     if ($LASTEXITCODE -ne 0) { throw 'Production client remapping failed.' }
     & (Join-Path $PSScriptRoot 'test-legacy-production.ps1') -JdkPath $JdkPath
     $candidate = Join-Path $legacyProject 'build/libs/vortex-client-1.21.11-fabric-0.2.2.jar'

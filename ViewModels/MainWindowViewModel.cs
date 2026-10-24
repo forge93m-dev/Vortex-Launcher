@@ -37,12 +37,27 @@ public partial class MainWindowViewModel : ObservableObject
     private CancellationTokenSource? _installationCancellation;
     private Avalonia.Controls.WindowState _previousWindowState;
     private int _runningGames;
+    private readonly LauncherDiscordPresence _discordPresence = new();
+    private string? _discordPageOverride;
+    [ObservableProperty] private bool _discordPresenceEnabled;
+    [ObservableProperty] private bool _receiveDiscordInvites;
+    [ObservableProperty] private string _discordPresenceStatus = "Disabled";
+    partial void OnDiscordPresenceEnabledChanged(bool value) => RefreshDiscordPresence();
+    partial void OnReceiveDiscordInvitesChanged(bool value) => RefreshDiscordPresence();
+    public void SetDiscordSection(string? section)
+    {
+        _discordPageOverride = section;
+        RefreshDiscordPresence();
+    }
+    private void RefreshDiscordPresence() => _discordPresence.Update(
+        DiscordPresenceEnabled && !_launcherClosed, _discordPageOverride ?? ActiveTab, "vortex", _runningGames > 0, ReceiveDiscordInvites);
     private volatile bool _launcherClosed;
     private readonly SessionWindows<DebugLogWindow> _gameLogs = new(window => window.Close());
 
     public void CloseLauncherSessions()
     {
         _launcherClosed = true;
+        _discordPresence.Dispose();
         _installationCancellation?.Cancel();
         _gameLogs.Shutdown();
     }
@@ -207,6 +222,8 @@ public partial class MainWindowViewModel : ObservableObject
     internal MainWindowViewModel(InstanceManager instances, SettingsManager settings, AccountManager accounts, bool checkUpdates = true)
     {
         _checkUpdatesOnStartup = checkUpdates;
+        _discordPresence.StatusChanged += status => Dispatcher.UIThread.Post(() => DiscordPresenceStatus = status);
+        _discordPresence.InvitationReceived += invite => Dispatcher.UIThread.Post(() => _ = ReviewDiscordInvitationAsync(invite));
         _instanceManager = instances; _settingsManager = settings; _accountManager = accounts;
         Library = new InstanceLibraryViewModel(Instances);
         Library.PropertyChanged += (_, e) =>
@@ -251,6 +268,8 @@ public partial class MainWindowViewModel : ObservableObject
 
     partial void OnActiveTabChanged(string value)
     {
+        _discordPageOverride = null;
+        RefreshDiscordPresence();
         OnPropertyChanged(nameof(PageEyebrow));
         OnPropertyChanged(nameof(PageTitle));
         OnPropertyChanged(nameof(PageDescription));
@@ -343,6 +362,8 @@ public partial class MainWindowViewModel : ObservableObject
         RamGb = settings.RamAllocationGb;
         MinimizeOnGameLaunch = settings.MinimizeOnGameLaunch;
         InterfaceAnimationsEnabled = settings.InterfaceAnimationsEnabled;
+        DiscordPresenceEnabled = settings.DiscordPresenceEnabled;
+        ReceiveDiscordInvites = settings.ReceiveDiscordInvites;
         UiMotion.Enabled = InterfaceAnimationsEnabled;
         CustomJavaPath = settings.CustomJavaPath;
         JvmArgs = settings.JvmArguments;
@@ -410,6 +431,8 @@ public partial class MainWindowViewModel : ObservableObject
         settings.AccentColor = AccentColor;
         settings.ThemeName = ThemeName;
         settings.InterfaceAnimationsEnabled = InterfaceAnimationsEnabled;
+        settings.DiscordPresenceEnabled = DiscordPresenceEnabled;
+        settings.ReceiveDiscordInvites = ReceiveDiscordInvites;
         settings.MinimizeOnGameLaunch = MinimizeOnGameLaunch;
         try { await Task.Run(() => _settingsManager.SaveSettings(settings)); ThemeManager.SetAccentColor(AccentColor); StatusMessage = "Settings saved!"; }
         catch (Exception ex) { StatusMessage = "Settings were not saved: " + ex.Message; }
@@ -863,6 +886,7 @@ public partial class MainWindowViewModel : ObservableObject
                     }
                     target.IsRunning = true;
                     _runningGames++;
+                    RefreshDiscordPresence();
                     if (!_launcherClosed && MinimizeOnGameLaunch && _runningGames == 1 &&
                         Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
                         desktop.MainWindow is { } window)
@@ -883,6 +907,7 @@ public partial class MainWindowViewModel : ObservableObject
                         target.IsRunning = false;
                         target.TotalPlayTimeSeconds += (long)Math.Max(0, (DateTime.UtcNow - startedAt).TotalSeconds);
                         _runningGames--;
+                        RefreshDiscordPresence();
                         if (!_launcherClosed && _runningGames == 0 && _minimizedForGame && Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
                             desktop.MainWindow is { WindowState: Avalonia.Controls.WindowState.Minimized } window)
                         {

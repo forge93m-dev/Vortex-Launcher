@@ -143,45 +143,43 @@ public partial class CreateInstanceViewModel : ObservableObject
             quilt.ItemOpacity = 0.42;
         }
 
+        // Each loader is checked independently: a Forge lookup failure must not
+        // mark Quilt unavailable (and the other way round).
+        int request = ++_availabilityRequest;
         try
         {
-            var forgeTask = _forgeService.GetPromotedForgeVersionAsync(minecraftVersion);
-            var quiltTask = _quiltService.GetLatestLoaderVersionAsync(minecraftVersion);
-            await Task.WhenAll(forgeTask, quiltTask);
+            var forgeTask = SafeLookupAsync(() => _forgeService.GetPromotedForgeVersionAsync(minecraftVersion));
+            var quiltTask = SafeLookupAsync(() => _quiltService.GetLatestLoaderVersionAsync(minecraftVersion));
+            string?[] results = await Task.WhenAll(forgeTask, quiltTask);
+            if (request != _availabilityRequest) return; // a newer Minecraft version was selected meanwhile
 
-            if (forge != null)
-            {
-                forge.IsAvailable = !string.IsNullOrWhiteSpace(forgeTask.Result);
-                forge.DisplayName = forge.IsAvailable ? "Forge" : "Forge (unavailable)";
-                forge.ItemOpacity = forge.IsAvailable ? 1.0 : 0.42;
-            }
-            if (quilt != null)
-            {
-                quilt.IsAvailable = !string.IsNullOrWhiteSpace(quiltTask.Result);
-                quilt.DisplayName = quilt.IsAvailable ? "Quilt" : "Quilt (unavailable)";
-                quilt.ItemOpacity = quilt.IsAvailable ? 1.0 : 0.42;
-            }
-        }
-        catch
-        {
-            if (forge != null)
-            {
-                forge.IsAvailable = false;
-                forge.DisplayName = "Forge (unavailable)";
-                forge.ItemOpacity = 0.42;
-            }
-            if (quilt != null)
-            {
-                quilt.IsAvailable = false;
-                quilt.DisplayName = "Quilt (unavailable)";
-                quilt.ItemOpacity = 0.42;
-            }
+            ApplyAvailability(forge, "Forge", results[0]);
+            ApplyAvailability(quilt, "Quilt", results[1]);
         }
         finally
         {
-            IsCheckingForge = false;
-            OnPropertyChanged(nameof(CanCreate));
+            if (request == _availabilityRequest)
+            {
+                IsCheckingForge = false;
+                OnPropertyChanged(nameof(CanCreate));
+            }
         }
+    }
+
+    private int _availabilityRequest;
+
+    internal static async Task<string?> SafeLookupAsync(Func<Task<string?>> lookup)
+    {
+        try { return await lookup(); }
+        catch { return null; }
+    }
+
+    private static void ApplyAvailability(LoaderOption? option, string name, string? version)
+    {
+        if (option == null) return;
+        option.IsAvailable = !string.IsNullOrWhiteSpace(version);
+        option.DisplayName = option.IsAvailable ? name : $"{name} (unavailable)";
+        option.ItemOpacity = option.IsAvailable ? 1.0 : 0.42;
     }
 }
 

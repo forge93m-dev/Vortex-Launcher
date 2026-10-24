@@ -47,6 +47,8 @@ internal static class AlignmentSettingsChecks
         var tabs=window.FindControl<TabControl>("SettingsTabs")!;
         var sections=Sections.Select(n=>window.FindControl<ScrollViewer>(n)!).ToArray();
         Check(sections.All(c=>c.GetVisualRoot()==window),"settings sections are mounted once, including hidden categories");
+        Check(sections[0].GetVisualDescendants().OfType<ToggleSwitch>().Any(t => AutomationProperties.GetName(t) == "Share launcher activity"), "Discord opt-in is in Settings Appearance, not Profiles");
+        Check(sections[0].GetVisualDescendants().OfType<ToggleSwitch>().Any(t => AutomationProperties.GetName(t) == "Receive server invitations"), "receiving invitations requires its own explicit opt-in");
         int attachments=0,detachments=0;
         foreach(var section in sections){section.AttachedToVisualTree+=(_,_)=>attachments++;section.DetachedFromVisualTree+=(_,_)=>detachments++;}
         var headers=tabs.Items.OfType<TabItem>().ToArray();

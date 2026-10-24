@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 public final class ClientConfig {
+    public boolean discordPresenceEnabled = false;
     public boolean resourceCounterEnabled, storageMemoryEnabled;
     public java.util.List<ResourceCounter.Goal> resourceGoals = java.util.List.of();
     public int resourceX = 10, resourceY = 180, storageMemoryRadius = 64;

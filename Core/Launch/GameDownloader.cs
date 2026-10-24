@@ -283,24 +283,6 @@ public class GameDownloader
         progressCallback?.Invoke("Game files ready!", 100);
     }
 
-    private static async Task SafeWriteAllBytesAsync(string path, byte[] bytes)
-    {
-        string tempPath = path + ".tmp";
-        try
-        {
-            await File.WriteAllBytesAsync(tempPath, bytes);
-            if (File.Exists(path)) File.Delete(path);
-            File.Move(tempPath, path);
-        }
-        catch
-        {
-            if (File.Exists(tempPath))
-            {
-                try { File.Delete(tempPath); } catch { }
-            }
-        }
-    }
-
     private static void ExtractNatives(string zipPath, string extractTo, CancellationToken token)
     {
         try
@@ -396,52 +378,6 @@ public class GameDownloader
             cancellationToken.ThrowIfCancellationRequested();
             layout.LoaderLibraries = uniqueTargets.Select(item => SharedGameFiles.Relative(item.path)).ToList();
             SharedGameFiles.Save(instancePath, layout);
-        }
-    }
-
-    public async Task InstallForgeOrNeoForgeAsync(string installerUrl, string instancePath, string javaPath, Action<string, double> progressCallback)
-    {
-        string librariesDir = Path.Combine(instancePath, "libraries");
-        Directory.CreateDirectory(librariesDir);
-
-        progressCallback?.Invoke("Downloading loader installer...", 10);
-        string tempInstallerPath = Path.Combine(Path.GetTempPath(), "forge_installer.jar");
-
-        try
-        {
-            var response = await HttpClient.GetAsync(installerUrl);
-            if (!response.IsSuccessStatusCode)
-            {
-                progressCallback?.Invoke($"Forge installer not found (Status: {response.StatusCode}). Skipping...", 100);
-                return;
-            }
-
-            byte[] installerBytes = await response.Content.ReadAsByteArrayAsync();
-            await SafeWriteAllBytesAsync(tempInstallerPath, installerBytes);
-
-            progressCallback?.Invoke("Extracting Forge libraries...", 40);
-            using (var archive = ZipFile.OpenRead(tempInstallerPath))
-            {
-                foreach (var entry in archive.Entries)
-                {
-                    if (entry.FullName.EndsWith(".jar") && !entry.FullName.Contains("clientdata"))
-                    {
-                        string fileName = Path.GetFileName(entry.FullName);
-                        if (!string.IsNullOrEmpty(fileName))
-                        {
-                            string destPath = Path.Combine(librariesDir, fileName);
-                            entry.ExtractToFile(destPath, true);
-                        }
-                    }
-                }
-            }
-
-            if (File.Exists(tempInstallerPath)) File.Delete(tempInstallerPath);
-            progressCallback?.Invoke("Forge dependencies installed!", 100);
-        }
-        catch (Exception ex)
-        {
-            progressCallback?.Invoke($"Failed to install Forge: {ex.Message}", 100);
         }
     }
 }

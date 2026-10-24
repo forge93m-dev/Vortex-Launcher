@@ -1,0 +1,12 @@
+{
+  "name": "vortex-cosmetics",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-10-17",
+  "workers_dev": true,
+  "vars": {"VORTEX_ACCOUNTS_ENABLED":"false"},
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "vortex-cosmetics",
+    "database_id": "433866a6-82a1-4674-9522-3264cd04a0b2"
+  }]
+}

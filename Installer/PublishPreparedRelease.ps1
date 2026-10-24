@@ -7,6 +7,8 @@ $manifestPath=Join-Path $PSScriptRoot '../release/latest.json'
 $releasePath=(Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '../release')).Path
 $manifest=Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 if ($manifest.version -ne $Version) {throw 'Artifact version does not match requested version.'}
+dotnet run --project (Join-Path $PSScriptRoot '../tools/UpdateSigner/UpdateSigner.csproj') -- verify $manifestPath
+if ($LASTEXITCODE -ne 0) {throw 'The prepared update feed is not signed with a trusted release key; nothing was published.'}
 foreach ($rid in @('win-x64','osx-arm64','osx-x64')) {
     $spec=$manifest.packages.$rid
     $name="VortexLauncher-$Version-$rid.zip"

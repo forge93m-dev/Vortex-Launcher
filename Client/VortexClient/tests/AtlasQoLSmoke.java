@@ -13,9 +13,12 @@ public final class AtlasQoLSmoke {
         Class<?> store=Class.forName("dev.vortex.client.WaypointsStore",true,l),point=Class.forName("dev.vortex.client.WaypointsStore$Point",true,l),feature=Class.forName("dev.vortex.client.WaypointsFeature",true,l),scope=Class.forName("dev.vortex.client.WaypointsFeature$Scope",true,l);
         Path path=root.resolve("old-waypoints.json");String world="a".repeat(64),dimension="minecraft:overworld";UUID id=UUID.randomUUID();
         Files.writeString(path,"{\"version\":1,\"points\":[{\"id\":\""+id+"\",\"world\":\""+world+"\",\"dimension\":\"minecraft:overworld\",\"name\":\"Old base\",\"x\":1,\"y\":64,\"z\":2,\"color\":123,\"hidden\":false}]}");
+        String originalDocument=Files.readString(path);
         Object data=store.getConstructor(Path.class).newInstance(path);List<?> old=(List<?>)store.getMethod("load").invoke(data);check(point.getMethod("group").invoke(old.getFirst()).equals("General"),"Old waypoints lost default group");
+        check(((List<?>)point.getMethod("blocks").invoke(old.getFirst())).isEmpty(),"Old waypoints must migrate to empty block selections");
         Object grouped=point.getConstructor(UUID.class,String.class,String.class,String.class,int.class,int.class,int.class,int.class,boolean.class,String.class).newInstance(id,world,dimension,"Base",1,64,2,123,false,"Bases");
         store.getMethod("update",point,UUID.class).invoke(data,grouped,null);List<?> loaded=(List<?>)store.getMethod("load").invoke(data);check(point.getMethod("group").invoke(loaded.getFirst()).equals("Bases"),"Group persistence");
+        check(Files.readString(path.resolveSibling(path.getFileName()+".pre-blocks.bak")).equals(originalDocument),"First schema upgrade must keep an exact backup of legacy waypoints");
         check(point.getMethod("group").invoke(point.getMethod("hidden",boolean.class).invoke(grouped,true)).equals("Bases"),"Individual hiding lost group");
         Object config=Class.forName("dev.vortex.client.VortexClient",true,l).getField("config").get(null);Field hidden=config.getClass().getField("hiddenWaypointGroups");Object previousHidden=hidden.get(config);
         var scopeField=feature.getDeclaredField("scope");var pointsField=feature.getDeclaredField("points");var visibleField=feature.getDeclaredField("visible");for(var field:new Field[]{scopeField,pointsField,visibleField})field.setAccessible(true);
