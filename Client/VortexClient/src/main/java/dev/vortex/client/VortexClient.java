@@ -24,6 +24,7 @@ public final class VortexClient implements ClientModInitializer {
     }
 
     public static void tick(Minecraft minecraft) {
+        DiscordPresence.tick(minecraft);
         ClientNotifications.context(LocalSkins.profile(minecraft));
         LocalSkins.tick(minecraft);
         WardrobeAutoSync.tick(minecraft);

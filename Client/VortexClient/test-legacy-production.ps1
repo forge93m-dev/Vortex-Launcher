@@ -27,7 +27,7 @@ $classes = Join-Path $smokeRoot 'classes'
 New-Item -ItemType Directory -Path $classes,(Join-Path $smokeRoot 'mods') -Force | Out-Null
 Copy-Item -LiteralPath $candidate -Destination (Join-Path $smokeRoot 'mods')
 $classpath = (@($classes,$game,$mappings) + @($libraries)) -join [IO.Path]::PathSeparator
-& (Join-Path $JdkPath 'bin/javac.exe') --release 21 -proc:none -classpath $classpath -d $classes (Join-Path $PSScriptRoot 'tests/TargetMixinSmoke.java') (Join-Path $PSScriptRoot 'tests/CollectionSmoke.java') (Join-Path $PSScriptRoot 'tests/ResourceToolsSmoke.java')
+& (Join-Path $JdkPath 'bin/javac.exe') --release 21 -proc:none -classpath $classpath -d $classes (Join-Path $PSScriptRoot 'tests/TargetMixinSmoke.java') (Join-Path $PSScriptRoot 'tests/CollectionSmoke.java') (Join-Path $PSScriptRoot 'tests/ResourceToolsSmoke.java') (Join-Path $PSScriptRoot 'tests/WaypointsSmoke.java')
 if ($LASTEXITCODE -ne 0) { throw 'Production test compilation failed.' }
 Push-Location $smokeRoot
 try {

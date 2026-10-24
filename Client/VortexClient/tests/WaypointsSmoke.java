@@ -44,22 +44,42 @@ public final class WaypointsSmoke {
         matrix.getMethod("perspective",float.class,float.class,float.class,float.class).invoke(perspective,(float)Math.toRadians(70),16f/9f,.05f,1000f);
         Class<?> projection=Class.forName("dev.vortex.client.WaypointProjection",true,loader);
         Method project=projection.getMethod("project",double.class,double.class,double.class,matrixInterface,int.class,int.class);
-        for(double[] vector:new double[][]{{0,0,-10},{0,0,-20000000},{10000,0,-1},{0,0,10}}){
+        for(double[] vector:new double[][]{{0,0,-10},{0,0,-20000000}}){
             Object pin=project.invoke(null,vector[0],vector[1],vector[2],perspective,854,480);
             check(pin!=null,"Marker rejected by distance");Class<?> pinType=pin.getClass();
             int x=(int)pinType.getMethod("x").invoke(pin),y=(int)pinType.getMethod("y").invoke(pin);
             check(x>=0 && x<854 && y>=0 && y<480,"Projected marker escaped viewport");
-            if(vector[2]>0 || vector[0]>0)check((boolean)pinType.getMethod("edge").invoke(pin),"Offscreen direction arrow");
+            check(!(boolean)pinType.getMethod("edge").invoke(pin),"Waypoints must never use edge arrows");
         }
+        for(double[] vector:new double[][]{{10000,0,-1},{0,0,10},{0,10000,-1}})check(project.invoke(null,vector[0],vector[1],vector[2],perspective,854,480)==null,"Behind-camera/offscreen marker must disappear, not stick to edge");
+        check(project.invoke(null,10d,0d,-10d,perspective,854,480)!=null,"Marker near horizontal screen edge stays visible without aiming crosshair");
+        check(project.invoke(null,0d,6d,-10d,perspective,854,480)!=null,"Marker near vertical screen edge stays visible");
+        check(project.invoke(null,14d,0d,-10d,perspective,854,480)==null,"Marker outside horizontal FOV is hidden");
+        check(project.invoke(null,0d,8d,-10d,perspective,854,480)==null,"Marker outside vertical FOV is hidden");
+        Object turned=matrix.getConstructor().newInstance();matrix.getMethod("perspective",float.class,float.class,float.class,float.class).invoke(turned,(float)Math.toRadians(70),16f/9f,.05f,1000f);matrix.getMethod("rotateY",float.class).invoke(turned,(float)Math.PI);
+        check(project.invoke(null,0d,0d,10d,turned,854,480)!=null&&project.invoke(null,0d,0d,-10d,turned,854,480)==null,"Visibility follows camera rotation, not a fixed world direction");
         check(project.invoke(null,Double.NaN,0d,-1d,perspective,854,480)==null,"Invalid projection");
         Class<?> screen=Class.forName("dev.vortex.client.WaypointsScreen",true,loader);
         for(int[] size:new int[][]{{320,240},{430,300},{854,480},{1920,1080}}){
             Object l=screen.getMethod("layout",int.class,int.class).invoke(null,size[0],size[1]);Class<?> type=l.getClass();
             int x=(int)type.getMethod("x").invoke(l),y=(int)type.getMethod("y").invoke(l),w=(int)type.getMethod("width").invoke(l),h=(int)type.getMethod("height").invoke(l);
             int rows=(int)type.getMethod("rows").invoke(l);
-            check(x>=0 && y>=0 && x+w<=size[0] && y+h<=size[1] && 64+rows*32<=h-8,"Waypoint layout bounds");
-            check((int)type.getMethod("editorWidth").invoke(l)>=140 && h-66>=144,"Editor controls overlap");
+            check(x>=0 && y>=0 && x+w<=size[0] && y+h<=size[1] && 128+rows*44<=h-30,"Waypoint list rows overlap footer or viewport");
         }
-        System.out.println("PASS Waypoints restart/rename/hide/delete, concurrent stores, corrupt-file preservation, context isolation, unlimited-distance projection and responsive layout");
+        Class<?> block=Class.forName("dev.vortex.client.WaypointsStore$Block",true,loader);var blockCtor=block.getConstructor(int.class,int.class,int.class);
+        Object picked=blockCtor.newInstance(10,65,-20),picked2=blockCtor.newInstance(11,65,-20);
+        var multiCtor=point.getConstructor(UUID.class,String.class,String.class,String.class,int.class,int.class,int.class,int.class,boolean.class,String.class,List.class);
+        Object multi=multiCtor.newInstance(id,world,"minecraft:overworld","Blocks",10,65,-20,0x7DDCBB,false,"Traps",List.of(picked,picked2));
+        Path multiPath=root.resolve("multi-block/waypoints-v1.json");Object multiStore=store.getConstructor(Path.class).newInstance(multiPath);
+        update.invoke(multiStore,multi,null);check(((List<?>)load.invoke(multiStore)).equals(List.of(multi)),"Selected real blocks must persist across restarts");
+        Object multiHidden=point.getMethod("hidden",boolean.class).invoke(multi,true);check(point.getMethod("blocks").invoke(multiHidden).equals(List.of(picked,picked2)),"Hiding marker must preserve block selection");
+        for(String removed:new String[]{"WaypointBlockSelection","WaypointBlockOverlay"})try{Class.forName("dev.vortex.client."+removed,false,loader);throw new AssertionError("Block feature still bundled: "+removed);}catch(ClassNotFoundException expected){}
+        Class<?> bindings=Class.forName("dev.vortex.client.ClientBindings$Action",true,loader);
+        for(Object action:bindings.getEnumConstants())check(!action.toString().equals("WAYPOINT_BLOCK"),"Removed block selection must not reserve a key");
+        Method matching=screen.getMethod("matching",List.class,String.class,String.class);
+        check(((List<?>)matching.invoke(null,List.of(multi),"blocks -20","Traps")).size()==1&&((List<?>)matching.invoke(null,List.of(multi),"blocks","Bases")).isEmpty(),"Search matches all words and group filter");
+        Class<?> edit=Class.forName("dev.vortex.client.WaypointEditScreen",true,loader);
+        for(int[] size:new int[][]{{320,240},{430,300},{854,480}}){var l=edit.getMethod("layout",int.class,int.class).invoke(null,size[0],size[1]);var type=l.getClass();int h=(int)type.getMethod("height").invoke(l);boolean compact=(boolean)type.getMethod("compact").invoke(l);check(178<h-36&&(compact||233<h-36),"Waypoint form controls and preview overlap save actions");}
+        System.out.println("PASS Waypoints full-viewport FOV (no crosshair cone/edge arrows/distance cap), removed block tools, legacy data preservation, search/groups and responsive list/editor");
     }
 }

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Same payload/verification code as the launcher, so signing and checking cannot drift apart. -->
+    <Compile Include="../../Core/Network/LauncherUpdateManifest.cs" Link="LauncherUpdateManifest.cs" />
+  </ItemGroup>
+</Project>

@@ -73,6 +73,7 @@ internal static class ModAndReportChecks
         string root = Directory.CreateDirectory(Path.Combine(parent, "private-report-instance")).FullName;
         Directory.CreateDirectory(Path.Combine(root, "logs")); Directory.CreateDirectory(Path.Combine(root, "crash-reports")); Directory.CreateDirectory(Path.Combine(root, "mods"));
         string secret = "--accessToken SUPER-PRIVATE-TOKEN\n{\"refresh_token\":\"REFRESH-PRIVATE\",\"password\":\"SECRET-PASSWORD\"}\nAuthorization: Bearer VERY-PRIVATE\nEmail: testperson@example.org\nC:\\Users\\SecretPerson\\Documents\\game\n/home/SecretPerson/game\n[CHAT] SecretPerson: private chat\nConnecting to private.example.org, 25565\nUUID: 123e4567-e89b-12d3-a456-426614174000\nSetting user: SecretPlayer\nIP 192.168.10.42\njava.lang.OutOfMemoryError: Java heap space\n";
+        secret += "--quickPlayMultiplayer hidden-quick.example.org:25566\n--quickPlayMultiplayer\nhidden-multiline.example.org:25565\nInvite: vxi1.MjYuM3xtYy5leGFtcGxlLm9yZzoyNTU2NXx4MnF6OWt8MDEyMzQ1Njc4OWFiY2RlZg\n";
         File.WriteAllText(Path.Combine(root, "logs", "latest.log"), secret);
         File.WriteAllText(Path.Combine(root, "crash-reports", "crash.txt"), secret);
         File.WriteAllText(Path.Combine(root, "accounts.json"), "ACCOUNT-DATABASE-PRIVATE");
@@ -87,6 +88,7 @@ internal static class ModAndReportChecks
             string text = string.Join('\n', zip.Entries.Select(e => { using var reader = new StreamReader(e.Open()); return reader.ReadToEnd(); }));
             Check(new[] { "SUPER-PRIVATE", "REFRESH-PRIVATE", "SECRET-PASSWORD", "VERY-PRIVATE", "testperson@example.org", "SecretPerson", "SecretPlayer", "192.168.10.42", "private.example.org", "123e4567", "ACCOUNT-DATABASE", "METADATA-SECRET", "Private pack" }.All(s => !text.Contains(s)), "diagnostic report redacts credentials, IDs, emails, usernames, paths, chat and server addresses");
             Check(text.Contains("OutOfMemoryError") && text.Contains("26.3") && text.Contains("Fabric"), "sanitization retains useful error and game/loader information");
+            Check(!text.Contains("hidden-quick") && !text.Contains("hidden-multiline") && !text.Contains("vxi1."), "Quick Play address arguments and invitation tokens are redacted too");
         }
         await Reject(() => DiagnosticReport.CreateAsync(report, root), "report export never silently overwrites an existing file");
         Console.WriteLine("MOD_REPORT_CHECKS_OK");

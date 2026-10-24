@@ -1,0 +1,8 @@
+{
+  "name": "vortex-accounts-staging",
+  "main": "staging-probe.mjs",
+  "compatibility_date": "2026-10-17",
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": {"VORTEX_ACCOUNTS_ENABLED":"false","PROBE_ENABLED":"false"}
+}

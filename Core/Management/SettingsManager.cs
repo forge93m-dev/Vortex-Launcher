@@ -19,6 +19,8 @@ public class LauncherSettings
     public string UpdateManifestUrl { get; set; } = DefaultUpdateManifestUrl;
     public bool MinimizeOnGameLaunch { get; set; } = true;
     public bool InterfaceAnimationsEnabled { get; set; } = true;
+    public bool DiscordPresenceEnabled { get; set; }
+    public bool ReceiveDiscordInvites { get; set; }
 }
 
 public class SettingsManager

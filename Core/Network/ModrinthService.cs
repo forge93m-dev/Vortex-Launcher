@@ -93,14 +93,23 @@ public class ModrinthDependency
 
 public class ModrinthService
 {
-    private static readonly HttpClient HttpClient = new();
+    private static readonly HttpClient HttpClient = CreateClient();
+
+    // Modrinth asks API clients for a uniquely identifying User-Agent with the real version.
+    internal static string UserAgent { get; } =
+        $"forge93m-dev/Vortex-Launcher/{typeof(ModrinthService).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"} (github.com/forge93m-dev/Vortex-Launcher)";
+
+    private static HttpClient CreateClient()
+    {
+        // Configured once, before any request: mutating DefaultRequestHeaders from
+        // concurrently created service instances is not thread-safe.
+        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
+        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", UserAgent);
+        return client;
+    }
 
     public ModrinthService()
     {
-        if (!HttpClient.DefaultRequestHeaders.Contains("User-Agent"))
-        {
-            HttpClient.DefaultRequestHeaders.Add("User-Agent", "VortexLauncher/1.0.0");
-        }
     }
 
     internal static string BuildSearchUrl(string query, string gameVersion, string loader, int offset,

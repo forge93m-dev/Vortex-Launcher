@@ -30,7 +30,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
       - name: Build, ad-hoc sign and verify the extracted ZIP
         shell: pwsh
         env:

@@ -24,3 +24,12 @@ Client/VortexClient/.gradle/
 Client/VortexClient/build/
 Client/VortexClient/ports/**/build/
 Client/VortexClient/ports/**/.gradle/
+Client/MediaRuntime/.gradle/
+Client/MediaRuntime/build/
+# Old client builds; the launcher embeds only the current version
+Client/VortexClient/dist/*-0.1.*.jar
+Client/VortexClient/dist/*-0.2.0.jar
+.previews/
+.wrangler/
+**/node_modules/
+.dev.vars*

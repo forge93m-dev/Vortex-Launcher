@@ -24,7 +24,8 @@ public static class DiagnosticReport
         // unknown to the launcher or account secrets split across many switches.
         text = Replace(text, @"(?m)^.*(?:--accessToken|--access-token|--refreshToken|Authorization\s*:|\[CHAT\]|Connecting to|server[_ ]?address|server[_ ]?ip).*$", "[private command/chat/server line removed]");
         text = Replace(text, "([\\\"']?(?:access[_-]?token|refresh[_-]?token|client[_-]?token|id[_-]?token|password|passwd|secret|api[_-]?key|session(?:id)?|username|displayname|uuid|xuid|clientid)[\\\"']?\\s*[:=]\\s*)(?:\\\"[^\\\"]*\\\"|'[^']*'|[^\\s,;}&]+)", "$1[redacted]");
-        text = Replace(text, @"(--(?:username|uuid|xuid|clientId|server)\s+)(?:""[^""]*""|'[^']*'|\S+)", "$1[redacted]");
+        text = Replace(text, @"(--(?:username|uuid|xuid|clientId|server|quickPlayMultiplayer)\s+)(?:""[^""]*""|'[^']*'|\S+)", "$1[redacted]");
+        text = Replace(text, @"\bvxi1\.[A-Za-z0-9_-]{1,128}\b", "[server-invitation]");
         text = Replace(text, @"\bBearer\s+\S+", "Bearer [redacted]");
         text = Replace(text, @"\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)?", "[token]");
         text = Replace(text, @"\b[\w.!#$%&'*+/=?^`{|}~-]+@[\w.-]+\.[A-Za-z]{2,}\b", "[email]");

@@ -18,7 +18,7 @@ public final class WaypointsFeature {
     private static Scope scope;
     private static Object level;
     private static boolean loaded,busy,keyDown;
-    public static String message="Private local waypoints. No distance limit.";
+    public static String message="Markers are visible anywhere inside your field of view.";
     public static final int[] COLORS={0xBDA5FF,0x7DDCBB,0x85B9FF,0xFFD178,0xFF969F,0xF2A7DD,0xE7EBF2,0xA8D981};
     public static Scope scope(){return scope;}
     public static boolean busy(){return busy;}
@@ -36,7 +36,7 @@ public final class WaypointsFeature {
         if(busy || !loaded){message="Wait for waypoints to load, then retry.";done.accept(false);return;}busy=true;
         IO.execute(()->{try{var saved=WaypointsStore.local().update(point,remove);Minecraft.getInstance().execute(()->{points=saved;busy=false;refreshVisible();message=remove==null?"Waypoint saved.":"Waypoint removed.";done.accept(true);});}catch(Exception error){Minecraft.getInstance().execute(()->{busy=false;message=error instanceof IllegalArgumentException||error instanceof IllegalStateException?error.getMessage():"Could not save waypoints. Check disk space and file permissions.";done.accept(false);});}});
     }
-    public static void open(Screen parent,boolean create){if(scope==null){ClientNotifications.info("waypoint-world","Waypoints","Join a world or server first.");return;}if(!loaded)load();Minecraft.getInstance().gui.setScreen(new WaypointsScreen(parent,create));}
+    public static void open(Screen parent,boolean create){if(scope==null){ClientNotifications.info("waypoint-world","Waypoints","Join a world or server first.");return;}if(!loaded)load();var list=new WaypointsScreen(parent,false);Minecraft.getInstance().gui.setScreen(create?new WaypointEditScreen(list,null):list);}
     public static void tick(Minecraft mc){
         if(level!=mc.level || scope==null && mc.level!=null){level=mc.level;scope=null;
             if(mc.level!=null){String identity=null,kind=null;
@@ -46,11 +46,11 @@ public final class WaypointsFeature {
             }refreshVisible();if(scope!=null && !loaded && !busy)load();
         }
         boolean down=mc.isWindowActive() && ClientBindings.down(ClientBindings.Action.WAYPOINTS);
-        if(VortexClient.config.waypointsEnabled && down && !keyDown && mc.player!=null && mc.gui.screen()==null && mc.gui.overlay()==null)open(null,true);keyDown=down;
+        if(VortexClient.config.waypointsEnabled && down && !keyDown && mc.player!=null && mc.gui.screen()==null && mc.gui.overlay()==null)open(null,false);keyDown=down;
     }
     public static void draw(GuiGraphicsExtractor g){
         var mc=Minecraft.getInstance();var storageMarker=StorageMemory.marker();
-        if(!VortexClient.config.waypointsEnabled && storageMarker==null || mc.level==null || mc.player==null || mc.gui.hud.isHidden() || mc.gui.screen() instanceof HudEditorScreen)return;
+        if(!VortexClient.config.waypointsEnabled && storageMarker==null || mc.level==null || mc.player==null || mc.gui.hud.isHidden() || mc.gui.screen()!=null)return;
         var camera=mc.gameRenderer.mainCamera();var origin=camera.position();var matrix=camera.getViewRotationProjectionMatrix(new Matrix4f());var font=UiFonts.body();
         List<WaypointsStore.Point> renderPoints=VortexClient.config.waypointsEnabled?visible:List.of();
         if(storageMarker!=null){renderPoints=new ArrayList<>(renderPoints);renderPoints.add(storageMarker);}
@@ -58,12 +58,13 @@ public final class WaypointsFeature {
             double dx=point.x()+.5-origin.x,dy=point.y()+1-origin.y,dz=point.z()+.5-origin.z;
             var pin=WaypointProjection.project(dx,dy,dz,matrix,g.guiWidth(),g.guiHeight());if(pin==null)continue;
             int x=pin.x(),y=pin.y(),color=0xFF000000|point.color();
-            if(pin.edge()){g.pose().pushMatrix();g.pose().translate(x,y);g.pose().rotate((float)pin.angle());g.fill(3,-1,8,1,color);g.fill(4,-3,6,-1,color);g.fill(4,1,6,3,color);g.pose().popMatrix();}
             ClientUi.rounded(g,x-4,y-4,8,8,4,color);ClientUi.rounded(g,x-1,y-1,2,2,1,0xFFFFFFFF);
             String name=font.plainSubstrByWidth(point.name(),112),distance=WaypointProjection.distance(Math.sqrt(dx*dx+dy*dy+dz*dz));
-            int tx=Math.clamp(x-font.width(name)/2,3,Math.max(3,g.guiWidth()-font.width(name)-3));
-            int labelY=Math.min(y+8,g.guiHeight()-24);g.text(font,name,tx,labelY,0xFFF3F4F7,true);
-            g.text(font,distance,Math.clamp(x-font.width(distance)/2,3,Math.max(3,g.guiWidth()-font.width(distance)-3)),labelY+10,0xFFB6BCC9,true);
+            int labelWidth=Math.max(font.width(name),font.width(distance))+14;
+            int tx=Math.clamp(x-labelWidth/2,3,Math.max(3,g.guiWidth()-labelWidth-3));
+            int labelY=Math.min(y+8,g.guiHeight()-24);
+            ClientUi.panel(g,tx,labelY-3,labelWidth,25,5,0x66000000|point.color(),0xD910151C);
+            g.text(font,name,tx+7,labelY,0xFFF3F4F7,false);g.text(font,distance,tx+7,labelY+11,0xFFB6BCC9,false);
         }
     }
 }

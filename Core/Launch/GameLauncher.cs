@@ -182,17 +182,18 @@ public class GameLauncher
         string indexesDir = Path.Combine(baseDir, "assets", "indexes");
         if (SharedGameFiles.Read(baseDir) == null && Directory.Exists(indexesDir))
         {
-            var files = Directory.GetFiles(indexesDir, "*.json");
-            if (files.Length > 0)
-            {
-                assetIndex = Path.GetFileNameWithoutExtension(files[0]);
-            }
+            assetIndex = ChooseLocalAssetIndex(baseDir, version, Directory.GetFiles(indexesDir, "*.json")) ?? version;
         }
 
         assetIndex = SharedGameFiles.IndexFor(baseDir, assetIndex);
         var sb = new StringBuilder();
         sb.AppendLine(FormatArgument($"-Xmx{ramGb}G"));
         if (OperatingSystem.IsMacOS()) sb.AppendLine("-XstartOnFirstThread");
+        if (isFabricLike)
+        {
+            // Native Discord IPC/JNA requires explicit native access on modern Java.
+            sb.AppendLine("--enable-native-access=ALL-UNNAMED");
+        }
 
         if (isForge)
         {
@@ -371,7 +372,7 @@ public class GameLauncher
 
         if (!string.IsNullOrWhiteSpace(customJvmArgs))
         {
-            foreach (var arg in customJvmArgs.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            foreach (var arg in SplitUserArguments(customJvmArgs))
             {
                 sb.AppendLine(FormatArgument(arg));
             }
@@ -467,21 +468,7 @@ public class GameLauncher
 
         if (!string.IsNullOrWhiteSpace(serverAddress))
         {
-            string host = serverAddress.Trim();
-            string port = "25565";
-            int separator = host.LastIndexOf(':');
-            if (separator > 0 && separator < host.Length - 1 &&
-                int.TryParse(host[(separator + 1)..], out int parsedPort) &&
-                parsedPort is >= 1 and <= 65535)
-            {
-                host = host[..separator];
-                port = parsedPort.ToString();
-            }
-
-            sb.AppendLine("--server");
-            sb.AppendLine(FormatArgument(host));
-            sb.AppendLine("--port");
-            sb.AppendLine(port);
+            foreach (string argument in ServerLaunchArguments.Build(version, serverAddress)) sb.AppendLine(FormatArgument(argument));
         }
 
         string argFilePath = Path.Combine(baseDir, "java_args.txt");
@@ -536,10 +523,78 @@ public class GameLauncher
         return process;
     }
 
-    private static string FormatArgument(string p)
+    internal static string FormatArgument(string p)
     {
         p = p.Replace('\\', '/').Trim('\"');
-        return p.Contains(' ') ? $"\"{p}\"" : p;
+        // Java @argfiles treat whitespace as a separator and '#' as a comment start,
+        // so such values (e.g. a Windows user folder "C#") must be quoted. Inside quotes
+        // only '"' needs escaping because backslashes were normalized above.
+        bool needsQuotes = p.Any(c => char.IsWhiteSpace(c) || c is '#' or '"' or '\'');
+        return needsQuotes ? "\"" + p.Replace("\"", "\\\"") + "\"" : p;
+    }
+
+    /// <summary>
+    /// Splits the user's JVM argument field like a shell would: whitespace separates
+    /// arguments unless it is inside single or double quotes.
+    /// Example: <c>-Dpath="C:/My Folder" -Xss4M</c> gives two arguments.
+    /// </summary>
+    internal static List<string> SplitUserArguments(string input)
+    {
+        var result = new List<string>();
+        var current = new StringBuilder();
+        char quote = '\0';
+        bool hasToken = false;
+        foreach (char c in input)
+        {
+            if (quote != '\0')
+            {
+                if (c == quote) quote = '\0';
+                else current.Append(c);
+            }
+            else if (c is '"' or '\'')
+            {
+                quote = c;
+                hasToken = true;
+            }
+            else if (char.IsWhiteSpace(c))
+            {
+                if (hasToken) result.Add(current.ToString());
+                current.Clear();
+                hasToken = false;
+            }
+            else
+            {
+                current.Append(c);
+                hasToken = true;
+            }
+        }
+        if (hasToken) result.Add(current.ToString());
+        return result;
+    }
+
+    /// <summary>
+    /// Picks the asset index declared by the installed version metadata. Falls back to an index
+    /// named after the version, then to the only index present. Returns null when it is ambiguous.
+    /// </summary>
+    internal static string? ChooseLocalAssetIndex(string baseDir, string version, IReadOnlyList<string> indexFiles)
+    {
+        var names = indexFiles.Select(Path.GetFileNameWithoutExtension).Where(n => !string.IsNullOrEmpty(n)).Select(n => n!).ToList();
+        string metadataPath = Path.Combine(baseDir, "versions", version, $"{version}.json");
+        try
+        {
+            if (File.Exists(metadataPath))
+            {
+                using var document = JsonDocument.Parse(File.ReadAllText(metadataPath));
+                string? declared =
+                    document.RootElement.TryGetProperty("assetIndex", out var index) && index.TryGetProperty("id", out var id) ? id.GetString() :
+                    document.RootElement.TryGetProperty("assets", out var assets) ? assets.GetString() : null;
+                if (!string.IsNullOrWhiteSpace(declared) && names.Contains(declared, StringComparer.OrdinalIgnoreCase)) return declared;
+            }
+        }
+        catch (JsonException) { }
+        catch (IOException) { }
+        if (names.Contains(version, StringComparer.OrdinalIgnoreCase)) return version;
+        return names.Count == 1 ? names[0] : null;
     }
 
     private static string GetArtifactName(string filename)

@@ -70,6 +70,7 @@ VortexLauncher.Core.Media.ArtworkCache.DiskRoot = Path.Combine(output, "artwork-
 try
 {
     if (args.Contains("--collection")) { GameLibraryChecks.Run(window, fixture, Pump, output); GridBrowsingChecks.Run(Pump, output); Console.WriteLine("Rendered previews: " + output); return; }
+    if (args.Contains("--discord")) { DiscordInviteChecks.Run(Pump, output); Console.WriteLine("Rendered previews: " + output); return; }
     if (args.Contains("--artwork")) { ArtworkChecks.Run(Pump, output); return; }
     ArtworkChecks.Run(Pump, output);
     LauncherWardrobeChecks.Run(Pump,output);

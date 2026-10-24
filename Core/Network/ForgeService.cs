@@ -14,17 +14,45 @@ namespace VortexLauncher.Core.Network;
 
 public class ForgeService
 {
-    private static readonly HttpClient HttpClient = new HttpClient(new HttpClientHandler
+    private static readonly HttpClient HttpClient = CreateClient();
+
+    private static HttpClient CreateClient()
     {
-        AllowAutoRedirect = true
-    });
+        var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = true });
+        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+        return client;
+    }
+
+    private const string OfficialMaven = "https://maven.minecraftforge.net/";
+    private const string MirrorMaven = "https://bmclapi2.bangbang93.com/maven/";
+    private const long MaxInstallerBytes = 64L * 1024 * 1024;
+
+    private static async Task<string?> TryGetOfficialSha1Async(string officialUrl, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromSeconds(15));
+            string text = (await HttpClient.GetStringAsync(officialUrl + ".sha1", timeout.Token)).Trim();
+            string hash = text.Split(' ', '\t', '\r', '\n')[0];
+            return hash.Length == 40 && hash.All(Uri.IsHexDigit) ? hash : null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch { return null; }
+    }
+
+    /// <summary>Returns a path under <paramref name="root"/> or null when the relative path escapes it.</summary>
+    internal static string? ResolveInside(string root, string relativePath)
+    {
+        if (string.IsNullOrWhiteSpace(relativePath) || Path.IsPathRooted(relativePath) || relativePath.Contains(':')) return null;
+        string fullRoot = Path.GetFullPath(root);
+        if (!fullRoot.EndsWith(Path.DirectorySeparatorChar)) fullRoot += Path.DirectorySeparatorChar;
+        string full = Path.GetFullPath(Path.Combine(fullRoot, relativePath.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar)));
+        return full.StartsWith(fullRoot, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) ? full : null;
+    }
 
     public ForgeService()
     {
-        if (!HttpClient.DefaultRequestHeaders.Contains("User-Agent"))
-        {
-            HttpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
-        }
     }
 
     public async Task<string?> GetPromotedForgeVersionAsync(string mcVersion)
@@ -69,23 +97,29 @@ public class ForgeService
             ? $"{forgeVersion}-1.7.10"
             : forgeVersion;
 
-        string[] installerUrls = new[]
-        {
-            $"https://bmclapi2.bangbang93.com/maven/net/minecraftforge/forge/{legacyArtifact}/forge-{legacyArtifact}-installer.jar",
-            $"https://maven.minecraftforge.net/net/minecraftforge/forge/{legacyArtifact}/forge-{legacyArtifact}-installer.jar",
-            $"https://bmclapi2.bangbang93.com/maven/net/minecraftforge/forge/{forgeVersion}/forge-{forgeVersion}-installer.jar",
-            $"https://maven.minecraftforge.net/net/minecraftforge/forge/{forgeVersion}/forge-{forgeVersion}-installer.jar"
-        }.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        // Prefer the official Forge Maven. A mirror is used only when its bytes
+        // match the SHA-1 published by the official Maven, because the installer
+        // JAR is executed (Forge processors) after download.
+        var installerCandidates = new[] { legacyArtifact, forgeVersion }
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(artifact => $"net/minecraftforge/forge/{artifact}/forge-{artifact}-installer.jar")
+            .ToArray();
 
         byte[]? installerBytes = null;
-        foreach (var url in installerUrls)
+        foreach (string mavenPath in installerCandidates)
         {
-            try
+            string officialUrl = OfficialMaven + mavenPath;
+            string? expectedSha1 = await TryGetOfficialSha1Async(officialUrl, cancellationToken);
+            foreach (string url in new[] { officialUrl, MirrorMaven + mavenPath })
             {
-                progressCallback?.Invoke("Downloading Forge installer...", 10);
-                using var resp = await HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-                if (resp.IsSuccessStatusCode)
+                bool official = url.StartsWith(OfficialMaven, StringComparison.Ordinal);
+                if (!official && expectedSha1 == null) continue; // never trust an unverifiable mirror copy
+                try
                 {
+                    progressCallback?.Invoke("Downloading Forge installer...", 10);
+                    using var resp = await HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                    if (!resp.IsSuccessStatusCode) continue;
+                    if (resp.Content.Headers.ContentLength > MaxInstallerBytes) continue;
                     transfer?.Begin("Forge installer", 1, resp.Content.Headers.ContentLength ?? 0);
                     using var output = new MemoryStream();
                     await using var input = await resp.Content.ReadAsStreamAsync(cancellationToken);
@@ -93,20 +127,23 @@ public class ForgeService
                     int count;
                     while ((count = await input.ReadAsync(buffer, cancellationToken)) > 0)
                     {
+                        if (output.Length + count > MaxInstallerBytes) throw new InvalidDataException("Forge installer is too large.");
                         await output.WriteAsync(buffer.AsMemory(0, count), cancellationToken);
                         transfer?.Received(count);
                     }
                     var data = output.ToArray();
                     transfer?.Complete(data.Length, data.Length);
-                    if (data.Length > 100000)
-                    {
-                        installerBytes = data;
-                        break;
-                    }
+                    if (data.Length <= 100000) continue;
+                    if (expectedSha1 != null && !Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(data))
+                            .Equals(expectedSha1, StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    installerBytes = data;
+                    break;
                 }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+                catch { }
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
-            catch { }
+            if (installerBytes != null) break;
         }
 
         if (installerBytes == null)
@@ -114,7 +151,7 @@ public class ForgeService
             throw new Exception("Could not download Forge installer JAR from any mirror.");
         }
 
-        string tempInstaller = Path.Combine(Path.GetTempPath(), $"forge-{forgeVersion}-installer.jar");
+        string tempInstaller = Path.Combine(Path.GetTempPath(), $"vortex-forge-{forgeVersion}-{Guid.NewGuid():N}-installer.jar");
         await File.WriteAllBytesAsync(tempInstaller, installerBytes);
 
         string? versionJsonContent = null;
@@ -153,7 +190,8 @@ public class ForgeService
                     if (entryPath.StartsWith("maven/", StringComparison.OrdinalIgnoreCase) && entryPath.EndsWith(".jar", StringComparison.OrdinalIgnoreCase))
                     {
                         string relPath = entryPath.Substring(6);
-                        string destPath = Path.Combine(librariesDir, relPath.Replace('/', Path.DirectorySeparatorChar));
+                        string? destPath = ResolveInside(librariesDir, relPath);
+                        if (destPath == null) throw new InvalidDataException($"Forge installer contains an unsafe path: {entryPath}");
                         string? dir = Path.GetDirectoryName(destPath);
                         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
                         entry.ExtractToFile(destPath, true);

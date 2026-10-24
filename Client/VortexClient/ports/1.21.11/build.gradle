@@ -14,7 +14,7 @@ java { toolchain.languageVersion = JavaLanguageVersion.of(25) }
 tasks.withType(JavaCompile).configureEach { options.release = 21 }
 sourceSets {
     main {
-        java.srcDirs = [file('../../build/targets/1.21.11/generated')]
+        java.srcDirs = [file(providers.gradleProperty('vortexSources').getOrElse('../../build/targets/1.21.11/generated'))]
         resources.srcDirs = [file(providers.gradleProperty('vortexResources').getOrElse('src/main/resources'))]
     }
 }
