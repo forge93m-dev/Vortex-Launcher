@@ -43,6 +43,7 @@
           <TextBlock Text="Instance settings &amp; tools" FontSize="22" FontWeight="SemiBold"/>
           <TextBlock Text="Maintenance actions stay here, separate from everyday play and mod management." Classes="Muted" TextWrapping="Wrap"/>
           <Button x:Name="OpenLauncherSettings" Content="Game memory &amp; Java defaults →" Click="OnLauncherSettings" Classes="SecondaryBtn" HorizontalAlignment="Left"/>
+          <ContentControl x:Name="LaunchSettingsHost"/>
           <Border Classes="WorkspaceAside" Padding="18"><StackPanel Spacing="10"><TextBlock Text="Vortex Client" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="Update the bundled client while keeping its HUD settings and other mods." Classes="Muted" TextWrapping="Wrap"/><Button Content="Update Vortex Client" Command="{Binding Details.UpdateVortexClientCommand}" IsEnabled="{Binding Details.CanMaintain}" IsVisible="{Binding Details.SupportsClientUpdate}" Classes="SecondaryBtn" HorizontalAlignment="Left"/></StackPanel></Border>
           <WrapPanel>
             <Button Content="Repair instance" Command="{Binding Details.RepairInstanceCommand}" IsEnabled="{Binding Details.CanMaintain}" Classes="SecondaryBtn" Margin="0,0,10,10"/>

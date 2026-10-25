@@ -24,6 +24,10 @@ public partial class InstanceWorkspaceView : UserControl, IDisposable
     public Func<Task>? LaunchAsync { get; set; }
     public Action? CancelMaintenance { get; set; }
     public Action? LauncherSettingsRequested { get; set; }
+    public InstanceLaunchSettingsPanel? LaunchSettings => LaunchSettingsHost.Content as InstanceLaunchSettingsPanel;
+    /// <summary>Shows this instance's Java / memory / argument overrides; defaults come from the launcher's settings.</summary>
+    public void AttachLaunchSettings(Func<InstanceLaunchSettingsPanel.Defaults> defaults, Action save) =>
+        LaunchSettingsHost.Content = new InstanceLaunchSettingsPanel(Instance, defaults, save);
     public event Action? BusyChanged;
     private readonly Dictionary<string, ContentCatalogView> _catalogs = new();
     private readonly Func<string, DownloadModsViewModel> _catalogFactory;

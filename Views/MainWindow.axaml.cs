@@ -386,6 +386,7 @@ public partial class MainWindow : Window
                 workspace.Details.ClientUpdateCallback = async () => { await main.UpdateVortexClientCommand.ExecuteAsync(instance); workspace.Details.StatusMessage = main.StatusMessage; };
                 workspace.CancelMaintenance = () => main.CancelInstallationCommand.Execute(null);
                 workspace.LauncherSettingsRequested = () => { HideInstanceWorkspace(); main.SelectTabCommand.Execute("Settings"); };
+                workspace.AttachLaunchSettings(() => new(main.RamGb, main.CustomJavaPath, main.JvmArgs), () => main.SaveInstanceMetadata(instance));
             }
             InstanceWorkspaceHost.Content = workspace;
         }

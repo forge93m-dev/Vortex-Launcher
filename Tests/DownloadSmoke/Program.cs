@@ -32,6 +32,7 @@ string testRoot = Directory.CreateDirectory(Path.Combine(FixturePaths.TempRoot()
 PlatformSupport.DataRootOverride = Directory.CreateDirectory(Path.Combine(testRoot, "data")).FullName;
 DataLocationChecks.Run(testRoot);
 await DirectDownloadChecks.RunAsync(testRoot);
+await LaunchSettingsChecks.RunAsync(testRoot);
 await InstallationSpeedChecks.RunAsync(testRoot);
 if (args.Contains("--installation-speed")) return;
 await ModPreflightChecks.RunAsync(testRoot);

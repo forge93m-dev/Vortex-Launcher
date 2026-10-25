@@ -531,11 +531,12 @@ public partial class MainWindowViewModel : ObservableObject
                 timing.Mark("Minecraft files and Fabric metadata");
 
                 var gameArchitecture = PlatformSupport.GetGameArchitecture(instance.InstancePath, instance.Version);
-                string javaPath = string.IsNullOrWhiteSpace(CustomJavaPath) ||
-                                  CustomJavaPath.Contains("latest", StringComparison.OrdinalIgnoreCase) ||
-                                  !File.Exists(CustomJavaPath)
+                string chosenJava = LaunchSettings.JavaPath(instance, CustomJavaPath);
+                string javaPath = string.IsNullOrWhiteSpace(chosenJava) ||
+                                  chosenJava.Contains("latest", StringComparison.OrdinalIgnoreCase) ||
+                                  !File.Exists(chosenJava)
                     ? JavaResolver.GetJavaForVersion(instance.Version, gameArchitecture)
-                    : CustomJavaPath;
+                    : chosenJava;
                 PlatformSupport.ValidateJavaArchitecture(javaPath, gameArchitecture);
                 timing.Mark("Java selection");
 
@@ -763,7 +764,8 @@ public partial class MainWindowViewModel : ObservableObject
             {
                 string instanceFolderName = Path.GetFileName(target.InstancePath);
                 UpdateStatus("Checking mod compatibility...");
-                bool customModRules = JvmArgs.Contains("fabric.addMods", StringComparison.Ordinal) || JvmArgs.Contains("fabric.debug.replaceVersion", StringComparison.Ordinal);
+                string launchArguments = LaunchSettings.JvmArgs(target, JvmArgs);
+                bool customModRules = launchArguments.Contains("fabric.addMods", StringComparison.Ordinal) || launchArguments.Contains("fabric.debug.replaceVersion", StringComparison.Ordinal);
                 var compatibility = await new ModPreflightService().CheckAsync(
                     target.InstancePath, target.Version, target.Loader, target.LoaderVersion, cancellation.Token, customModRules);
                 if (compatibility.NeedsReview)
@@ -870,9 +872,9 @@ public partial class MainWindowViewModel : ObservableObject
                     target.Version,
                     launchAccount.Username,
                     launchAccount.Uuid,
-                    CustomJavaPath,
-                    RamGb,
-                    JvmArgs,
+                    LaunchSettings.JavaPath(target, CustomJavaPath),
+                    LaunchSettings.RamGb(target, RamGb),
+                    launchArguments,
                     target.Loader,
                     fabricProfile,
                     line => logWindow?.AppendLog(line),

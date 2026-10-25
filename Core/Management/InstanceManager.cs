@@ -41,6 +41,7 @@ public class InstanceManager
             if (stored.Value is { } inst)
             {
                 inst.InstancePath = dir;
+                VortexLauncher.Core.Launch.LaunchSettings.Sanitize(inst);
                 inst.RefreshScreenshotCover();
                 OperationJournal.Discover(inst);
                 list.Add(inst);
@@ -226,7 +227,10 @@ public class InstanceManager
         string temporary = destination + "." + Guid.NewGuid().ToString("N") + ".tmp";
         // The in-memory instance is authoritative. A stale/missing disk manifest
         // must never turn a Fabric/Forge/Quilt export into a Vanilla instance.
-        string metadata = JsonSerializer.Serialize(instance, new JsonSerializerOptions { WriteIndented = true });
+        // Java path, memory and arguments belong to this computer: they are not written into the archive.
+        var exported = JsonSerializer.Deserialize<InstanceModel>(JsonSerializer.Serialize(instance))!;
+        LaunchSettings.Reset(exported);
+        string metadata = JsonSerializer.Serialize(exported, new JsonSerializerOptions { WriteIndented = true });
         try
         {
             ZipFile.CreateFromDirectory(instance.InstancePath, temporary, CompressionLevel.Fastest, false);

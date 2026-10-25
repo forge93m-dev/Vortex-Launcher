@@ -134,6 +134,8 @@ internal sealed class ArchiveImportPlan
         }
         if (string.IsNullOrWhiteSpace(plan.Instance.Name)) plan.Instance.Name = fallback;
         if (plan.Instance.Loader is not ("Vanilla" or "Fabric" or "Forge" or "Quilt")) throw new InvalidDataException("Unsupported loader in the archive.");
+        // A shared pack or archive never brings its own Java, memory or arguments: they would run on this computer.
+        LaunchSettings.RejectImported(plan.Instance);
         // Discard machine-specific absolute artwork paths from another computer.
         plan.Instance.CoverImagePath = "";
         plan.Instance.IconPath = "";

@@ -29,6 +29,16 @@ public partial class InstanceModel : ObservableObject
 
     [ObservableProperty]
     private bool _vortexClientEnabled;
+
+    // Per-instance launch overrides (see LaunchSettings). Empty / 0 / null mean "use the launcher settings".
+    [ObservableProperty]
+    private string _javaPathOverride = string.Empty;
+
+    [ObservableProperty]
+    private int _ramGbOverride;
+
+    [ObservableProperty]
+    private string? _jvmArgsOverride;
     [System.Text.Json.Serialization.JsonIgnore]
     public bool SupportsVortexClient => VortexLauncher.Core.Network.VortexClientService.IsCompatible(Version, Loader);
     [System.Text.Json.Serialization.JsonIgnore]
