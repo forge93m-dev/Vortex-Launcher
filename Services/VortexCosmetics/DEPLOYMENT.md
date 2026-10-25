@@ -1,3 +1,17 @@
+# Prepared, NOT yet deployed — animated capes (2026-10-25)
+
+Code and tests are ready; nothing has been deployed. The change adds the cape ids `nebula`, `flow` and `pulse`
+(shared list in `capes.mjs`, used by `worker.mjs` and `wardrobe.mjs`). No database change is needed: `cape` is a
+plain TEXT column without a constraint. Older clients ignore ids they do not know and show no cape for them.
+
+1. `node test.mjs` and the wardrobe/accounts tests (they need Node.js with `node:sqlite`; Node was not installed
+   when this was written, so the new assertions have not been run yet).
+2. Deploy both workers that use the list, from the owner's signed-in Cloudflare account:
+   `npx wrangler deploy` (cosmetics, `wrangler.jsonc`) and `npx wrangler deploy -c wrangler.accounts.jsonc`
+   (accounts/wardrobe). Use the staging configs first if you want a dry run.
+3. Check `GET /v1/catalog` lists seven ids.
+4. In the client, set `CapeCatalog.ANIMATED_ONLINE = true` so animated capes are published, then build a new client.
+
 # Deployed beta service — 2026-10-17
 
 - Worker: `vortex-cosmetics`

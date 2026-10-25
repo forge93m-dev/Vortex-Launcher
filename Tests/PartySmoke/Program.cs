@@ -33,7 +33,48 @@ store.Mark(friend.Token, marker with { Kind = "DANGER" });
 Check(store.Read(owner.Token).Markers.Length == 1, "each member has at most one active marker");
 now = now.AddSeconds(61);
 Check(store.Read(owner.Token).Markers.Length == 0, "markers expire after 60 seconds");
+store.Mark(friend.Token, marker with { Kind = "PING" });
+Check(store.Read(owner.Token).Markers.Single().Kind == "PING", "a ping marks one block for the party");
+now = now.AddSeconds(31);
+Check(store.Read(owner.Token).Markers.Length == 0, "pings expire after 30 seconds");
+
+store.Chat(friend.Token, new ChatRequest("  meet at the farm  "));
+var chat = store.Read(owner.Token).Chat;
+Check(chat.Length == 1 && chat[0].Name == "Friend" && chat[0].Text == "meet at the farm", "party chat reaches the party with the sender's party name");
+Check(store.Read(outsider.Token).Chat.Length == 0, "party chat does not leak into another party");
+Error(429, () => store.Chat(friend.Token, new ChatRequest("again")), "party chat spam is bounded");
+now = now.AddSeconds(1);
+Error(400, () => store.Chat(friend.Token, new ChatRequest("")), "empty party message rejected");
+Error(400, () => store.Chat(friend.Token, new ChatRequest(new string('x', 257))), "overlong party message rejected");
+Error(400, () => store.Chat(friend.Token, new ChatRequest("line\nbreak")), "control characters cannot fake extra chat lines");
+Error(400, () => store.Chat(friend.Token, new ChatRequest("abc‮dcba")), "bidi overrides cannot disguise a message");
+for (int i = 0; i < 60; i++) { now = now.AddSeconds(1); store.Chat(owner.Token, new ChatRequest("msg " + i)); store.Read(friend.Token); store.Read(outsider.Token); }
+chat = store.Read(owner.Token).Chat;
+Check(chat.Length == PartyStore.ChatLimit && chat[^1].Text == "msg 59" && chat.Zip(chat.Skip(1)).All(p => p.First.Seq < p.Second.Seq), "chat keeps only the newest 50 messages, in order");
+// Members keep polling (heartbeats) while the chat ages.
+for (int i = 0; i < 6; i++) { now = now.AddMinutes(1); store.Read(owner.Token); store.Read(friend.Token); store.Read(outsider.Token); }
+Check(store.Read(owner.Token).Chat.Length == 0, "party chat is forgotten after five minutes");
+
+var place = new WaypointRequest(new string('a', 64), "minecraft:overworld", "Iron farm", 100, 64, -50, 0x7DD3FC, [new BlockPos(100, 63, -50), new BlockPos(101, 63, -50)]);
+store.Share(friend.Token, place);
+var shared = store.Read(owner.Token).Waypoints;
+Check(shared.Length == 1 && shared[0].Name == "Friend" && shared[0].Title == "Iron farm" && shared[0].Blocks.Length == 2, "shared waypoint and its blocks reach the party");
+Check(store.Read(outsider.Token).Waypoints.Length == 0, "shared waypoints do not leak into another party");
+now = now.AddSeconds(2);
+Error(400, () => store.Share(friend.Token, place with { Title = "" }), "unnamed shared waypoint rejected");
+Error(400, () => store.Share(friend.Token, place with { Color = -1 }), "invalid shared waypoint colour rejected");
+Error(400, () => store.Share(friend.Token, place with { Blocks = Enumerable.Range(0, 33).Select(i => new BlockPos(i, 64, 0)).ToArray() }), "shared block selections are bounded");
+Error(400, () => store.Share(friend.Token, place with { Blocks = [new BlockPos(1, 1, 1), new BlockPos(1, 1, 1)] }), "duplicate shared blocks rejected");
+var third = store.Join(owner.Invite, "Third");
+Error(403, () => store.Unshare(third.Token, shared[0].Id), "members cannot remove someone else's waypoint");
+Error(404, () => store.Unshare(third.Token, "000000000000000000000000"), "removing an unknown waypoint is reported");
+store.Unshare(owner.Token, shared[0].Id);
+Check(store.Read(friend.Token).Waypoints.Length == 0, "the party owner can remove any shared waypoint");
+now = now.AddSeconds(2);
+store.Share(friend.Token, place);
 store.Leave(friend.Token);
+Check(store.Read(owner.Token).Waypoints.Length == 0, "places shared by someone who left are removed with them");
+store.Leave(third.Token);
 Check(store.Read(owner.Token).Members.Length == 1, "leaving removes membership and markers");
 for (int i = 0; i < 7; i++) store.Join(owner.Invite, "Player" + i);
 Error(409, () => store.Join(owner.Invite, "Extra"), "groups are bounded at eight members");
@@ -70,6 +111,12 @@ try
     http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", created.Token);
     var json = await http.GetStringAsync("/v1/session");
     Check(json.Contains("HttpFriend") && !json.Contains(created.Token) && !json.Contains(joined.Token) && !json.Contains(created.Invite), "snapshot returns markers but never session credentials or invite codes");
+    Check((await http.PostAsJsonAsync("/v1/chat", new { text = "hello party" })).IsSuccessStatusCode, "real HTTP party chat");
+    var sharedResponse = await http.PostAsJsonAsync("/v1/waypoints", new { serverKey = new string('a', 64), dimension = "minecraft:overworld", title = "Base", x = 1, y = 64, z = 2, color = 0xBDA5FF, blocks = new[] { new { x = 1, y = 63, z = 2 } } });
+    var sharedSnapshot = await sharedResponse.Content.ReadFromJsonAsync<Snapshot>();
+    Check(sharedResponse.IsSuccessStatusCode && sharedSnapshot!.Chat.Single().Text == "hello party" && sharedSnapshot.Waypoints.Single().Title == "Base", "real HTTP shared waypoint and chat in the snapshot");
+    Check((await http.DeleteAsync("/v1/waypoints/" + sharedSnapshot!.Waypoints.Single().Id)).IsSuccessStatusCode, "real HTTP shared waypoint removal");
+    Check((await http.DeleteAsync("/v1/waypoints/..%2Fsession")).StatusCode == HttpStatusCode.NotFound, "waypoint ids cannot reach other routes");
     var malformed = await http.PostAsync("/v1/markers", new StringContent("{", System.Text.Encoding.UTF8, "application/json"));
     Check(malformed.StatusCode == HttpStatusCode.BadRequest, "malformed HTTP payload is rejected");
     var oversized = await http.PostAsync("/v1/parties", new StringContent(new string('x', 5000), System.Text.Encoding.UTF8, "application/json"));

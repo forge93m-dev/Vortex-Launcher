@@ -25,7 +25,7 @@ async function call(path, method="GET", value, token, ip="fixture") {
   return {status:response.status,value:await response.json()};
 }
 assert.equal((await call("/health")).value.storage,true);
-assert.equal((await call("/v1/catalog")).value.capes.length,4);
+assert.deepEqual((await call("/v1/catalog")).value.capes,["none","vortex","aurora","ember","nebula","flow","pulse"]);
 assert.equal((await call("/v1/cape","PUT",{uuid:id,cape:"vortex"})).status,401);
 assert.equal((await call("/v1/claim","POST",{uuid:id,code:attacker,owner})).status,403);
 assert.deepEqual((await call("/v1/lookup","POST",{uuids:[id]})).value,{capes:[]});
@@ -36,6 +36,8 @@ assert.equal(sql.prepare("SELECT activation_hash FROM cape_profiles WHERE uuid=?
 assert.equal((await call("/v1/cape","PUT",{uuid:id,cape:"aurora"},attacker)).status,403);
 assert.equal((await call("/v1/cape","PUT",{uuid:other,cape:"aurora"},owner)).status,403);
 assert.equal((await call("/v1/cape","PUT",{uuid:id,cape:"https://evil.test/image.png"},owner)).status,400);
+assert.equal((await call("/v1/cape","PUT",{uuid:id,cape:"nebula2"},owner,"animated-fixture")).status,400);
+assert.equal((await call("/v1/cape","PUT",{uuid:id,cape:"Nebula"},owner,"animated-fixture")).status,400);
 assert.equal((await call("/v1/cape","PUT",{uuid:id,cape:"vortex"},owner)).status,200);
 const otherCode="d".repeat(64),otherOwner="e".repeat(64);
 sql.prepare("INSERT INTO cape_profiles(uuid,activation_hash) VALUES(?,?)").run(other,await digest(otherCode));
@@ -45,6 +47,13 @@ assert.equal((await call("/v1/cape","PUT",{uuid:id,cape:"ember"},otherOwner)).st
 const visible = await call("/v1/lookup","POST",{uuids:[id,id.toUpperCase(),other]});
 assert.deepEqual(visible.value,{capes:[{uuid:id,cape:"vortex"},{uuid:other,cape:"ember"}]});
 assert.ok(!JSON.stringify(visible).includes(owner));
+// Animated capes are ordinary catalogue ids: selectable by their owner, visible in the public lookup.
+for(const animated of ["nebula","flow","pulse"]){
+  assert.equal((await call("/v1/cape","PUT",{uuid:other,cape:animated},otherOwner,"animated-fixture")).status,200);
+  assert.deepEqual((await call("/v1/lookup","POST",{uuids:[other]},null,"animated-fixture")).value,{capes:[{uuid:other,cape:animated}]});
+  assert.equal((await call("/v1/cape","PUT",{uuid:other,cape:animated},owner,"animated-fixture")).status,403);
+}
+assert.equal((await call("/v1/cape","PUT",{uuid:other,cape:"ember"},otherOwner)).status,200);
 assert.equal((await call("/v1/lookup","POST",{uuids:["' OR 1=1 --"]})).status,400);
 assert.equal((await call("/v1/lookup","POST",{uuids:Array(33).fill(id)})).status,400);
 assert.equal((await call("/v1/claim","POST",{uuid:id,code,owner,extra:"x".repeat(5000)})).status,413);

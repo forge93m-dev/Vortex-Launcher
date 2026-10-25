@@ -1,6 +1,7 @@
 import {handleAccounts} from "./accounts.mjs";
+import {BUILT_IN_CAPES} from "./capes.mjs";
 // Only bounded RGBA pixels / bounded zlib pixel envelopes, never image URLs.
-export const CAPES = ["none", "vortex", "aurora", "ember"];
+export const CAPES = BUILT_IN_CAPES;
 const gates = new Map();
 const encoder = new TextEncoder();
 const uuid = value => typeof value === "string" && /^[a-f0-9]{32}$/.test(value.replaceAll("-", "").toLowerCase())

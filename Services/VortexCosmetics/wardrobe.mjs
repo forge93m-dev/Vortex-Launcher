@@ -1,5 +1,6 @@
 import {createHash,randomBytes} from "node:crypto";
 import {authenticate} from "./accounts.mjs";
+import {BUILT_IN_CAPES} from "./capes.mjs";
 const hash=value=>createHash("sha256").update(value).digest("hex");
 const id=value=>typeof value==="string" && /^[a-f0-9]{32}$/.test(value.replaceAll("-","").toLowerCase())?value.replaceAll("-","").toLowerCase():null;
 const reply=(value,status=200)=>Response.json(value,{status,headers:{"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
@@ -84,7 +85,7 @@ export async function handleWardrobe(request,env){
         if(legacy){
           if(typeof value.legacy_owner!=="string" || !/^[a-f0-9]{64}$/.test(value.legacy_owner) || hash(value.legacy_owner)!==legacy.owner_hash)throw fail("legacy_proof_required",403);
           if(path.endsWith("/skin")){
-            if(["none","vortex","aurora","ember"].includes(legacy.cape))inheritedCape=legacy.cape;
+            if(BUILT_IN_CAPES.includes(legacy.cape))inheritedCape=legacy.cape;
             else if(/^(custom|hd):[a-f0-9]{64}$/.test(legacy.cape)){
               const table=legacy.cape.startsWith("hd:")?"cape_hd_textures":"cape_textures";
               const texture=(await env.LEGACY_DB.prepare(`SELECT pixels FROM ${table} WHERE uuid=? AND hash=?`).bind(access.profile_uuid,legacy.cape.split(":")[1]).all()).results[0];
@@ -98,7 +99,7 @@ export async function handleWardrobe(request,env){
       let cape=inheritedCape,capePixels=inheritedPixels,skinHash=null,skinPixels=null,slim=0;
       if(path.endsWith("/cape")){
         if(value.pixels!==undefined){const packed=await capeBytes(value.pixels);cape=packed.cape;capePixels=packed.bytes.toString("base64");}
-        else if(["none","vortex","aurora","ember"].includes(value.cape))cape=value.cape;else throw fail("invalid_cape");
+        else if(BUILT_IN_CAPES.includes(value.cape))cape=value.cape;else throw fail("invalid_cape");
       }else if(value.enabled!==false){const bytes=pixels(value.pixels,16384);if(bytes.length!==16384 || typeof value.slim!=="boolean")throw fail("invalid_pixels");skinHash=hash(bytes);skinPixels=bytes.toString("base64");slim=value.slim?1:0;}
       // Only the selected cosmetic changes; a concurrent account claim cannot overwrite its owner.
       const field=path.endsWith("/cape")?"cape=excluded.cape,cape_pixels=excluded.cape_pixels":"skin_hash=excluded.skin_hash,skin_pixels=excluded.skin_pixels,slim=excluded.slim";

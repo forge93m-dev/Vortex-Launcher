@@ -21,6 +21,11 @@ assert.equal((await call("/v3/wardrobe/cape","PUT",{cape:"aurora"},token)).statu
 assert.equal((await call("/v3/wardrobe/cape","PUT",{uuid:canonical,cape:"ember"},token)).status,200,"offline-server UUID alias is bound to same account nickname");
 const skin=Buffer.alloc(16384,255),skinHash=hash(skin);
 assert.equal((await call("/v3/wardrobe/skin","PUT",{enabled:true,slim:true,pixels:skin.toString("base64")},token)).status,200);
+// Animated built-in capes are accepted like any built-in cape; unknown ids are not.
+assert.equal((await call("/v3/wardrobe/cape","PUT",{cape:"pulse"},token)).status,200);
+assert.equal((await call("/v3/wardrobe/cape","PUT",{cape:"pulse2"},token)).status,400);
+assert.equal((await call("/v3/wardrobe/lookup","POST",{uuids:[uuid]})).data.profiles[0].cape,"pulse");
+assert.equal((await call("/v3/wardrobe/cape","PUT",{cape:"aurora"},token)).status,200);
 let lookup=await call("/v3/wardrobe/lookup","POST",{uuids:[uuid]});assert.equal(lookup.data.profiles[0].cape,"aurora");assert.equal(lookup.data.profiles[0].skin_hash,skinHash);
 assert.deepEqual((await call("/v3/wardrobe/textures/"+skinHash)).data,skin);
 const cape=Buffer.alloc(8192,127);
