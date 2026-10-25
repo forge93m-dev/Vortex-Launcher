@@ -24,7 +24,7 @@ public final class VortexClient implements ClientModInitializer {
     public void onInitializeClient() {
         config = ClientConfig.load(FabricLoader.getInstance().getConfigDir().resolve("vortex-client.json"));
         ClientUi.applyAccent(config.clientAccent);
-        LoggerFactory.getLogger("Vortex Client").info("Vortex Client 0.2.4 initialized. Resource Counter and remembered storage tools; experimental visibility optimization remains disabled.");
+        LoggerFactory.getLogger("Vortex Client").info("Vortex Client 0.2.5 initialized. Resource Counter and remembered storage tools; experimental visibility optimization remains disabled.");
     }
 
     public static void tick(Minecraft minecraft) {

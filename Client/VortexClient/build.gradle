@@ -2,7 +2,7 @@ plugins {
     id 'net.fabricmc.fabric-loom' version '1.17.21'
 }
 
-version = '0.2.4'
+version = '0.2.5'
 group = 'dev.vortex'
 base { archivesName = 'vortex-client-26.3-fabric' }
 repositories { mavenCentral() }
