@@ -50,7 +50,7 @@ internal static class ChromeAndHoverChecks
         var before = card.TranslatePoint(default, scroller)!.Value;
         Hover(window, card, pump);
         var top = card.TranslatePoint(default, scroller)!.Value;
-        Check(card.IsPointerOver && Math.Abs(before.Y-top.Y)<.1 && top.Y>=-.5, "row hover never lifts or clips the top of the collection");
+        Check(card.IsPointerOver && Math.Abs(before.Y-top.Y)<.1 && top.Y>=-.5, "row hover never lifts or clips the top of the collection (over " + card.IsPointerOver + ", before " + before.Y + ", top " + top.Y + ")");
         Check(card.Bounds.Height==156 && card.GetVisualDescendants().OfType<Border>().Any(b=>RoundedClip.GetIsEnabled(b) && b.Clip!=null), "compact cover thumbnails retain an explicit rounded clip");
         window.CaptureRenderedFrame()!.Save(Path.Combine(output, "library-hover-first-row.png"));
         window.MouseMove(new Point(700, 80)); pump(120);
