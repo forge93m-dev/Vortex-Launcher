@@ -106,6 +106,20 @@ public final class AnimatedCapeSmoke {
         byte[] badSize = packed.clone(); java.nio.ByteBuffer.wrap(badSize, 4, 4).putInt(1024);
         fails("too large frame", () -> unpack.invoke(null, (Object) badSize));
 
+        // Saved capes (the wardrobe's collection) keep animated capes too; a forged id still cannot leave the folder.
+        Class<?> storeType = Class.forName("dev.vortex.client.CosmeticCollection", true, target);
+        Class<?> kindType = Class.forName("dev.vortex.client.CosmeticCollection$Kind", true, target);
+        Class<?> entryType = Class.forName("dev.vortex.client.CosmeticCollection$Entry", true, target);
+        Object capeKind = kindType.getEnumConstants()[1];
+        Object store = storeType.getConstructor(Path.class).newInstance(dir.resolve("collection"));
+        Object savedEntry = storeType.getMethod("addCape", byte[].class).invoke(store, (Object) packed);
+        if (!((String) entryType.getMethod("id").invoke(savedEntry)).matches("anim_[a-f0-9]{64}")) throw new AssertionError("A saved animated cape gets an anim_ id");
+        Object reopened = storeType.getConstructor(Path.class).newInstance(dir.resolve("collection"));
+        if (!Arrays.equals(packed, (byte[]) storeType.getMethod("readCape", entryType).invoke(reopened, savedEntry))) throw new AssertionError("A saved animated cape comes back byte for byte");
+        if (((List<?>) storeType.getMethod("entries", kindType).invoke(reopened, capeKind)).stream().noneMatch(e -> { try { return e.equals(savedEntry); } catch (Exception ex) { return false; } })) throw new AssertionError("A saved animated cape is listed after a restart");
+        Object forged = entryType.getConstructor(kindType, String.class).newInstance(capeKind, "anim_../../outside");
+        fails("a forged saved-cape id", () -> storeType.getMethod("readCape", entryType).invoke(reopened, forged));
+
         // GIF: four 128x64 frames at 0.1 s; the delay becomes the speed.
         Object fromGif = unpack.invoke(null, (Object) read.invoke(null, gif(dir, "cape.gif", 128, 64, 10, 0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00)));
         if (((byte[][]) animation.getMethod("frames").invoke(fromGif)).length != 4 || (int) animation.getMethod("frameMs").invoke(fromGif) != 100)

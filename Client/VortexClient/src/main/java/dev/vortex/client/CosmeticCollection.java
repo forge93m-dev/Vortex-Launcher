@@ -60,7 +60,7 @@ public final class CosmeticCollection {
     }
     private Path directory(Kind kind){return root.resolve(kind==Kind.SKIN?"skins":"capes");}
     private Path path(Entry entry) throws Exception {
-        String pattern=entry.kind()==Kind.SKIN?"[a-f0-9]{64}":"(?:custom|hd)_[a-f0-9]{64}";
+        String pattern=entry.kind()==Kind.SKIN?"[a-f0-9]{64}":"(?:custom|hd|anim)_[a-f0-9]{64}";
         if(!entry.id().matches(pattern))throw new IllegalArgumentException("Invalid collection entry.");
         Path path=directory(entry.kind()).resolve(entry.id()+(entry.kind()==Kind.SKIN?".skin":".cape"));
         for(Path p=path;p!=null;p=p.getParent())if(Files.isSymbolicLink(p))throw new IllegalArgumentException("Linked collection folders are not supported.");
@@ -74,7 +74,7 @@ public final class CosmeticCollection {
         try(var files=Files.newDirectoryStream(dir,kind==Kind.SKIN?"*.skin":"*.cape")) {
             for(Path file:files){
                 String name=file.getFileName().toString();String id=name.substring(0,name.lastIndexOf('.'));
-                if(!(kind==Kind.SKIN?id.matches("[a-f0-9]{64}"):id.matches("(?:custom|hd)_[a-f0-9]{64}")))continue;
+                if(!(kind==Kind.SKIN?id.matches("[a-f0-9]{64}"):id.matches("(?:custom|hd|anim)_[a-f0-9]{64}")))continue;
                 var entry=new Entry(kind,id);path(entry);
                 if(!Files.isRegularFile(file,LinkOption.NOFOLLOW_LINKS))continue;
                 result.add(entry);
