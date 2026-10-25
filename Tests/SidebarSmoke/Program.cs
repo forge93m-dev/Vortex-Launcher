@@ -314,9 +314,10 @@ try
     Check(successfulTask.State == "Completed" && successfulTask.Percent == 100, "late progress cannot revive or regress a completed operation");
     downloads.CaptureRenderedFrame()!.Save(Path.Combine(output, "downloads-history.png"));
     downloads.Close();
-    var importPreview = new TaskDialog("Import preview", "Survival\nMinecraft 26.3 · Fabric 0.19.5\nFormat: PolyMC\n\nMods: 12\nResource packs: 2\nWorlds: 1\n\nExisting instances will not be overwritten.", "Import instance");
+    var importPreview = new ImportPreviewWindow(new VortexLauncher.Core.Launch.ArchivePreview("fixture", "PolyMC", "Survival", "26.3", "Fabric", "0.19.5", 12, 2, 0, 1, 80, 90_000_000, 0), true, 200L << 30);
     Preview(importPreview, "import-preview", output);
-    Check(importPreview.GetVisualDescendants().OfType<Button>().Any(b => (b.Content as string) == "Import instance"), "import preview exposes explicit approval");
+    ImportPreviewChecks.Run(importPreview, Pump);
+    Check(importPreview.FindControl<Button>("ImportButton")!.IsEffectivelyVisible && (importPreview.FindControl<Button>("ImportButton")!.Content as string) == "Import instance", "import preview exposes explicit approval");
     importPreview.Close();
     var issueDialog = new TaskDialog("Missing or damaged game component", "A required file could not be read.\n\nWhat to do: try Repair instance. User mods and worlds are preserved.", details: "Exit code: 1\nCaused by: ZipException: invalid LOC header");
     Preview(issueDialog, "launch-error", output);

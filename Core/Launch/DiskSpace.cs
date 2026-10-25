@@ -41,6 +41,18 @@ internal static class DiskSpace
         ValidateAvailable(path, required, available);
     }
 
+    /// <summary>Free bytes on the drive holding <paramref name="path"/>, or null when that cannot be told (network share, no such drive).</summary>
+    internal static long? FreeBytes(string path)
+    {
+        try
+        {
+            string root = Path.GetPathRoot(Path.GetFullPath(path)) ?? "";
+            if (root.Length == 0 || root.StartsWith(@"\\", StringComparison.Ordinal)) return null;
+            return new DriveInfo(root).AvailableFreeSpace;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException) { return null; }
+    }
+
     internal static void ValidateAvailable(string path, long required, long available)
     {
         if (required > available) throw new DiskSpaceException(path, required, available);

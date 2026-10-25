@@ -304,7 +304,8 @@ public partial class MainWindowViewModel : ObservableObject
         try
         {
             var preview = await Task.Run(() => ArchivePreview.Inspect(archivePath));
-            if (!await TaskDialog.ConfirmAsync("Import preview", preview.Summary, "Import instance")) return;
+            long? freeBytes = DiskSpace.FreeBytes(PlatformSupport.DataRoot);
+            if (!await ImportPreviewWindow.ConfirmAsync(preview, !string.IsNullOrWhiteSpace(CurseForgeApiKey), freeBytes)) return;
             operation = DownloadCenter.Begin($"Import: {preview.Name}", cancellation.Cancel);
             StatusMessage = "Importing instance...";
             IsGlobalLoading = true;
