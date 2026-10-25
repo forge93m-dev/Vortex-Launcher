@@ -12,14 +12,23 @@ import java.util.HexFormat;
 public final class CapePixels {
     public static final int SIZE = 64 * 32 * 4;
     public static final int MAX_PACKED = 640 * 1024;
+    /** Animated custom cape: "VCA1", width, height, frames, milliseconds per frame, then one zlib stream of all RGBA frames. */
+    public static final int MAX_ANIMATED = 768 * 1024;
+    public static final int MAX_FRAMES = 32;
     public record Image(int width,int height,byte[] rgba) { }
+    public record Animation(int width,int height,int frameMs,byte[][] frames) { }
+    public static boolean animated(byte[] data) {return data!=null && data.length>=20 && ByteBuffer.wrap(data).getInt()==0x56434131;}
     public static boolean hd(byte[] data) {return data!=null && data.length>=12 && ByteBuffer.wrap(data).getInt()==0x56435032;}
     private CapePixels() { }
     public static String id(byte[] pixels) throws Exception {
-        check(pixels); return (hd(pixels)?"hd:":"custom:") + HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(pixels));
+        check(pixels); return (animated(pixels)?"anim:":hd(pixels)?"hd:":"custom:") + HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(pixels));
     }
     public static void check(byte[] pixels) {
-        if(hd(pixels)) {
+        if(animated(pixels)) {
+            var header=ByteBuffer.wrap(pixels); header.getInt(); int w=header.getInt(),h=header.getInt(),frames=header.getInt(),frameMs=header.getInt();
+            if(pixels.length<24 || pixels.length>MAX_ANIMATED || !(w==64 || w==128 || w==256) || h!=w/2 || frames<2 || frames>MAX_FRAMES || frameMs<50 || frameMs>1000)
+                throw new IllegalArgumentException("Invalid animated cape dimensions, frame count or size.");
+        } else if(hd(pixels)) {
             var header=ByteBuffer.wrap(pixels); header.getInt(); int w=header.getInt(),h=header.getInt();
             if(pixels.length<18 || pixels.length>MAX_PACKED || !dimensions(w,h)) throw new IllegalArgumentException("Invalid HD cape dimensions or size.");
         } else if (pixels == null || pixels.length != SIZE) throw new IllegalArgumentException("Invalid cape image.");
@@ -32,8 +41,44 @@ public final class CapePixels {
         try(var zipped=new java.util.zip.DeflaterOutputStream(output)) {zipped.write(image.rgba());}
         byte[] data=output.toByteArray(); check(data); return data;
     }
+    public static byte[] packAnimation(int width,int height,int frameMs,java.util.List<byte[]> frames) throws Exception {
+        if(!(width==64 || width==128 || width==256) || height!=width/2 || frames.size()<2 || frames.size()>MAX_FRAMES || frameMs<50 || frameMs>1000)
+            throw new IllegalArgumentException("Invalid animated cape dimensions or frame count.");
+        var output=new java.io.ByteArrayOutputStream();
+        output.write(ByteBuffer.allocate(20).putInt(0x56434131).putInt(width).putInt(height).putInt(frames.size()).putInt(frameMs).array());
+        try(var zipped=new java.util.zip.DeflaterOutputStream(output,new java.util.zip.Deflater(9))) {
+            for(byte[] frame:frames) {
+                if(frame.length!=width*height*4) throw new IllegalArgumentException("Invalid animated cape frame.");
+                zipped.write(frame);
+            }
+        }
+        byte[] data=output.toByteArray();
+        // An oversized result is returned as it is so the importer can shrink the frames; saving and uploading check it again.
+        if(data.length<=MAX_ANIMATED) check(data);
+        return data;
+    }
+    public static Animation unpackAnimation(byte[] data) throws Exception {
+        check(data); if(!animated(data)) throw new IllegalArgumentException("Not an animated cape.");
+        var header=ByteBuffer.wrap(data,4,16); int w=header.getInt(),h=header.getInt(),count=header.getInt(),frameMs=header.getInt();
+        int frameSize=w*h*4,expected=frameSize*count;
+        var inflater=new java.util.zip.Inflater();
+        try {
+            inflater.setInput(data,20,data.length-20);
+            byte[] all=new byte[expected+1]; int size=0;
+            while(!inflater.finished() && size<all.length) {
+                int read=inflater.inflate(all,size,all.length-size);
+                if(read==0) break; size+=read;
+            }
+            if(size!=expected || !inflater.finished() || inflater.getRemaining()!=0) throw new IllegalArgumentException("Invalid compressed animated cape pixels.");
+            byte[][] frames=new byte[count][];
+            for(int i=0;i<count;i++) frames[i]=java.util.Arrays.copyOfRange(all,i*frameSize,(i+1)*frameSize);
+            return new Animation(w,h,frameMs,frames);
+        } finally {inflater.end();}
+    }
     public static Image unpack(byte[] data) throws Exception {
-        check(data); if(!hd(data)) return new Image(64,32,data);
+        check(data);
+        if(animated(data)) {var animation=unpackAnimation(data); return new Image(animation.width(),animation.height(),animation.frames()[0]);}
+        if(!hd(data)) return new Image(64,32,data);
         int w=ByteBuffer.wrap(data,4,4).getInt(),h=w/2,expected=w*h*4;
         var inflater=new java.util.zip.Inflater();
         try {
@@ -68,7 +113,7 @@ public final class CapePixels {
         try(var input=Files.newInputStream(path)) { return decode(input.readNBytes(65537)); }
     }
     public static byte[] load(Path path) throws Exception {
-        try(var input=Files.newInputStream(path)) {byte[] pixels=input.readNBytes(MAX_PACKED+1); unpack(pixels); return pixels;}
+        try(var input=Files.newInputStream(path)) {byte[] pixels=input.readNBytes(MAX_ANIMATED+1); unpack(pixels); return pixels;}
     }
     public static void save(Path path, byte[] pixels) throws Exception {
         unpack(pixels);

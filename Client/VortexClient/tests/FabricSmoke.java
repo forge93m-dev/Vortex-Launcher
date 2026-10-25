@@ -62,6 +62,7 @@ public class FabricSmoke {
         Class<?> configType = Class.forName("dev.vortex.client.ClientConfig", true, target);
         Object current = entry.getField("config").get(null);
         CapeSmoke.run(target,Path.of(args[0]));
+        AnimatedCapeSmoke.run(target,Path.of(args[0]));
         Class<?> particleEngine = Class.forName("net.minecraft.client.particle.ParticleEngine", false, target);
         if (java.util.Arrays.stream(particleEngine.getDeclaredMethods()).anyMatch(m -> m.getName().contains("vortex$ambient")))
             throw new AssertionError("Removed particle limiter is still active");

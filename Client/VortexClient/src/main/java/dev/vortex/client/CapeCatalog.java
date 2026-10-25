@@ -28,13 +28,13 @@ public final class CapeCatalog {
         if (texture == null) return null;
         for (var entry : FRAMES.entrySet())
             for (var frame : entry.getValue()) if (frame.equals(texture)) return entry.getValue()[0];
-        return texture;
+        return CapeImages.canonical(texture);
     }
     /** The current frame for a cape given by its first frame; other textures are returned unchanged. */
     public static ClientAsset.Texture current(ClientAsset.Texture texture) {
         if (texture == null) return null;
         for (var entry : FRAMES.entrySet()) if (entry.getValue()[0].equals(texture)) return frame(entry.getKey());
-        return texture;
+        return CapeImages.currentFor(texture);
     }
     private static ClientAsset.Texture frame(String id) {
         var frames = FRAMES.computeIfAbsent(id, key -> {
@@ -51,9 +51,11 @@ public final class CapeCatalog {
         return new ClientAsset.ResourceTexture(Identifier.fromNamespaceAndPath("vortex_client", "capes/" + id),
             Identifier.fromNamespaceAndPath("vortex_client", "textures/capes/" + id + ".png"));
     }
-    public static boolean custom(String id) {return id!=null && id.matches("(?:custom|hd):[a-f0-9]{64}");}
+    public static boolean custom(String id) {return id!=null && id.matches("(?:custom|hd|anim):[a-f0-9]{64}");}
+    /** True when the cape's texture changes over time: a bundled animated cape or an uploaded animated one. */
+    public static boolean changesOverTime(String id) {return animated(id) || CapeImages.animated(id);}
     public static boolean valid(String id) { return "none".equals(id) || custom(id) || animated(id) || TEXTURES.containsKey(id == null ? "" : id); }
-    private static ClientAsset.Texture assetFor(String id) {return custom(id) ? CapeImages.asset(id) : animated(id) ? frame(id) : TEXTURES.get(id == null ? "" : id);}
+    private static ClientAsset.Texture assetFor(String id) {return custom(id) ? CapeImages.current(id) : animated(id) ? frame(id) : TEXTURES.get(id == null ? "" : id);}
     public static Identifier texture(String id) { var asset = assetFor(id); return asset == null ? null : asset.texturePath(); }
     public static PlayerSkin patch(PlayerSkin original, String id) {
         var cape = assetFor(id);

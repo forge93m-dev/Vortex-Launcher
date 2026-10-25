@@ -115,7 +115,9 @@ public final class WardrobeScreen extends Screen {
         button(x+half+4,footer,w-half-4,26,"Cancel",this::cancelSkin,false);
     }
     private void initCape(Layout l) {
-        button(l.listX(),l.y()+49,l.listWidth(),24,"Add cape…",Capes::choosePng,false);
+        int addWidth=(l.listWidth()-4)/2;
+        button(l.listX(),l.y()+49,addWidth,24,"Add cape…",Capes::choosePng,false);
+        button(l.listX()+addWidth+4,l.y()+49,l.listWidth()-addWidth-4,24,"Animated…",Capes::chooseAnimated,false);
         int y=l.y()+l.height()-58,w=l.listWidth(),half=(w-4)/2;
         button(l.listX(),y,half,26,"Apply",()->{
             if(CapeCatalog.custom(pendingCape()) && (selectionBusy || LocalSkins.busy() || Capes.busy())){Capes.message="Wait for the current image operation.";return;}

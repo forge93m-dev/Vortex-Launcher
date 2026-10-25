@@ -1,3 +1,12 @@
+# Prepared, NOT deployed — animated custom capes (2026-10-25)
+
+The cosmetics worker has a new `PUT /v2/animated` route (owner key, same as `/v2/custom`). It stores a `VCA1` envelope
+(width, height, frames 2-32, 50-1000 ms per frame, one zlib stream; at most 768 KiB) in the existing `cape_hd_textures`
+table under the cape id `anim:<sha256>`, and `/v1/lookup` returns such ids only when the client sends `anim:true`.
+No database change is needed. Deploy with `wrangler deploy` (cosmetics worker) before releasing a client that has
+the "Animated…" button; older clients keep working and simply do not see these capes. The accounts worker is not involved:
+animated custom capes use the legacy activation-key path.
+
 # Animated capes — cosmetics worker DEPLOYED 2026-10-25 (version b62e974e); accounts worker NOT yet redeployed
 
 Code and tests are ready; nothing has been deployed. The change adds the cape ids `nebula`, `flow` and `pulse`

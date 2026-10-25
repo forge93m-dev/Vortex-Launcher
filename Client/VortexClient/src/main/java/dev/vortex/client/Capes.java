@@ -49,7 +49,7 @@ public final class Capes {
         String cape = mine ? VortexClient.config.selectedCape : visible.get(player);
         if (cape == null || "none".equals(cape) || !CapeCatalog.valid(cape)) return original;
         // An animated cape's texture changes over time, so it is never served from the per-player cache.
-        if (CapeCatalog.animated(cape)) return CapeCatalog.patch(original, cape);
+        if (CapeCatalog.changesOverTime(cape)) return CapeCatalog.patch(original, cape);
         var old = patched.get(player);
         if (old != null && old.source() == original && cape.equals(old.id())) return old.skin();
         var changed = CapeCatalog.patch(original,cape);
@@ -147,9 +147,12 @@ public final class Capes {
         try {CapeImages.install(id,pixels); patched.clear();}
         catch(Exception error) {message="Could not display cape texture. Vanilla remains available.";}
     }
-    public static void choosePng() {
+    public static void choosePng() {choose(false);}
+    /** Animated cape: a GIF, or a PNG strip with the frames stacked top to bottom. */
+    public static void chooseAnimated() {choose(true);}
+    private static void choose(boolean animatedMode) {
         if(busy()) {message="Wait for the current cape request."; return;}
-        choosing=true; progressMessage="Choose a PNG or JPEG in the file window...";
+        choosing=true; progressMessage=animatedMode?"Choose a GIF or a PNG strip in the file window...":"Choose a PNG, JPEG or GIF in the file window...";
         int version=generation;
         var mc=Minecraft.getInstance();
         boolean shown=CapeFilePicker.show(mc.getWindow().handle(),result->mc.execute(()-> {
@@ -157,13 +160,25 @@ public final class Capes {
             if(version!=generation) return;
             if(result.failed()) {message="Could not open the file picker. Try windowed mode and choose PNG again."; return;}
             if(result.path()==null) {message="Selection cancelled. Nothing uploaded."; return;}
-            importPng(result.path());
+            importPng(result.path(),animatedMode);
         }));
         if(!shown) {choosing=false; message="A file picker is already open.";}
     }
-    private static void importPng(java.nio.file.Path path) {
+    private static void importPng(java.nio.file.Path path,boolean animatedMode) {
         var mc=Minecraft.getInstance(); var parent=mc.gui.screen();
         submit(()-> {
+            if(animatedMode || CapeAnimation.isGif(path)) {
+                byte[] pixels=CapeAnimation.read(path); String id=CapePixels.id(pixels);
+                var wardrobe=parent instanceof WardrobeScreen screen?screen:null;
+                CosmeticCollection.local().addCape(pixels);
+                if(wardrobe==null)CapePixels.save(customFile(),pixels);
+                return ()->{
+                    if(wardrobe!=null){if(mc.gui.screen()==wardrobe)wardrobe.stageCape(pixels);return;}
+                    var keep=new java.util.HashSet<>(visible.values()); keep.add(id); CapeImages.retain(keep);
+                    install(id,pixels); restoredCustom=id;
+                    if(preview(id)) message="Animated cape preview. Click Save online to upload it publicly.";
+                };
+            }
             var source=CapeArtwork.read(path);
             return ()->{if(mc.gui.screen()==parent) mc.gui.setScreen(new CapeCropScreen(parent,source));};
         },true);
@@ -280,7 +295,8 @@ public final class Capes {
         if (!VortexClient.config.capesEnabled || id == null) { message = "Enable capes and choose a valid launch profile first.";ClientNotifications.info("cape-publish-needs-profile","Publish cape","Enable capes and choose a valid launch profile first."); return; }
         var request=PUBLICATION.begin(id,cape);
         submit(() -> {
-            if(AccountWardrobe.connected()){
+            // Animated custom capes are stored by the cosmetics service only (the accounts service does not know them yet).
+            if(AccountWardrobe.connected() && !cape.startsWith("anim:")){
                 byte[] pixels=CapeCatalog.custom(cape)?loadSelection(cape):null;
                 AccountWardrobe.cape(id,cape,pixels);
                 return ()->{message="Cape saved to your Vortex account. No activation code required.";nextPoll=0;

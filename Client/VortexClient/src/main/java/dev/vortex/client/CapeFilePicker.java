@@ -16,8 +16,8 @@ public final class CapeFilePicker {
     // One reusable native callback/filter for the process, not one leaked allocation per dialog.
     // SDL may invoke the callback on any thread; all game changes are marshalled by the caller.
     private static final class Native {
-        static final java.nio.ByteBuffer name=MemoryUtil.memUTF8("Skin / cape image (PNG, JPEG)");
-        static final java.nio.ByteBuffer pattern=MemoryUtil.memUTF8("png;jpg;jpeg");
+        static final java.nio.ByteBuffer name=MemoryUtil.memUTF8("Skin / cape image (PNG, JPEG, GIF)");
+        static final java.nio.ByteBuffer pattern=MemoryUtil.memUTF8("png;jpg;jpeg;gif");
         static final SDL_DialogFileFilter.Buffer filters=SDL_DialogFileFilter.calloc(1);
         static {filters.get(0).name(name).pattern(pattern);}
         static final SDL_DialogFileCallback callback=SDL_DialogFileCallback.create((userdata,files,filter)-> {

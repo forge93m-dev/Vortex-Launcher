@@ -32,7 +32,7 @@ public final class CapeConnection {
     }
     public Map<UUID,String> lookup(List<UUID> ids) throws Exception {
         if (ids.size() > 32) throw new IllegalArgumentException("Too many cape profiles.");
-        var result = request("POST", "v1/lookup", "", Map.of("uuids", ids.stream().map(CapeConnection::id).toList(),"custom",true,"hd",true));
+        var result = request("POST", "v1/lookup", "", Map.of("uuids", ids.stream().map(CapeConnection::id).toList(),"custom",true,"hd",true,"anim",true));
         if (!result.has("capes") || !result.get("capes").isJsonArray() || result.getAsJsonArray("capes").size() > 32)
             throw new IllegalArgumentException("Invalid cape response.");
         var capes = new HashMap<UUID,String>();
@@ -59,16 +59,16 @@ public final class CapeConnection {
         String cape=CapePixels.id(pixels);
         CapePixels.unpack(pixels);
         if(!secret(owner)) throw new IllegalArgumentException("Activate this profile first.");
-        var result=request("PUT",CapePixels.hd(pixels)?"v2/custom":"v1/custom",owner,Map.of("uuid",id(id),"pixels",java.util.Base64.getEncoder().encodeToString(pixels)));
+        var result=request("PUT",CapePixels.animated(pixels)?"v2/animated":CapePixels.hd(pixels)?"v2/custom":"v1/custom",owner,Map.of("uuid",id(id),"pixels",java.util.Base64.getEncoder().encodeToString(pixels)));
         if(!result.has("saved") || !result.get("saved").getAsBoolean() || !cape.equals(result.get("cape").getAsString()))
             throw new IllegalArgumentException("Invalid upload response.");
     }
     public byte[] download(String cape) throws Exception {
         if(!CapeCatalog.custom(cape)) throw new IllegalArgumentException("Invalid custom cape ID.");
-        boolean hd=cape.startsWith("hd:");
+        boolean hd=cape.startsWith("hd:") || cape.startsWith("anim:");
         var builder=HttpRequest.newBuilder(base.resolve((hd?"v2":"v1")+"/textures/"+cape.substring(cape.indexOf(':')+1)))
             .timeout(Duration.ofSeconds(12)).header("Accept","application/octet-stream").GET();
-        var response=send(builder,hd?CapePixels.MAX_PACKED:65536);
+        var response=send(builder,cape.startsWith("anim:")?CapePixels.MAX_ANIMATED:hd?CapePixels.MAX_PACKED:65536);
         byte[] pixels=response.body();
         if(!cape.equals(CapePixels.id(pixels))) throw new IllegalArgumentException("Cape checksum mismatch.");
         CapePixels.unpack(pixels);

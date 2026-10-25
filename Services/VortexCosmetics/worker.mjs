@@ -22,7 +22,7 @@ async function body(request) {
       const {value, done} = await reader.read(); if (done) break;
       size += value.length;
       const route = new URL(request.url).pathname;
-      const limit = route === "/v2/custom" ? 900000 : route === "/v1/custom" ? 12288 : 4096;
+      const limit = route === "/v2/animated" ? 1100000 : route === "/v2/custom" ? 900000 : route === "/v1/custom" ? 12288 : 4096;
       if (size > limit) { await reader.cancel(); throw Object.assign(new Error("Request too large"), {status:413}); }
       chunks.push(value);
     }
@@ -66,6 +66,28 @@ async function validateHd(bytes) {
   } catch {throw Object.assign(new Error("Invalid compressed pixels"),{status:400});}
   finally {reader.releaseLock();}
 }
+// Animated custom cape: "VCA1", width, height, frames, milliseconds per frame (big-endian u32), then a zlib stream of
+// frames*width*height*4 RGBA bytes. Frames are stacked in one stream; every size and count is bounded.
+const ANIMATED_MAX_BYTES=786432;
+async function validateAnimated(bytes) {
+  if(bytes.length<24 || bytes.length>ANIMATED_MAX_BYTES) throw Object.assign(new Error("Invalid animated cape size"),{status:400});
+  const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+  const width=view.getUint32(4),height=view.getUint32(8),frames=view.getUint32(12),frameMs=view.getUint32(16);
+  if(view.getUint32(0)!==0x56434131 || ![64,128,256].includes(width) || height!==width/2 || frames<2 || frames>32 || frameMs<50 || frameMs>1000)
+    throw Object.assign(new Error("Invalid animated cape header"),{status:400});
+  const expected=width*height*4*frames;
+  const reader=new Response(bytes.slice(20)).body.pipeThrough(new DecompressionStream("deflate")).getReader();
+  let total=0;
+  try {
+    for(;;) {
+      const {value,done}=await reader.read(); if(done) break;
+      total+=value.length;
+      if(total>expected) {await reader.cancel(); throw new Error("Too many pixels");}
+    }
+    if(total!==expected) throw new Error("Truncated pixels");
+  } catch {throw Object.assign(new Error("Invalid compressed animated pixels"),{status:400});}
+  finally {reader.releaseLock();}
+}
 export default {
   async fetch(request, env) {
     try {
@@ -81,15 +103,32 @@ export default {
         const ids = [...new Set(value.uuids.map(uuid))];
         if (!ids.length) return json({capes:[]});
         const result = await env.DB.prepare(`SELECT uuid,cape FROM cape_profiles WHERE uuid IN (${ids.map(()=>"?").join(",")}) AND owner_hash IS NOT NULL`).bind(...ids).all();
-        return json({capes:result.results.map(row=>({uuid:row.uuid,cape:CAPES.includes(row.cape) || value.custom === true && /^custom:[a-f0-9]{64}$/.test(row.cape) || value.hd === true && /^hd:[a-f0-9]{64}$/.test(row.cape) ? row.cape:"none"}))});
+        return json({capes:result.results.map(row=>({uuid:row.uuid,cape:CAPES.includes(row.cape) || value.custom === true && /^custom:[a-f0-9]{64}$/.test(row.cape) || value.hd === true && /^hd:[a-f0-9]{64}$/.test(row.cape) || value.anim === true && /^anim:[a-f0-9]{64}$/.test(row.cape) ? row.cape:"none"}))});
       }
       if (/^\/v2\/textures\/[a-f0-9]{64}$/.test(path) && request.method === "GET") {
         const found=await env.DB.prepare("SELECT pixels FROM cape_hd_textures WHERE hash=? LIMIT 1").bind(path.slice("/v2/textures/".length)).all();
         if(!found.results.length) return json({error:"Texture not found"},404);
         const bytes=Uint8Array.from(atob(found.results[0].pixels),c=>c.charCodeAt(0));
-        if(bytes.length>655360) return json({error:"Texture unavailable"},503);
+        if(bytes.length>ANIMATED_MAX_BYTES) return json({error:"Texture unavailable"},503);
         return new Response(bytes,{headers:{"Content-Type":"application/octet-stream","Content-Length":String(bytes.length),
           "Cache-Control":"public, max-age=300","X-Content-Type-Options":"nosniff","Content-Security-Policy":"default-src 'none'"}});
+      }
+      if(path === "/v2/animated" && request.method === "PUT") {
+        const token=request.headers.get("Authorization")?.match(/^Bearer ([a-f0-9]{64})$/)?.[1];
+        if(!key(token)) return json({error:"Activation required"},401);
+        const value=await body(request),id=uuid(value.uuid),owner=await digest(token);
+        if(!id || typeof value.pixels!=="string" || value.pixels.length>1048580 || value.pixels.length%4 || !/^[A-Za-z0-9+/]*={0,2}$/.test(value.pixels)) return json({error:"Invalid animated envelope"},400);
+        const profile=await env.DB.prepare("SELECT owner_hash FROM cape_profiles WHERE uuid=?").bind(id).all();
+        if(profile.results[0]?.owner_hash!==owner) return json({error:"This key cannot change that profile"},403);
+        const bytes=Uint8Array.from(atob(value.pixels),c=>c.charCodeAt(0));
+        if(encode64(bytes)!==value.pixels) return json({error:"Invalid encoding"},400);
+        await validateAnimated(bytes);
+        const hash=[...new Uint8Array(await crypto.subtle.digest("SHA-256",bytes))].map(n=>n.toString(16).padStart(2,"0")).join(""),cape="anim:"+hash;
+        const results=await env.DB.batch([
+          env.DB.prepare("INSERT INTO cape_hd_textures(uuid,hash,pixels) SELECT uuid,?,? FROM cape_profiles WHERE uuid=? AND owner_hash=? ON CONFLICT(uuid) DO UPDATE SET hash=excluded.hash,pixels=excluded.pixels").bind(hash,value.pixels,id,owner),
+          env.DB.prepare("UPDATE cape_profiles SET cape=?,updated=? WHERE uuid=? AND owner_hash=?").bind(cape,Date.now(),id,owner)
+        ]);
+        return results[1].meta.changes===1 ? json({saved:true,cape}) : json({error:"This key cannot change that profile"},403);
       }
       if(path === "/v2/custom" && request.method === "PUT") {
         const token=request.headers.get("Authorization")?.match(/^Bearer ([a-f0-9]{64})$/)?.[1];

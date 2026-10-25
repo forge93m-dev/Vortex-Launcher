@@ -94,10 +94,31 @@ for(const malformed of [hdEnvelope(2048,1024),hdEnvelope(64,32,8193),hdEnvelope(
   assert.equal((await call("/v2/custom","PUT",{uuid:id,pixels:malformed.toString("base64")},owner)).status,400);
 }
 assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM cape_hd_textures WHERE uuid=?").get(id).n,1);
+// Animated custom capes: VCA1 header + zlib frames, bounded in size, frame count, speed and exact pixel count.
+function animEnvelope(width=128,height=64,frames=8,frameMs=100,length=width*height*4*frames) {
+  const header=Buffer.alloc(20); header.writeUInt32BE(0x56434131,0); header.writeUInt32BE(width,4); header.writeUInt32BE(height,8);
+  header.writeUInt32BE(frames,12); header.writeUInt32BE(frameMs,16);
+  return Buffer.concat([header,deflateSync(Buffer.alloc(length,63))]);
+}
+const anim=animEnvelope();
+assert.equal((await call("/v2/animated","PUT",{uuid:id,pixels:anim.toString("base64")},otherOwner)).status,403);
+const animUpload=await call("/v2/animated","PUT",{uuid:id,pixels:anim.toString("base64")},owner);
+assert.equal(animUpload.status,200); assert.match(animUpload.value.cape,/^anim:[a-f0-9]{64}$/);
+assert.equal((await call("/v1/lookup","POST",{uuids:[id],custom:true,hd:true})).value.capes[0].cape,"none"); // older clients never see ids they do not know
+assert.equal((await call("/v1/lookup","POST",{uuids:[id],custom:true,hd:true,anim:true})).value.capes[0].cape,animUpload.value.cape);
+const animResponse=await service.fetch(new Request("https://fixture.test/v2/textures/"+animUpload.value.cape.slice(5)),env);
+assert.equal(animResponse.status,200); assert.deepEqual(Buffer.from(await animResponse.arrayBuffer()),anim);
+for(const malformed of [animEnvelope(128,64,1),animEnvelope(128,64,33),animEnvelope(128,64,8,10),animEnvelope(128,64,8,5000),animEnvelope(512,256,8),animEnvelope(128,32,8),
+    animEnvelope(128,64,8,100,128*64*4*8-1),animEnvelope(128,64,8,100,128*64*4*9),anim.subarray(0,anim.length-1),Buffer.concat([anim,Buffer.from([0])]),Buffer.concat([Buffer.from([0]),anim.subarray(1)])]) {
+  assert.equal((await call("/v2/animated","PUT",{uuid:id,pixels:malformed.toString("base64")},owner)).status,400);
+}
+assert.equal((await call("/v2/animated","PUT",{uuid:id,pixels:"A".repeat(1048584)},owner)).status,400); // over the envelope bound
+assert.equal((await call("/v2/animated","PUT",{uuid:id,pixels:"A".repeat(1200000)},owner)).status,413); // oversized request body
+assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM cape_hd_textures WHERE uuid=?").get(id).n,1);
 assert.equal((await call("/v1/cape","PUT",{uuid:id,cape:"none"},owner)).status,200);
 let last;
 for(let i=0;i<121;i++) last=await call("/v1/lookup","POST",{uuids:[]},null,"rate-fixture");
 assert.equal(last.status,429);
 assert.equal((await service.fetch(new Request("https://fixture.test/v1/lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}),{})).status,503);
 sql.close();
-console.log("COSMETICS_SERVICE_OK: SQLite schema, profile enrollment, owner-only catalogue/custom/HD updates, bounded exact HD decompression, truncation/trailing-data rejection, replacement, backwards compatibility and no key disclosure");
+console.log("COSMETICS_SERVICE_OK: SQLite schema, profile enrollment, owner-only catalogue/custom/HD updates, bounded exact HD decompression, animated custom capes (header/size/frame/speed bounds, exact pixels, hidden from older clients), truncation/trailing-data rejection, replacement, backwards compatibility and no key disclosure");
