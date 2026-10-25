@@ -15,7 +15,7 @@ public final class CapeCropScreen extends Screen {
     private final Screen parent;
     private CapeArtwork.Source source;
     private final CapeAnimation.Clip clip;
-    private int quality=128,shownFrame=-1;
+    private int quality=512,shownFrame=-1;
     private double zoom=1,panX,panY;
     private boolean fit=true,dirty=true;
     private boolean textureMode;
@@ -50,7 +50,7 @@ public final class CapeCropScreen extends Screen {
         addRenderableWidget(new ClientUi.Slider(cx,y+144,cw,"Vertical",-1,1,panY,v->Math.round(v*100)+"%",v->{panY=v; dirty=true;},()->{})).active=!textureMode;
         int by=y+l.height()-30;
         if(clip!=null) addRenderableWidget(new ClientUi.ActionButton(cx,y+186,cw,20,Component.literal("Cape size: "+quality+" wide"),b->{
-            quality=quality==128?256:quality==256?512:128; rebuildWidgets();
+            quality=quality==512?256:quality==256?128:512; rebuildWidgets();
         }));
         addRenderableWidget(new ClientUi.ActionButton(l.x()+12,by,70,22,Component.literal("Reset"),b->{zoom=1;panX=panY=0;fit=true;textureMode=false;dirty=true;rebuildWidgets();}));
         addRenderableWidget(new ClientUi.ActionButton(l.x()+86,by,70,22,Component.literal("Cancel"),b->onClose()));
