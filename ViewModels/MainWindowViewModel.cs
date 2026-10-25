@@ -192,10 +192,10 @@ public partial class MainWindowViewModel : ObservableObject
     private string _jvmArgs = "-XX:+UseG1GC -XX:+UnlockExperimentalVMOptions";
 
     [ObservableProperty]
-    private string _accentColor = "#D7F36A";
+    private string _accentColor = "#A78BFA";
 
     [ObservableProperty]
-    private string _themeName = "Graphite";
+    private string _themeName = "Midnight";
 
     [ObservableProperty]
     private bool _isStartupGreetingVisible = true;
@@ -247,6 +247,7 @@ public partial class MainWindowViewModel : ObservableObject
                 else Dispatcher.UIThread.Post(ApplyLoadingState);
             });
 
+        ThemePresets.Add(new ThemePresetViewModel("Midnight", "#A78BFA", "#15161C", "#1D1F27", "#252833", "#2E3140", "#ECEDF3", "#A0A4B3"));
         ThemePresets.Add(new ThemePresetViewModel("Graphite", "#D7F36A", "#101214", "#15181B", "#1D2125", "#2E3439", "#F0F2EE", "#9BA49E"));
         ThemePresets.Add(new ThemePresetViewModel("Soft Slate", "#8BA8D8", "#181C24", "#1E232D", "#252B36", "#394353", "#E2E6EF", "#A4AFC2"));
         ThemePresets.Add(new ThemePresetViewModel("Tokyo Night", "#7AA2F7", "#131722", "#191E2B", "#202636", "#344059", "#DFE6F3", "#A0ADC4"));
@@ -368,7 +369,14 @@ public partial class MainWindowViewModel : ObservableObject
         CustomJavaPath = settings.CustomJavaPath;
         JvmArgs = settings.JvmArguments;
         ThemeName = settings.ThemeName;
-        AccentColor = string.IsNullOrWhiteSpace(settings.AccentColor) ? "#D7F36A" : settings.AccentColor;
+        AccentColor = string.IsNullOrWhiteSpace(settings.AccentColor) ? "#A78BFA" : settings.AccentColor;
+        // Players still on the untouched pre-0.2.6 default move to the new default look;
+        // any customised theme or accent is kept.
+        if (ThemeName == "Graphite" && string.Equals(AccentColor, "#D7F36A", StringComparison.OrdinalIgnoreCase))
+        {
+            ThemeName = "Midnight";
+            AccentColor = "#A78BFA";
+        }
         var preset = ThemePresets.FirstOrDefault(x => x.Name == ThemeName) ?? ThemePresets[0];
         ThemeManager.SetTheme(preset.Name, AccentColor, preset.Background, preset.Sidebar,
             preset.Panel, preset.Border, preset.Text, preset.Subtext);

@@ -15,10 +15,10 @@ internal static class AlignmentSettingsChecks
     private static readonly string[] Sections = { "settingsAppearance", "settingsGame", "settingsJava", "settingsUpdates" };
     internal static void Run(MainWindow window, SidebarFixture fixture, Action<int> pump, string output)
     {
-        fixture.Select("Instances"); window.MouseMove(new Point(10,120)); pump(250);
+        fixture.Select("Instances"); window.MouseMove(new Point(500,120)); pump(250);
         foreach(var size in new[]{new Size(960,600),new Size(1280,800)})
         {
-            window.Width=size.Width; window.Height=size.Height; pump(80);
+            window.Width=size.Width; window.Height=size.Height; GameLibraryChecks.Switcher(window).IsChecked=true; pump(80);
             var search=window.FindControl<TextBox>("librarySearch")!;
             var watermark=search.GetVisualDescendants().OfType<TextBlock>().Single(t=>t.Name=="PART_Watermark");
             CenterY(watermark,search,"search watermark");
@@ -36,6 +36,7 @@ internal static class AlignmentSettingsChecks
                 Check(Math.Abs(point.X-button.Bounds.Width/2)<=1,"icon button horizontal center");
             }
             window.CaptureRenderedFrame()!.Save(System.IO.Path.Combine(output,$"alignment-library-{(int)size.Width}.png"));
+            GameLibraryChecks.Switcher(window).IsChecked=false; pump(40);
         }
         var favorite=window.GetVisualDescendants().OfType<Button>().Single(b=>AutomationProperties.GetName(b)=="Toggle favorite");
         var wasFavorite=fixture.Library.SelectedInstance!.IsFavorite;
@@ -68,7 +69,7 @@ internal static class AlignmentSettingsChecks
         Check(attachments==0 && detachments==0,"rapid settings navigation never detaches/rebuilds section controls");
         Check(java.Text=="-Xmx4G -Dfixture=true" && fixture.JvmArgs==java.Text,"editing settings survives rapid category changes");
         java.Text=original;pump(20);
-        window.MouseMove(new Point(10,120));pump(220);
+        window.MouseMove(new Point(500,120));pump(220);
         foreach(var tab in headers.Where(t=>!t.IsSelected))
         {
             var chrome=tab.GetVisualDescendants().OfType<Border>().Single(b=>b.Name=="WorkspaceTabChrome");

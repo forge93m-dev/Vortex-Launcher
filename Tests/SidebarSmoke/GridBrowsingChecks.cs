@@ -13,7 +13,8 @@ internal static class GridBrowsingChecks
     {
         var fixture = new SidebarFixture(500);
         var window = new MainWindow { DataContext = fixture, Width = 1280, Height = 800 };
-        window.Show(); pump(250);
+        window.Show(); pump(100);
+        GameLibraryChecks.Switcher(window).IsChecked = true; pump(150);
         var grid = window.FindControl<InstanceTileGrid>("instanceCards")!;
         var scroll = grid.GetVisualDescendants().OfType<ScrollViewer>().First();
         Border[] Tiles() => grid.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("LibraryTile")).ToArray();
@@ -33,6 +34,7 @@ internal static class GridBrowsingChecks
         Point point = play.TranslatePoint(new Point(play.Bounds.Width / 2, play.Bounds.Height / 2), window)!.Value;
         window.MouseDown(point, MouseButton.Left); window.MouseUp(point, MouseButton.Left); pump(30);
         Check(fixture.LaunchCount == 1 && ReferenceEquals(fixture.LastLaunched, tile.DataContext), "Play on a tile launches that exact instance");
+        Check(GameLibraryChecks.Switcher(window).IsChecked == true, "tile buttons act without closing the open collection");
         grid.Focus();
         window.KeyPress(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, ""); window.KeyRelease(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, ""); pump(80);
         Check(grid.SelectedIndex == grid.Columns, "Down selects the next grid row, not the next tile");

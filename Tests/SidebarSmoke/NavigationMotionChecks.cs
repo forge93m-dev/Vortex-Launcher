@@ -10,7 +10,7 @@ internal static class NavigationMotionChecks
 {
     internal static void Run(MainWindow window, SidebarFixture fixture, Action<int> pump, string output)
     {
-        fixture.Select("Instances"); window.MouseMove(new Point(10, 120)); pump(250);
+        fixture.Select("Instances"); window.MouseMove(new Point(500, 120)); pump(250);
         foreach (var name in new[] { "libraryNav", "modpacksNav", "profilesNav", "settingsNav" })
         {
             var button = window.FindControl<Button>(name)!;
@@ -18,7 +18,7 @@ internal static class NavigationMotionChecks
             var bounds = button.Bounds;
             Check(Math.Abs(hover.Bounds.Height - button.Bounds.Height) < .01 && Math.Abs(hover.Bounds.Width - button.Bounds.Width) < .01, "vertical highlight fills the entire navigation strip");
             var indicator = Part(button, "NavIndicator");
-            Check(indicator.Height == 2 && Math.Abs(indicator.Bounds.Width - button.Bounds.Width) < .01, "horizontal underline spans the tab width");
+            Check(indicator.Width == 3 && indicator.HorizontalAlignment == Avalonia.Layout.HorizontalAlignment.Left && indicator.Bounds.Height >= button.Bounds.Height / 2, "vertical marker sits on the rail item's left edge");
             var label = button.GetVisualDescendants().OfType<TextBlock>().Single();
             var labelPosition = label.TranslatePoint(default, window)!.Value;
             var point = button.TranslatePoint(new Point(button.Bounds.Width / 2, button.Bounds.Height / 2), window)!.Value;
@@ -38,11 +38,11 @@ internal static class NavigationMotionChecks
             var pageName=name switch { "libraryNav"=>"instancesPage", "modpacksNav"=>"modpacksPage", "profilesNav"=>"accountsPage", _=>"settingsPage" };
             var page=window.FindControl<Grid>(pageName)!;
             if(name!="libraryNav") Check(page.IsEffectivelyVisible && page.Opacity>.81 && page.Opacity<1, "opening a new tab has a visible fade without a blank frame");
-            Check(indicator.Opacity == 1 && window.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("LibraryNav") && !b.Classes.Contains("active")).All(b => Part(b, "NavIndicator").Opacity == 0), "only the selected tab has a visible underline");
+            Check(indicator.Opacity == 1 && window.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("LibraryNav") && !b.Classes.Contains("active")).All(b => Part(b, "NavIndicator").Opacity == 0), "only the selected rail item has a visible marker");
             pump(220);
             Check(page.Opacity==1 && hover.RenderTransform!.Value.IsIdentity, "tab opening and press release both settle cleanly");
             window.CaptureRenderedFrame()!.Save(Path.Combine(output, "navigation-full-height-" + name + ".png"));
-            window.MouseMove(new Point(10, 120)); pump(200); Check(Math.Abs(hover.Opacity - .6) < .01, "selected tab keeps its subtle full-height highlight");
+            window.MouseMove(new Point(500, 120)); pump(200); Check(Math.Abs(hover.Opacity - .6) < .01, "selected tab keeps its subtle full-height highlight");
             fixture.Select(name == "libraryNav" ? "Settings" : "Instances"); pump(220);
             Check(hover.Opacity == 0, "inactive tab highlight fades out cleanly");
             Check(indicator.Opacity == 0, "outgoing underline disappears without a duplicate");

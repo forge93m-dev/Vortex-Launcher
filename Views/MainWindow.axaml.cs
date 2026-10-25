@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
@@ -10,6 +11,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using VortexLauncher.Models;
 using VortexLauncher.ViewModels;
 
@@ -54,6 +56,51 @@ public partial class MainWindow : Window
         Height = 800;
         MinHeight = 600;
         foreach (var tab in new[] { libraryNav, modpacksNav, profilesNav, settingsNav }) tab.Click += (_, _) => HideInstanceWorkspace();
+        libraryBrowser.PropertyChanged += (_, e) =>
+        {
+            // Effective visibility and tile layout settle after this change, so start on the next pass.
+            if (e.Property == IsVisibleProperty && libraryBrowser.IsVisible)
+                Dispatcher.UIThread.Post(AnimateCollectionOpening, DispatcherPriority.Loaded);
+        };
+        librarySelection.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == ContentControl.ContentProperty && e.NewValue != null)
+                Dispatcher.UIThread.Post(AnimateFeaturedCover, DispatcherPriority.Loaded);
+        };
+    }
+
+    // The collection opens top to bottom: heading, filters, then the visible tiles one after another.
+    private void AnimateCollectionOpening()
+    {
+        if (!libraryBrowser.IsEffectivelyVisible) return;
+        var tiles = instanceCards.GetVisualDescendants().OfType<Border>()
+            .Where(tile => tile.Classes.Contains("LibraryTile") && tile.IsEffectivelyVisible)
+            .Select(tile => (tile, at: tile.TranslatePoint(default, instanceCards) ?? default))
+            .Where(item => item.at.Y < instanceCards.Bounds.Height)
+            .OrderBy(item => item.at.Y).ThenBy(item => item.at.X)
+            .Take(12).Select(item => item.tile).ToArray();
+        if (tiles.Length == 0)
+        {
+            _ = UiMotion.RiseAsync(libraryBrowser, default, 18, duration: 220);
+            return;
+        }
+        _ = UiMotion.RiseAsync(browserHeader, default, 10, duration: 220);
+        _ = UiMotion.RiseAsync(browserFilters, default, 10, delay: 40, duration: 220);
+        for (int i = 0; i < tiles.Length; i++)
+            _ = UiMotion.RiseAsync(tiles[i], default, 16, delay: 70 + i * 30, duration: 260);
+    }
+
+    // A newly featured instance: the cover cross-fades in and its title card rises after it.
+    private void AnimateFeaturedCover()
+    {
+        Control? cover = null, card = null;
+        foreach (var border in librarySelection.GetVisualDescendants().OfType<Border>())
+        {
+            if (border.Name == "heroCover") cover = border;
+            else if (border.Name == "selectedInstanceBar") card = border;
+        }
+        if (cover != null) _ = UiMotion.RiseAsync(cover, default, 0, fromOpacity: .45, duration: 320);
+        if (card != null) _ = UiMotion.RiseAsync(card, default, 14, delay: 60, duration: 260);
     }
 
     private void OnQuickProfileClick(object? sender, RoutedEventArgs e)
@@ -84,6 +131,7 @@ public partial class MainWindow : Window
     private void OnWindowOpened(object? sender, EventArgs e)
     {
         if (DataContext is MainWindowViewModel startup) _ = startup.InitializeAsync();
+        if (startupOverlay.IsVisible) _ = UiMotion.RiseAsync(startupGreeting, default, 22, duration: 420);
 
         _ = HideStartupGreetingAsync();
     }
@@ -93,6 +141,8 @@ public partial class MainWindow : Window
         if (DataContext is MainWindowViewModel startup) await startup.InitializeAsync();
         await Task.Delay(120);
         startupOverlay.Opacity = 0;
+        // The launcher settles into place while the greeting fades away above it.
+        _ = UiMotion.RiseAsync(mainShell, default, 12, fromOpacity: .6, duration: 340);
         await Task.Delay(250);
         if (DataContext is MainWindowViewModel viewModel)
             viewModel.IsStartupGreetingVisible = false;
@@ -264,6 +314,23 @@ public partial class MainWindow : Window
             e.Handled = true;
             ShowInstanceMenu(card, instance, vm);
         }
+    }
+
+    private void OnFeaturedPlayClick(object? sender, RoutedEventArgs e) => UiMotion.Pulse(playPulse);
+
+    // Choosing a tile features it on the cover; arrow-key browsing keeps the collection open.
+    private void OnInstanceTileTapped(object? sender, TappedEventArgs e)
+    {
+        if (e.Source is Control source && (source is Button || source.GetVisualAncestors().OfType<Button>().Any())) return;
+        instanceSwitcher.IsChecked = false;
+    }
+
+    private void OnLibraryBrowserKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape || instanceSwitcher.IsChecked != true) return;
+        instanceSwitcher.IsChecked = false;
+        instanceSwitcher.Focus();
+        e.Handled = true;
     }
 
     private void ShowInstanceMenu(Control anchor, InstanceModel instance, MainWindowViewModel vm)

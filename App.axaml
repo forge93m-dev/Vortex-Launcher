@@ -48,11 +48,19 @@
             <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
         </Style>
+        <Style Selector="FlyoutPresenter">
+            <Setter Property="Background" Value="{DynamicResource ThemePanelBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="views:PopupMotion.IsEnabled" Value="True" />
+        </Style>
         <Style Selector="MenuFlyoutPresenter">
             <Setter Property="Background" Value="{DynamicResource ThemePanelBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="CornerRadius" Value="16" />
             <Setter Property="Padding" Value="6" />
             <Setter Property="MinWidth" Value="210" />
             <Setter Property="views:PopupMotion.IsEnabled" Value="True" />
@@ -104,17 +112,18 @@
         <StyleInclude Source="avares://Vortex Launcher/Styles/Workspace.axaml" />
     </Application.Styles>
     <Application.Resources>
-        <Color x:Key="AccentColor">#D7F36A</Color>
+        <Color x:Key="AccentColor">#A78BFA</Color>
         <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
-        <SolidColorBrush x:Key="AccentHoverBrush" Color="#E6FF91" />
-        <SolidColorBrush x:Key="AccentSoftBrush" Color="#26D7F36A" />
-        <SolidColorBrush x:Key="AccentForegroundBrush" Color="#18200B" />
-        <SolidColorBrush x:Key="ThemeBackgroundBrush" Color="#101214" />
-        <SolidColorBrush x:Key="ThemeSidebarBrush" Color="#15181B" />
-        <SolidColorBrush x:Key="ThemePanelBrush" Color="#1D2125" />
-        <SolidColorBrush x:Key="ThemeBorderBrush" Color="#2E3439" />
-        <SolidColorBrush x:Key="ThemeTextBrush" Color="#F0F2EE" />
-        <SolidColorBrush x:Key="ThemeSubtextBrush" Color="#9BA49E" />
+        <SolidColorBrush x:Key="AccentHoverBrush" Color="#BFA3FF" />
+        <SolidColorBrush x:Key="AccentSoftBrush" Color="#26A78BFA" />
+        <SolidColorBrush x:Key="AccentForegroundBrush" Color="#000000" />
+        <SolidColorBrush x:Key="ThemeBackgroundBrush" Color="#15161C" />
+        <SolidColorBrush x:Key="ThemeGlassBrush" Color="#D915161C" />
+        <SolidColorBrush x:Key="ThemeSidebarBrush" Color="#1D1F27" />
+        <SolidColorBrush x:Key="ThemePanelBrush" Color="#252833" />
+        <SolidColorBrush x:Key="ThemeBorderBrush" Color="#2E3140" />
+        <SolidColorBrush x:Key="ThemeTextBrush" Color="#ECEDF3" />
+        <SolidColorBrush x:Key="ThemeSubtextBrush" Color="#A0A4B3" />
         <SolidColorBrush x:Key="ModrinthBg" Color="#111217" />
         <SolidColorBrush x:Key="ModrinthPanel" Color="#161822" />
         <SolidColorBrush x:Key="ModrinthBorder" Color="#222636" />

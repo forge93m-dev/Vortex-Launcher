@@ -68,7 +68,7 @@ internal static class WorkspaceMotionChecks
             {
                 pump(16);
                 var visiblePages=window.GetVisualDescendants().OfType<Control>().Where(c=>SurfaceMotion.GetKind(c)!="" && c.IsEffectivelyVisible).ToArray();
-                Check(visiblePages.All(c=>c.Opacity>=(SurfaceMotion.GetKind(c)=="Page"?.819:.939) && (c.RenderTransform==null || c.RenderTransform.Value.IsIdentity)), "transition frame stays readable and stationary: "+tab+"/"+frame);
+                Check(visiblePages.All(c=>c.Opacity>=(SurfaceMotion.GetKind(c)=="Page"?.819:.939) && (c.RenderTransform==null || c.RenderTransform.Value.IsIdentity || SlidesSideways(c))), "transition frame stays readable and at most slides a short way sideways: "+tab+"/"+frame);
                 Check(visiblePages.Where(UiMotion.IsRunning).All(c=>!c.GetVisualAncestors().OfType<Control>().Any(UiMotion.IsRunning)), "transition frame has one animation per visual branch");
                 var inactiveNav=window.GetVisualDescendants().OfType<Button>().Where(b=>b.Classes.Contains("LibraryNav") && !b.Classes.Contains("active"));
                 Check(inactiveNav.All(b=>b.GetVisualDescendants().OfType<Border>().Where(n=>n.Name=="NavChrome").All(n=>n.BorderBrush is not ISolidColorBrush brush || brush.Color.A==0)), "old navigation underline disappears without a second active tab");
@@ -79,6 +79,11 @@ internal static class WorkspaceMotionChecks
         pump(220);
         Check(UiMotion.ActiveCount==0, "rapid tab changes drain without queued or perpetual effects");
         Console.WriteLine("WORKSPACE_MOTION_UI_OK");
+    }
+    private static bool SlidesSideways(Control page)
+    {
+        var m = page.RenderTransform!.Value;
+        return SurfaceMotion.GetKind(page)=="Page" && m.M11==1 && m.M22==1 && m.M12==0 && m.M21==0 && m.M32==0 && m.M31>=0 && m.M31<=UiMotion.PageSlide+.01;
     }
     private static void Check(bool condition,string message){if(!condition)throw new Exception("FAIL: "+message);Console.WriteLine("PASS: "+message);}
 }

@@ -19,6 +19,9 @@
 		<AvaloniaResource Include="Assets/Branding/vortex-icon-v1.ico" />
 		<AvaloniaResource Include="Assets/Branding/vortex-icon-v1.png" />
 		<AvaloniaResource Include="Assets/Capes/*.png" />
+		<!-- Nunito (SIL Open Font License 1.1); the license travels with the fonts. -->
+		<AvaloniaResource Include="Assets/Fonts/*.ttf" />
+		<AvaloniaResource Include="Assets/Fonts/OFL.txt" />
 		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-26.3-fabric-0.2.2.jar" LogicalName="VortexLauncher.Client.vortex-client-26.3-fabric-0.2.2.jar" />
 		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-26.2-fabric-0.2.2.jar" LogicalName="VortexLauncher.Client.vortex-client-26.2-fabric-0.2.2.jar" />
 		<EmbeddedResource Include="Client/VortexClient/dist/vortex-client-26.1.2-fabric-0.2.2.jar" LogicalName="VortexLauncher.Client.vortex-client-26.1.2-fabric-0.2.2.jar" />

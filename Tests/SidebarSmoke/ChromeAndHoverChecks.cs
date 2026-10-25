@@ -42,7 +42,8 @@ internal static class ChromeAndHoverChecks
 
         var fixture = new SidebarFixture(36);
         var window = new MainWindow { DataContext = fixture, Width = 960, Height = 600 };
-        window.Show(); pump(550);
+        window.Show(); pump(400);
+        GameLibraryChecks.Switcher(window).IsChecked = true; pump(150);
         Check(window.Content is Border root && RoundedClip.GetIsEnabled(root) && root.Clip != null, "main window uses the rounded content clip");
         var scroller = window.FindControl<InstanceTileGrid>("instanceCards")!.GetVisualDescendants().OfType<ScrollViewer>().First();
         var card = VisibleCards(window, scroller).OrderBy(c => c.TranslatePoint(default, scroller)!.Value.Y).First();

@@ -36,6 +36,16 @@ internal static class MotionRegressionChecks
         pump(30); UiMotion.Enabled = false; pump(40);
         Check(interrupted.IsCompletedSuccessfully && UiMotion.ActiveCount == 0 && Math.Abs(parent.Opacity - .72) < .001, "disabling motion stops in-flight work and preserves the visual state");
         UiMotion.Enabled = true;
+        var rise = UiMotion.RiseAsync(parent, default, 18); pump(30);
+        Check(ReferenceEquals(parent.RenderTransform, transform), "rising entrances only fade surfaces that already carry a transform");
+        pump(400);
+        Check(rise.IsCompletedSuccessfully && Math.Abs(parent.Opacity - .72) < .001 && ReferenceEquals(parent.RenderTransform, transform), "a rising entrance restores bound opacity and the original transform");
+        var menu = new Border { Width = 120, Height = 60, Background = Brushes.White };
+        host.Content = menu; pump(40);
+        var grow = UiMotion.GrowAsync(menu, default); pump(40);
+        Check(menu.RenderTransform is ScaleTransform { ScaleX: < 1 } && menu.Opacity < 1, "menus grow slightly into place while they fade in");
+        pump(300);
+        Check(grow.IsCompletedSuccessfully && menu.RenderTransform == null && menu.Opacity == 1, "a grown menu ends at its exact size");
         host.Close(); pump(40);
         Console.WriteLine("MOTION_REGRESSION_OK");
     }

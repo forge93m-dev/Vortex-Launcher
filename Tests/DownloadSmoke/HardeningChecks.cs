@@ -35,6 +35,15 @@ internal static class HardeningChecks
         foreach (string evil in new[] { "../outside.jar", "net/../../outside.jar", "/absolute.jar", "C:/evil.jar", @"..\outside.jar" })
             Check(ForgeService.ResolveInside(libraries, evil) == null, "unsafe Forge installer path is rejected: " + evil);
 
+        // The long Forge installer run reports readable stages from its real output.
+        Check(ForgeService.InstallerStage("  MainClass: net.minecraftforge.installertools.ConsoleTool") == "Forge 1/4: preparing mappings...", "Forge mapping stage is named");
+        Check(ForgeService.InstallerStage("  MainClass: net.minecraftforge.jarsplitter.ConsoleTool") == "Forge 2/4: splitting the game files...", "Forge splitting stage is named");
+        Check(ForgeService.InstallerStage("  MainClass: net.minecraftforge.fart.Main")!.StartsWith("Forge 3/4: remapping"), "Forge remapping stage is named");
+        Check(ForgeService.InstallerStage("  MainClass: net.minecraftforge.binarypatcher.ConsoleTool") == "Forge 4/4: applying Forge patches...", "Forge patching stage is named");
+        Check(ForgeService.InstallerStage("Injecting profile") == "Forge: finishing setup...", "Forge finishing stage is named");
+        Check(new[] { "  Patching net/minecraft/world/item/Items$1 1/1", "Cant Find Class: org/slf4j/Logger", "  net/minecraft/util/thread/ProcessorMailbox.class", "Task: MERGE_MAPPING", "" }
+            .All(line => ForgeService.InstallerStage(line) == null), "per-file installer output does not flood the progress text");
+
         // Modrinth requires an identifying User-Agent with the real version.
         Check(ModrinthService.UserAgent.Contains("Vortex-Launcher/") && !ModrinthService.UserAgent.Contains("/1.0.0 "), "Modrinth User-Agent carries the launcher version");
 

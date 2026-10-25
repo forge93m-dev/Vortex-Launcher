@@ -46,6 +46,11 @@ if (args.Contains("--native-preview"))
 AppBuilder.Configure<VortexLauncher.App>().UseSkia()
     .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
     .SetupWithoutStarting();
+if (args.Length >= 3 && args[0] == "--benchmark-create")
+{
+    RealCreateBenchmark.Run(args[1], args[2], args.Contains("client"), Pump);
+    return;
+}
 ThemeManager.SetTheme("Test", "#F5C2E7", "#11111B", "#181825", "#1E1E2E", "#313244", "#CDD6F4", "#A6ADC8");
 var fixture = new SidebarFixture(args.Contains("--benchmark") ? 500 : 0);
 var benchmarkClock = Stopwatch.StartNew();
@@ -90,6 +95,7 @@ try
     if (args.Contains("--motion")) { MotionRegressionChecks.Run(Pump); return; }
     if (args.Contains("--alignment")) { AlignmentSettingsChecks.Run(window, fixture, Pump, output); return; }
     if (args.Contains("--navigation")) { NavigationMotionChecks.Run(window, fixture, Pump, output); return; }
+    if (args.Contains("--hub-motion")) { HubMotionChecks.Run(window, fixture, Pump, output); Console.WriteLine("Rendered previews: " + output); return; }
     if (args.Contains("--chrome"))
     {
         ChromeAndHoverChecks.Run(Pump, output);
@@ -100,6 +106,7 @@ try
     GridBrowsingChecks.Run(Pump, output);
     UnifiedWorkspaceChecks.Run(window, fixture, Pump, output);
     NavigationMotionChecks.Run(window, fixture, Pump, output);
+    HubMotionChecks.Run(window, fixture, Pump, output);
     AlignmentSettingsChecks.Run(window, fixture, Pump, output);
     if (args.Contains("--library")) { Console.WriteLine("Rendered previews: " + output); return; }
     WorkspaceMotionChecks.Run(window, fixture, Pump, output);

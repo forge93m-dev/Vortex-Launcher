@@ -16,7 +16,10 @@ public static class ThemeManager
         if (resources is null) return;
 
         resources["ThemeName"] = name;
-        resources["ThemeBackgroundBrush"] = new SolidColorBrush(Parse(background, Colors.Black));
+        var backgroundColor = Parse(background, Colors.Black);
+        resources["ThemeBackgroundBrush"] = new SolidColorBrush(backgroundColor);
+        // Translucent panels laid over cover art.
+        resources["ThemeGlassBrush"] = new SolidColorBrush(new Color(0xD9, backgroundColor.R, backgroundColor.G, backgroundColor.B));
         resources["ThemeSidebarBrush"] = new SolidColorBrush(Parse(sidebar, Colors.Black));
         resources["ThemePanelBrush"] = new SolidColorBrush(Parse(panel, Colors.Black));
         resources["ThemeBorderBrush"] = new SolidColorBrush(Parse(border, Colors.Gray));

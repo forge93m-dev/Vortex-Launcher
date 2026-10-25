@@ -51,7 +51,7 @@ public static class PopupMotion
         state.Running?.Cancel();
         var cancellation = new CancellationTokenSource();
         state.Running = cancellation;
-        try { await UiMotion.RevealAsync(control, cancellation.Token); }
+        try { await UiMotion.GrowAsync(control, cancellation.Token); }
         finally
         {
             if (ReferenceEquals(state.Running, cancellation)) state.Running = null;

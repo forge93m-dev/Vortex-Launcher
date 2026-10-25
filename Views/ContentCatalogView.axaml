@@ -18,7 +18,7 @@
           <Border Classes="WorkspaceRow" Padding="6,10"><Grid ColumnDefinitions="Auto,Auto,*">
             <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,10,0" AutomationProperties.Name="Select content"/>
             <Border Grid.Column="1" Width="48" Height="48" CornerRadius="7" Background="{DynamicResource ThemePanelBrush}" ClipToBounds="True" VerticalAlignment="Center" Margin="0,0,12,0"><Panel>
-              <PathIcon IsVisible="{Binding !HasIcon}" Width="24" Height="24" Foreground="{DynamicResource ThemeSubtextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M12,2 L22,7 L22,17 L12,22 L2,17 L2,7 Z M2,7 L12,12 L22,7 M12,12 L12,22"/>
+              <PathIcon IsVisible="{Binding !HasIcon}" Width="24" Height="24" Classes="Line" Foreground="{DynamicResource ThemeSubtextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M12,3 L20,7.5 L20,16.5 L12,21 L4,16.5 L4,7.5 Z M4,7.5 L12,12 L20,7.5 M12,12 L12,21"/>
               <Image x:Name="CatalogItemIcon" Source="{Binding IconBitmap}" Stretch="Uniform"/>
             </Panel></Border>
             <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4"><TextBlock Text="{Binding Item.Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Item.Description}" Classes="Muted" FontSize="11" MaxLines="2" TextWrapping="Wrap"/><TextBlock Text="{Binding Item.Author,StringFormat='by {0}'}" Classes="Muted" FontSize="10"/></StackPanel>
@@ -33,7 +33,7 @@
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="10">
               <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,4">
                 <Border Width="56" Height="56" CornerRadius="8" Background="{DynamicResource ThemePanelBrush}" ClipToBounds="True" Margin="0,0,12,0"><Panel>
-                  <PathIcon IsVisible="{Binding !HasIcon}" Width="28" Height="28" Foreground="{DynamicResource ThemeSubtextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M12,2 L22,7 L22,17 L12,22 L2,17 L2,7 Z M2,7 L12,12 L22,7 M12,12 L12,22"/>
+                  <PathIcon IsVisible="{Binding !HasIcon}" Width="28" Height="28" Classes="Line" Foreground="{DynamicResource ThemeSubtextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M12,3 L20,7.5 L20,16.5 L12,21 L4,16.5 L4,7.5 Z M4,7.5 L12,12 L20,7.5 M12,12 L12,21"/>
                   <Image x:Name="CatalogDetailIcon" Source="{Binding IconBitmap}" Stretch="Uniform"/>
                 </Panel></Border>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4"><TextBlock Text="{Binding Item.Title}" FontSize="19" FontWeight="SemiBold" TextWrapping="Wrap"/><TextBlock Text="{Binding Item.Author,StringFormat='by {0}'}" Classes="Muted" FontSize="11" TextTrimming="CharacterEllipsis"/></StackPanel>

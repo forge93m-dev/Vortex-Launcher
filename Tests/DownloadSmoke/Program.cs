@@ -7,6 +7,18 @@ using System.Text;
 using System.Text.Json;
 using VortexLauncher.Core.Launch;
 
+if (args.Length >= 1 && args[0] == "--benchmark-network")
+{
+    await NetworkBenchmark.RunAsync(args.Length > 1 ? args[1] : "1.21.11");
+    return;
+}
+
+if (args.Length >= 1 && args[0] == "--benchmark-install")
+{
+    await RealInstallBenchmark.RunAsync(args.Length > 1 ? args[1] : null, args.Contains("forge"));
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--profile-assets")
 {
     await AssetVerificationChecks.ProfileAsync(Path.GetFullPath(args[1]));
@@ -19,6 +31,7 @@ if (args.Contains("--session-windows")) return;
 string testRoot = Directory.CreateDirectory(Path.Combine(FixturePaths.TempRoot(), "vortex-download-smoke-" + Guid.NewGuid().ToString("N"))).FullName;
 PlatformSupport.DataRootOverride = Directory.CreateDirectory(Path.Combine(testRoot, "data")).FullName;
 DataLocationChecks.Run(testRoot);
+await DirectDownloadChecks.RunAsync(testRoot);
 await InstallationSpeedChecks.RunAsync(testRoot);
 if (args.Contains("--installation-speed")) return;
 await ModPreflightChecks.RunAsync(testRoot);

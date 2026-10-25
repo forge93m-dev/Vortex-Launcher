@@ -19,7 +19,8 @@ static class StabilityUiChecks
     {
         var large = new SidebarFixture(500);
         var clock = Stopwatch.StartNew();
-        var window = new MainWindow { DataContext = large }; window.Show(); pump(100);
+        var window = new MainWindow { DataContext = large }; window.Show(); pump(50);
+        GameLibraryChecks.Switcher(window).IsChecked = true; pump(50);
         int realized = window.GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("InstanceCard"));
         Check(realized is > 0 and < 60, "500 instances realize only a bounded viewport of cards");
         var scroller = window.FindControl<InstanceTileGrid>("instanceCards")!.GetVisualDescendants().OfType<ScrollViewer>().First();

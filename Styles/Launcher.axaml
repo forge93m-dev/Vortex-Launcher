@@ -3,6 +3,10 @@
         <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
         <Setter Property="FontSize" Value="13" />
     </Style>
+    <!-- Windows, flyouts and menus all inherit the launcher's bundled font. -->
+    <Style Selector=":is(TopLevel)">
+        <Setter Property="FontFamily" Value="avares://Vortex Launcher/Assets/Fonts#Nunito" />
+    </Style>
     <Style Selector="TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
     </Style>
@@ -32,24 +36,24 @@
     </Style>
     <Style Selector="Border.VortexCard">
         <Setter Property="Background" Value="{DynamicResource ThemePanelBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="22" />
     </Style>
     <Style Selector="Border.Chip">
-        <Setter Property="Background" Value="{DynamicResource ThemeSidebarBrush}" />
-        <Setter Property="CornerRadius" Value="7" />
-        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="Background" Value="#17FFFFFF" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="10,4" />
     </Style>
     <Style Selector="Border.InstanceCard">
         <Setter Property="views:RoundedClip.IsEnabled" Value="True" />
         <Setter Property="ClipToBounds" Value="True" />
-        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="CornerRadius" Value="20" />
         <Setter Property="Background" Value="{DynamicResource ThemeSidebarBrush}" />
-        <Setter Property="RenderTransform" Value="translate(0px,0px)" />
         <Setter Property="Transitions">
             <Transitions>
                 <BrushTransition Property="BorderBrush" Duration="0:0:0.18" />
+                <BrushTransition Property="Background" Duration="0:0:0.16" />
             </Transitions>
         </Setter>
     </Style>
@@ -60,7 +64,7 @@
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Height" Value="32" />
         <Setter Property="MinHeight" Value="0" />
-        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="CornerRadius" Value="16" />
     </Style>
     <Style Selector="Border.Chip TextBlock">
         <Setter Property="FontSize" Value="11" />
@@ -69,12 +73,12 @@
     <Style Selector="Button">
         <Setter Property="Background" Value="{DynamicResource ThemePanelBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="6" />
-        <Setter Property="Padding" Value="14,10" />
+        <Setter Property="CornerRadius" Value="18" />
+        <Setter Property="Padding" Value="16,10" />
         <Setter Property="FontSize" Value="13" />
-        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Cursor" Value="Hand" />
     </Style>
     <Style Selector="Button:pointerover /template/ ContentPresenter">
@@ -101,7 +105,7 @@
         <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}" />
     </Style>
     <Style Selector="Button.SecondaryBtn">
-        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Background" Value="#17FFFFFF" />
     </Style>
     <Style Selector="Button.FilterBtn">
         <Setter Property="Background" Value="Transparent" />
@@ -140,10 +144,10 @@
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Background" Value="{DynamicResource ThemeSidebarBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource ThemeTextBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="10" />
-        <Setter Property="Padding" Value="12,10" />
+        <Setter Property="CornerRadius" Value="16" />
+        <Setter Property="Padding" Value="14,10" />
         <Setter Property="MinHeight" Value="40" />
         <Setter Property="SelectionBrush" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
@@ -153,7 +157,7 @@
         <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     </Style>
     <Style Selector="ComboBox">
-        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="CornerRadius" Value="14" />
         <Setter Property="MinHeight" Value="40" />
         <Setter Property="Padding" Value="12,9" />
     </Style>
@@ -166,7 +170,7 @@
     <Style Selector="ListBoxItem">
         <Setter Property="Padding" Value="4" />
         <Setter Property="Margin" Value="0,0,0,6" />
-        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="CornerRadius" Value="16" />
     </Style>
     <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
@@ -187,7 +191,13 @@
     <Style Selector="ProgressBar">
         <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
         <Setter Property="Background" Value="{DynamicResource ThemeBorderBrush}" />
-        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="CornerRadius" Value="4" />
+        <!-- Progress glides between reported values instead of jumping. -->
+        <Setter Property="Transitions">
+            <Transitions>
+                <DoubleTransition Property="Value" Duration="0:0:0.35" Easing="CubicEaseOut" />
+            </Transitions>
+        </Setter>
     </Style>
     <Style Selector="ScrollBar">
         <Setter Property="AllowAutoHide" Value="True" />

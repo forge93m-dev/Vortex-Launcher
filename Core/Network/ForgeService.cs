@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -399,20 +400,38 @@ public class ForgeService
             installer.ArgumentList.Add(instancePath);
 
             cancellationToken.ThrowIfCancellationRequested();
-            using var process = Process.Start(installer)
-                ?? throw new InvalidOperationException("Could not start the Forge installer.");
+            using var process = new Process { StartInfo = installer };
+            var outputLines = new StringBuilder();
+            var errorLines = new StringBuilder();
+            string? lastStage = null;
+            // The installer runs for a while and prints tens of thousands of lines;
+            // surface only its stage changes so the progress text keeps moving.
+            process.OutputDataReceived += (_, e) =>
+            {
+                if (e.Data == null) return;
+                lock (outputLines) outputLines.AppendLine(e.Data);
+                string? stage = InstallerStage(e.Data);
+                if (stage != null && stage != lastStage)
+                {
+                    lastStage = stage;
+                    progressCallback?.Invoke(stage, 95);
+                }
+            };
+            process.ErrorDataReceived += (_, e) => { if (e.Data != null) lock (errorLines) errorLines.AppendLine(e.Data); };
+            if (!process.Start()) throw new InvalidOperationException("Could not start the Forge installer.");
             using var registration = cancellationToken.Register(() =>
             {
                 try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
                 catch (InvalidOperationException) { }
                 catch (System.ComponentModel.Win32Exception) { }
             });
-            var outputTask = process.StandardOutput.ReadToEndAsync();
-            var errorTask = process.StandardError.ReadToEndAsync();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
             // Wait for the child to exit before allowing Resume to write files.
             await process.WaitForExitAsync();
-            string output = await outputTask;
-            string error = await errorTask;
+            string output, error;
+            lock (outputLines) output = outputLines.ToString();
+            lock (errorLines) error = errorLines.ToString();
             cancellationToken.ThrowIfCancellationRequested();
 
             string profileId = $"{minecraftVersion}-forge-{forgeVersion.Split('-').Last()}";
@@ -456,6 +475,21 @@ public class ForgeService
 
         progressCallback?.Invoke("Forge setup ready!", 100);
         return true;
+    }
+
+    // Maps the official installer's processor announcements to readable stages.
+    internal static string? InstallerStage(string line)
+    {
+        string text = line.Trim();
+        if (text.StartsWith("Downloading libraries", StringComparison.Ordinal)) return "Forge: checking libraries...";
+        if (!text.StartsWith("MainClass:", StringComparison.Ordinal))
+            return text.StartsWith("Injecting profile", StringComparison.Ordinal) ? "Forge: finishing setup..." : null;
+        if (text.Contains("installertools", StringComparison.Ordinal)) return "Forge 1/4: preparing mappings...";
+        if (text.Contains("jarsplitter", StringComparison.Ordinal)) return "Forge 2/4: splitting the game files...";
+        if (text.Contains(".fart.", StringComparison.Ordinal) || text.Contains("SpecialSource", StringComparison.Ordinal))
+            return "Forge 3/4: remapping Minecraft (the longest step)...";
+        if (text.Contains("binarypatcher", StringComparison.Ordinal)) return "Forge 4/4: applying Forge patches...";
+        return "Forge: running installer step...";
     }
 
     private static bool ContainsArchiveEntry(string archivePath, string entryName)

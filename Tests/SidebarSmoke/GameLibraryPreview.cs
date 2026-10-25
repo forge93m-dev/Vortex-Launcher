@@ -10,7 +10,7 @@ public sealed class GameLibraryPreview : VortexLauncher.App
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            ThemeManager.SetTheme("Graphite", "#D7F36A", "#101214", "#15181B", "#1D2125", "#2E3439", "#F0F2EE", "#9BA49E");
+            ThemeManager.SetTheme("Midnight", "#A78BFA", "#15161C", "#1D1F27", "#252833", "#2E3140", "#ECEDF3", "#A0A4B3");
             var fixture = new SidebarFixture();
             var window = new MainWindow { Title="Vortex Library — preview (test data)", DataContext=fixture };
             window.KeyDown += (_, e) =>
