@@ -25,7 +25,7 @@ internal static class LaunchSettingsPanelChecks
 
         ramToggle.IsChecked = true;
         Check(instance.RamGbOverride == 6 && slider.IsEnabled && reset.IsEnabled && saves == 1 && ramValue.Text == "6 GB", "switching memory on starts from the launcher's amount and saves");
-        slider.Value = 9; pump(5);
+        slider.Value = 9; pump(40);
         Check(instance.RamGbOverride == 9 && ramValue.Text == "9 GB" && saves == 1, "dragging the memory slider updates the instance at once but saves only when released");
         panel.Commit();
         Check(saves == 2, "releasing the slider saves the instance");
