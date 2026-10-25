@@ -31,6 +31,14 @@ public final class CapeSmoke {
         if(configType.getField("capesEnabled").getBoolean(config)) throw new AssertionError("Capes must be opt-in");
         Class<?> player=Class.forName("net.minecraft.client.player.AbstractClientPlayer",false,target);
         if(Arrays.stream(player.getDeclaredMethods()).noneMatch(m->m.getName().contains("vortex$cape"))) throw new AssertionError("Missing real cape skin mixin");
+        Class<?> entry=Class.forName("net.minecraft.client.multiplayer.PlayerInfo",false,target);
+        if(Arrays.stream(entry.getDeclaredMethods()).noneMatch(m->m.getName().contains("vortex$skin"))) throw new AssertionError("Missing tab-list skin mixin (chat heads would show the default skin)");
+        Class<?> calls=Class.forName("dev.vortex.client.SkinCalls",true,target);
+        Method enter=calls.getMethod("enter"),leave=calls.getMethod("leave"),inside=calls.getMethod("inside");
+        if((boolean)inside.invoke(null)) throw new AssertionError("Skin call guard starts closed");
+        enter.invoke(null);enter.invoke(null);if(!(boolean)inside.invoke(null)) throw new AssertionError("Skin call guard while the entity reads the skin");
+        leave.invoke(null);if(!(boolean)inside.invoke(null)) throw new AssertionError("Skin call guard must stay on until the outer read ends");
+        leave.invoke(null);leave.invoke(null);if((boolean)inside.invoke(null)) throw new AssertionError("Skin call guard must reopen and never go negative");
         Class<?> screen=Class.forName("dev.vortex.client.CapeScreen",false,target);
         for(int[] dims:new int[][]{{320,240},{430,300},{640,360},{1920,1080}}) {
             Object layout=screen.getMethod("layout",int.class,int.class).invoke(null,dims[0],dims[1]);

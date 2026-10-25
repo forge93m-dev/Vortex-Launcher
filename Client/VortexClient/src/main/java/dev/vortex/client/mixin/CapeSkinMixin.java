@@ -10,8 +10,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(AbstractClientPlayer.class)
 public abstract class CapeSkinMixin {
+    @Inject(method="getSkin", at=@At("HEAD"))
+    private void vortex$enter(CallbackInfoReturnable<PlayerSkin> callback) { dev.vortex.client.SkinCalls.enter(); }
     @Inject(method="getSkin", at=@At("RETURN"), cancellable=true)
     private void vortex$cape(CallbackInfoReturnable<PlayerSkin> callback) {
+        dev.vortex.client.SkinCalls.leave();
         // WingsLayer can otherwise fall back to the custom cape as its elytra
         // texture. Keep the entire vanilla skin while gliding gear is equipped.
         var player = (AbstractClientPlayer)(Object)this;
