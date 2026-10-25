@@ -28,7 +28,7 @@ internal static class CurseForgeImportChecks
                     : Mods();
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") });
             }
-            CdnCalls++; Hosts.Add(request.RequestUri!.Host);
+            CdnCalls++; if (request.RequestUri!.Host.Length > 0) Hosts.Add(request.RequestUri.Host);
             return Task.FromResult(Cdn.TryGetValue(url, out var bytes)
                 ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) }
                 : new HttpResponseMessage(HttpStatusCode.NotFound));
