@@ -1,3 +1,8 @@
+# Animated custom capes — DEPLOYED 2026-10-25 (cosmetics worker version 8f8f922c)
+
+`PUT /v2/animated` accepts up to 120 frames, 20-1000 ms per frame, widths 64/128/256/512, at most 8,000,000 pixels in total
+(frames x width x height) and 1,000,000 bytes. The accounts worker is still the older build; it does not know animated custom capes.
+
 # Prepared, NOT deployed — animated custom capes (2026-10-25)
 
 The cosmetics worker has a new `PUT /v2/animated` route (owner key, same as `/v2/custom`). It stores a `VCA1` envelope
