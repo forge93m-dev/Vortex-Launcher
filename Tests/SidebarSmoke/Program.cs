@@ -144,6 +144,7 @@ try
     var createVersions = create.GetVisualDescendants().OfType<ComboBox>().First();
     createVersions.SelectedIndex = 1; Pump(30);
     Check(((CreateFixture)create.DataContext!).SelectedVersion == "1.21.11", "create-instance version selector is two-way");
+    CreateInstanceDesignChecks.Run(create, Pump);
     create.Close();
     foreach (var title in new[] { "Mods", "Resource packs", "Shaders" })
     {
@@ -535,11 +536,13 @@ sealed class CatalogFixture : INotifyPropertyChanged
         SelectedMod = SearchResults[0]; SelectedMod.IsSelected = true;
     }
 }
-sealed class CreateFixture
+sealed class CreateFixture : IVersionChoice
 {
     public string InstanceName { get; set; } = "Survival";
     public string SelectedVersion { get; set; } = "26.3";
     public string[] AvailableVersions { get; } = { "26.3", "1.21.11" };
+    public string[] QuickVersions => AvailableVersions;
+    public string LoaderHint => "Light and fast. The best choice for Vortex Client.";
     public LoaderOption[] AvailableLoaders { get; } = { new("Vanilla"), new("Fabric"), new("Forge") };
     public LoaderOption SelectedLoaderOption { get; set; }
     public bool IsLoadingVersions => false;

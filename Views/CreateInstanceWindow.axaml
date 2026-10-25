@@ -13,43 +13,93 @@
         <Style Selector="ComboBoxItem:disabled /template/ ContentPresenter">
             <Setter Property="Opacity" Value="0.42" />
         </Style>
+        <!-- Loader tiles: one tile per loader; a loader that is unavailable for this version is dimmed and cannot be picked. -->
+        <Style Selector="ListBox.LoaderTiles ListBoxItem">
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="Padding" Value="2,10" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="{DynamicResource ThemePanelBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}" />
+            <Setter Property="IsEnabled" Value="{Binding IsAvailable}" />
+        </Style>
+        <Style Selector="ListBox.LoaderTiles ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource ThemePanelBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeSubtextBrush}" />
+        </Style>
+        <Style Selector="ListBox.LoaderTiles ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBox.LoaderTiles ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+        </Style>
+        <!-- Version chips: the newest releases one click away; the box next to them still lists every version. -->
+        <Style Selector="ListBox.VersionChips ListBoxItem">
+            <Setter Property="Margin" Value="0,0,6,6" />
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="CornerRadius" Value="15" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="{DynamicResource ThemePanelBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}" />
+        </Style>
+        <Style Selector="ListBox.VersionChips ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBox.VersionChips ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}" />
+        </Style>
     </Window.Styles>
     <Border x:Name="dialogContent" Background="{DynamicResource ThemeBackgroundBrush}">
         <Grid ColumnDefinitions="172,*">
             <Border ClipToBounds="True" Background="{DynamicResource ThemeSidebarBrush}">
-                <Panel><views:WorldCover Seed="Create a new adventure"/><Border Background="#99101516"/><StackPanel VerticalAlignment="Bottom" Margin="20,24" Spacing="8"><TextBlock Text="YOUR NEXT" Foreground="#DBE6DF" FontSize="10" LetterSpacing="2"/><TextBlock Text="Adventure." FontWeight="SemiBold" FontSize="22" Foreground="White"/><TextBlock Text="One instance.&#10;Your own world." TextWrapping="Wrap" Foreground="#C3D5C9" FontSize="12" LineHeight="20"/></StackPanel></Panel>
+                <Panel>
+                    <views:WorldCover Seed="{Binding InstanceName}"/>
+                    <Border Background="#99101516"/>
+                    <StackPanel VerticalAlignment="Bottom" Margin="20,24" Spacing="6">
+                        <TextBlock Text="PREVIEW" Foreground="#DBE6DF" FontSize="10" LetterSpacing="2"/>
+                        <TextBlock Text="{Binding InstanceName}" FontWeight="SemiBold" FontSize="20" Foreground="White" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding ConfigurationSummary}" Foreground="#C3D5C9" FontSize="12" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding VortexClientStatus}" Foreground="{DynamicResource AccentBrush}" FontSize="11"/>
+                    </StackPanel>
+                </Panel>
             </Border>
         <Grid Grid.Column="1" Margin="28" RowDefinitions="Auto, *, Auto">
-            <StackPanel Grid.Row="0" Spacing="7" Margin="0,0,0,22">
+            <StackPanel Grid.Row="0" Spacing="7" Margin="0,0,0,18">
                 <TextBlock Classes="Eyebrow" Text="LIBRARY / NEW INSTANCE" />
                 <TextBlock Classes="PageTitle" Text="New instance" FontSize="25" />
                 <TextBlock Classes="Muted" Text="Choose your Minecraft version and make it yours." FontSize="12" />
             </StackPanel>
             <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Spacing="18">
+                <StackPanel Spacing="12" Margin="0,0,10,0">
                     <StackPanel Spacing="6">
                         <TextBlock Text="Instance name" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" FontWeight="Medium" />
                         <TextBox Text="{Binding InstanceName}" Background="{DynamicResource ThemePanelBrush}" Foreground="{DynamicResource ThemeTextBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10" />
                     </StackPanel>
-                    <Grid ColumnDefinitions="*, *">
-                        <StackPanel Grid.Column="0" Spacing="6" Margin="0,0,8,0">
-                            <Grid ColumnDefinitions="*, Auto">
-                                <TextBlock Grid.Column="0" Text="Minecraft version" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" FontWeight="Medium" />
-                                <ProgressBar Grid.Column="1" IsIndeterminate="True" Width="24" Height="3" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsLoadingVersions}" />
-                            </Grid>
-                            <ComboBox ItemsSource="{Binding AvailableVersions}" SelectedItem="{Binding SelectedVersion}" HorizontalAlignment="Stretch" Background="{DynamicResource ThemePanelBrush}" Foreground="{DynamicResource ThemeTextBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" CornerRadius="6" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Spacing="6" Margin="8,0,0,0">
-                            <TextBlock Text="Mod loader" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" FontWeight="Medium" />
-                            <ComboBox ItemsSource="{Binding AvailableLoaders}" SelectedItem="{Binding SelectedLoaderOption}" HorizontalAlignment="Stretch" Background="{DynamicResource ThemePanelBrush}" Foreground="{DynamicResource ThemeTextBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" CornerRadius="6">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding DisplayName}" Opacity="{Binding ItemOpacity}" />
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </StackPanel>
-                    </Grid>
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <TextBlock Grid.Column="0" Text="Minecraft version" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" FontWeight="Medium" />
+                            <ProgressBar Grid.Column="1" IsIndeterminate="True" Width="24" Height="3" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsLoadingVersions}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*, 170">
+                            <ListBox x:Name="quickVersions" Classes="VersionChips" ItemsSource="{Binding QuickVersions}" SelectedItem="{Binding SelectedVersion, Mode=OneWay}" SelectionChanged="OnQuickVersionChanged" Background="Transparent" BorderThickness="0" Padding="0" VerticalAlignment="Top">
+                                <ListBox.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ListBox.ItemsPanel>
+                                <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" FontSize="12" /></DataTemplate></ListBox.ItemTemplate>
+                            </ListBox>
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableVersions}" SelectedItem="{Binding SelectedVersion}" PlaceholderText="All versions" HorizontalAlignment="Stretch" VerticalAlignment="Top" Background="{DynamicResource ThemePanelBrush}" Foreground="{DynamicResource ThemeTextBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" CornerRadius="15" />
+                        </Grid>
+                    </StackPanel>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Mod loader" Foreground="{DynamicResource ThemeSubtextBrush}" FontSize="12" FontWeight="Medium" />
+                        <ListBox x:Name="loaderTiles" Classes="LoaderTiles" ItemsSource="{Binding AvailableLoaders}" SelectedItem="{Binding SelectedLoaderOption}" Background="Transparent" BorderThickness="0" Padding="0">
+                            <ListBox.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate></ListBox.ItemsPanel>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Spacing="2" HorizontalAlignment="Center" Opacity="{Binding ItemOpacity}">
+                                        <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                        <TextBlock Text="{Binding Tagline}" FontSize="10" Foreground="{DynamicResource ThemeSubtextBrush}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <TextBlock Text="{Binding LoaderHint}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource ThemeSubtextBrush}" />
+                    </StackPanel>
                     <Border Background="{DynamicResource ThemePanelBrush}" BorderBrush="{DynamicResource ThemeBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14">
                         <StackPanel Spacing="10">
                             <Grid ColumnDefinitions="*,Auto">

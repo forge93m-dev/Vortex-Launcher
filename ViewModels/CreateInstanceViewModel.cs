@@ -7,7 +7,13 @@ using VortexLauncher.Core.Network;
 
 namespace VortexLauncher.ViewModels;
 
-public partial class CreateInstanceViewModel : ObservableObject
+/// <summary>What the version chips need from their window's data: the version being chosen.</summary>
+public interface IVersionChoice
+{
+    string SelectedVersion { get; set; }
+}
+
+public partial class CreateInstanceViewModel : ObservableObject, IVersionChoice
 {
     private readonly MinecraftService _minecraftService = new();
     private readonly ForgeService _forgeService = new();
@@ -48,9 +54,23 @@ public partial class CreateInstanceViewModel : ObservableObject
         OnPropertyChanged(nameof(CanUseVortexClient));
         OnPropertyChanged(nameof(VortexClientDescription));
         OnPropertyChanged(nameof(ConfigurationSummary));
+        OnPropertyChanged(nameof(LoaderHint));
     }
 
     public ObservableCollection<string> AvailableVersions { get; } = new();
+
+    /// <summary>The newest releases, shown as one-click chips next to the full version list.</summary>
+    public ObservableCollection<string> QuickVersions { get; } = new();
+
+    public string LoaderHint => SelectedLoader switch
+    {
+        "Vanilla" => "The original game, no mods.",
+        "Fabric" => "Light and fast. The best choice for Vortex Client.",
+        "Forge" => "Classic mod loader with the largest library of older mods.",
+        "NeoForge" => "Modern Forge fork for new big mods and modpacks.",
+        "Quilt" => "Fabric-compatible loader with extra tools.",
+        _ => ""
+    };
 
     public ObservableCollection<LoaderOption> AvailableLoaders { get; } = new();
 
@@ -105,6 +125,12 @@ public partial class CreateInstanceViewModel : ObservableObject
         foreach (var version in versions)
         {
             AvailableVersions.Add(version);
+        }
+
+        QuickVersions.Clear();
+        foreach (var version in AvailableVersions.Take(5))
+        {
+            QuickVersions.Add(version);
         }
 
         if (AvailableVersions.Count > 0)
@@ -193,6 +219,20 @@ public partial class CreateInstanceViewModel : ObservableObject
 
 public partial class LoaderOption : ObservableObject
 {
+    /// <summary>One short line under the loader's name: its character, or its availability while that is being checked.</summary>
+    public string Tagline
+    {
+        get
+        {
+            string suffix = DisplayName.StartsWith(Name, StringComparison.Ordinal) ? DisplayName[Name.Length..].Trim(' ', '(', ')', '.') : "";
+            if (suffix.Length > 0) return suffix;
+            return Name switch
+            {
+                "Vanilla" => "no mods", "Fabric" => "light, fast", "Forge" => "classic", "NeoForge" => "modern", "Quilt" => "Fabric fork", _ => ""
+            };
+        }
+    }
+
     public LoaderOption(string name, bool isAvailable = true, string? displayName = null)
     {
         Name = name;
@@ -204,6 +244,7 @@ public partial class LoaderOption : ObservableObject
     public string Name { get; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Tagline))]
     private string _displayName;
 
     [ObservableProperty]
