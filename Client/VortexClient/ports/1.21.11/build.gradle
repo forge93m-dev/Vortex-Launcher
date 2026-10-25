@@ -1,7 +1,7 @@
 plugins {
     id 'net.fabricmc.fabric-loom-remap' version '1.17.21'
 }
-version = '0.2.2'
+version = '0.2.3'
 group = 'dev.vortex'
 base { archivesName = 'vortex-client-1.21.11-fabric' }
 repositories { mavenCentral() }
@@ -18,7 +18,7 @@ sourceSets {
         resources.srcDirs = [file(providers.gradleProperty('vortexResources').getOrElse('src/main/resources'))]
     }
 }
-tasks.remapJar { archiveFileName = 'vortex-client-1.21.11-fabric-0.2.2.jar' }
+tasks.remapJar { archiveFileName = 'vortex-client-1.21.11-fabric-0.2.3.jar' }
 tasks.register('preparePortClasspath') {
     doLast {
         def destination = layout.buildDirectory.file('port-classpath.txt').get().asFile

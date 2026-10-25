@@ -13,7 +13,7 @@ namespace VortexLauncher.Core.Network;
 
 public sealed class VortexClientService
 {
-    public const string ClientVersion = "0.2.2";
+    public const string ClientVersion = "0.2.3";
     private sealed record ClientBuild(string Minecraft)
     {
         public string FileName => $"vortex-client-{Minecraft}-fabric-{ClientVersion}.jar";
