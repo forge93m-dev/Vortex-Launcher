@@ -29,7 +29,8 @@ public enum ClientModule {
     DEATH_WAYPOINTS("Death Waypoints", "Save death coordinates in the Deaths group", "Gameplay", null),
     RESOURCE_COUNTER("Resource Counter", "Track inventory goals", "HUD", HudModules.Element.RESOURCES),
     STORAGE_MEMORY("Storage Finder", "Find items in previously opened storage", "Gameplay", null),
-    PLAYER_LIST("Player List", "Party on top, ping in ms, Vortex badges · Tab", "Gameplay", null);
+    PLAYER_LIST("Player List", "Party on top, ping in ms, Vortex badges · Tab", "Gameplay", null),
+    EVENT_ALERTS("Event Alerts", "Sounds and notices for party changes, mentions and low health", "Gameplay", null);
 
     public final String title, description, category;
     public final HudModules.Element hud;
@@ -58,6 +59,7 @@ public enum ClientModule {
             case ENCHANTMENT_HINTS -> c.enchantmentHintsEnabled;
             case DEATH_WAYPOINTS -> c.deathWaypointsEnabled;
             case PLAYER_LIST -> c.playerListEnabled;
+            case EVENT_ALERTS -> c.eventAlertsEnabled;
         };
     }
     public void toggle() {
@@ -86,6 +88,7 @@ public enum ClientModule {
             case ENCHANTMENT_HINTS -> c.enchantmentHintsEnabled=!c.enchantmentHintsEnabled;
             case DEATH_WAYPOINTS -> c.deathWaypointsEnabled=!c.deathWaypointsEnabled;
             case PLAYER_LIST -> c.playerListEnabled=!c.playerListEnabled;
+            case EVENT_ALERTS -> c.eventAlertsEnabled=!c.eventAlertsEnabled;
         }
     }
     public boolean matches(String search, String filter) {

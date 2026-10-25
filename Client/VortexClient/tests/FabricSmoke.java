@@ -63,6 +63,7 @@ public class FabricSmoke {
         Object current = entry.getField("config").get(null);
         CapeSmoke.run(target,Path.of(args[0]));
         AnimatedCapeSmoke.run(target,Path.of(args[0]));
+        EventAlertsSmoke.run(target,Path.of(args[0]));
         Class<?> particleEngine = Class.forName("net.minecraft.client.particle.ParticleEngine", false, target);
         if (java.util.Arrays.stream(particleEngine.getDeclaredMethods()).anyMatch(m -> m.getName().contains("vortex$ambient")))
             throw new AssertionError("Removed particle limiter is still active");
@@ -117,7 +118,7 @@ public class FabricSmoke {
             if ((boolean)matches.invoke(module, "", "Gameplay")) gameplayCount++;
             if ((boolean)matches.invoke(module, "", "Enabled")) enabledCount++;
         }
-        if (hudCount != 12 || gameplayCount != 14 || enabledCount != 14 ||
+        if (hudCount != 12 || gameplayCount != 15 || enabledCount != 15 ||
             !(boolean)matches.invoke(modules[0], "  fPs  ", "HUD") ||
             (boolean)matches.invoke(modules[1], "Zoom", "HUD") ||
             (boolean)matches.invoke(modules[0], "no such module", "All Modules"))
@@ -134,7 +135,7 @@ public class FabricSmoke {
         if ((boolean)matches.invoke(modules[0], "", "Enabled") || !(boolean)configType.getField("armorEnabled").get(current))
             throw new AssertionError("Module toggle isolation / stale enabled filter");
         moduleType.getMethod("toggle").invoke(modules[0]);
-        if (modules.length != 25) throw new AssertionError("New modules not registered");
+        if (modules.length != 26) throw new AssertionError("New modules not registered");
         for (Object module : modules) if (module.toString().equals("KEYS") || module.toString().equals("HELD_ITEM") || module.toString().equals("CPS"))
             throw new AssertionError("Excluded module exposed");
         for (Object module : modules) {

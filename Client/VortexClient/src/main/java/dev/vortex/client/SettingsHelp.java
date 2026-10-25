@@ -30,6 +30,7 @@ public final class SettingsHelp {
             case FPS->"Shows the game's current frame-rate counter. It does not improve FPS by itself. Edit HUD changes position, scale and opacity.";
             case SPEED->"Shows horizontal movement speed in blocks per second. Vertical falling is excluded. It measures movement; it does not speed up the player.";
             case CLOCK->"Shows your computer's local time, not Minecraft world time. Edit HUD changes position and appearance.";
+            case EVENT_ALERTS->"Plays a short sound and shows a notice when a friend joins or leaves your party, someone shares a waypoint or ping, another player writes your name in chat, or your health or hunger gets low. Each event can be switched off, and sounds can be muted or made quieter. Sounds are the game's own interface sounds, so game volume still applies. Nothing is sent to anyone.";
             case BLOCK_INFO->"Shows information about the block under your crosshair. It does not reveal blocks behind walls. Edit HUD changes placement and scale.";
         };
         return module.title+"\n\n"+detail+"\n\nEnabled turns only this module on or off. Settings are saved for the current instance.";

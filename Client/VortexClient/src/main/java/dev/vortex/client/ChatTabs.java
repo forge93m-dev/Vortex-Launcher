@@ -49,6 +49,7 @@ public final class ChatTabs {
     public static boolean filtering() { return tab != Tab.ALL || !query.isEmpty(); }
     /** A new message arrived (not a redraw): light the dot of its tab unless that tab is open. */
     public static void arrived(Component line) {
+        EventAlerts.chat(line.getString());
         Tab category = category(line);
         if (category != Tab.ALL && category != tab) UNREAD[category.ordinal()] = true;
     }

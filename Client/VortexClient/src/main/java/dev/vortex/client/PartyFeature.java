@@ -67,7 +67,9 @@ public final class PartyFeature {
         });
     }
     private static void accept(PartyConnection.Snapshot value) {
-        snapshot = value; lastUpdate = System.nanoTime(); nextPoll = lastUpdate + 2_000_000_000L; failures = 0;
+        var before = snapshot;
+        snapshot = value;
+        EventAlerts.party(before, value); lastUpdate = System.nanoTime(); nextPoll = lastUpdate + 2_000_000_000L; failures = 0;
         long newest = lastChatSeq;
         for (var line : value.chatOrEmpty()) {
             // History from before joining is not replayed; only messages that arrive afterwards appear in chat.

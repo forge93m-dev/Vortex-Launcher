@@ -389,6 +389,8 @@ public final class VortexScreen extends Screen {
             addRenderableWidget(new ClientUi.ActionButton(x,y,w,24,Component.literal("Players: "+(VortexClient.config.entityHeartsPlayers?"ON":"OFF")),b->{VortexClient.config.entityHeartsPlayers=!VortexClient.config.entityHeartsPlayers;b.setMessage(Component.literal("Players: "+(VortexClient.config.entityHeartsPlayers?"ON":"OFF")));dirtySettings=true;saveSettings();}));
             addRenderableWidget(new ClientUi.ActionButton(x,y+32,w,24,Component.literal("Mobs: "+(VortexClient.config.entityHeartsMobs?"ON":"OFF")),b->{VortexClient.config.entityHeartsMobs=!VortexClient.config.entityHeartsMobs;b.setMessage(Component.literal("Mobs: "+(VortexClient.config.entityHeartsMobs?"ON":"OFF")));dirtySettings=true;saveSettings();}));
             addRenderableWidget(new ClientUi.Slider(x,y+70,w,"Visible range",8,64,VortexClient.config.entityHeartsRange,value->Math.round(value)+" m",value->{VortexClient.config.entityHeartsRange=(int)Math.round(value);dirtySettings=true;},this::saveSettings));
+        } else if (module == ClientModule.EVENT_ALERTS) {
+            addRenderableWidget(new ClientUi.ActionButton(x,y,w,24,Component.literal("Choose alerts…"),b->minecraft.gui.setScreen(new EventAlertsSettingsScreen(this)),true));
         } else if (module == ClientModule.FULLBRIGHT || module == ClientModule.CHEST_SEARCH || module == ClientModule.SHULKER_PREVIEW || module == ClientModule.ENCHANTMENT_HINTS || module == ClientModule.DEATH_WAYPOINTS || module == ClientModule.PLAYER_LIST) {
             // Only enable/disable; this is not a HUD overlay.
         } else if (module == ClientModule.FREELOOK) {

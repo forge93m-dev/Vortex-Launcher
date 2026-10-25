@@ -59,6 +59,10 @@ public final class ClientConfig {
     public int zoomKey = com.mojang.blaze3d.platform.InputConstants.KEY_C;
     public boolean durabilityAlerts = true;
     public int durabilityThreshold = 10;
+    // Event alerts: sounds and notices for party changes, chat mentions, low health and low hunger.
+    public boolean eventAlertsEnabled = true, eventSounds = true;
+    public int eventVolume = 60, lowHealthPercent = 30;
+    public boolean alertPartyJoin = true, alertPartyLeave = true, alertPartyPlace = true, alertMention = true, alertLowHealth = true, alertLowHunger = true;
     public float freelookSensitivity = 1;
     // Legacy fields stay readable; Keystrokes is no longer an available module.
     public boolean keystrokesEnabled = false;
@@ -156,6 +160,8 @@ public final class ClientConfig {
             if (!ClientBindings.valid(config.waypointsKey)) config.waypointsKey = com.mojang.blaze3d.platform.InputConstants.KEY_B;
             if (config.partyServiceUrl == null || config.partyServiceUrl.length() > 240) config.partyServiceUrl = "";
             config.durabilityThreshold = Math.clamp(config.durabilityThreshold, 1, 30);
+            config.eventVolume = Math.clamp(config.eventVolume, 0, 100);
+            config.lowHealthPercent = Math.clamp(config.lowHealthPercent, 10, 50);
             config.freelookSensitivity = finiteClamp(config.freelookSensitivity, .25f, 2, 1);
             config.hudScale = finiteClamp(config.hudScale, 0.75f, 2, 1);
             config.hudOpacity = finiteClamp(config.hudOpacity, 0.25f, 1, 0.85f);

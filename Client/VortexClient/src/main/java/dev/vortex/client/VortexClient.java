@@ -44,6 +44,7 @@ public final class VortexClient implements ClientModInitializer {
         MetricsHud.tick(minecraft);
         Freelook.sync(minecraft);
         DurabilityWarnings.tick(minecraft);
+        EventAlerts.tick(minecraft);
         boolean down = minecraft.isWindowActive() && ClientBindings.down(ClientBindings.Action.MENU);
         var screen = minecraft.gui.screen();
         if (down && !menuWasDown && minecraft.gui.overlay() == null && !(screen instanceof KeybindScreen keys && keys.capturing())) {
