@@ -12,11 +12,12 @@ namespace VortexLauncher.Core.Launch;
 
 public sealed record ArchivePreview(string Fingerprint, string Format, string Name, string Version,
     string Loader, string LoaderVersion, int Mods, int ResourcePacks, int ShaderPacks, int Worlds,
-    int Files, long Bytes, int Downloads)
+    int Files, long Bytes, int Downloads, string Note = "")
 {
     public string Summary => $"{Name}\nMinecraft {Version} · {Loader} {LoaderVersion}\nFormat: {Format}\n\n" +
         $"Mods: {Mods}\nResource packs: {ResourcePacks}\nShader packs: {ShaderPacks}\nWorlds: {Worlds}\n" +
         $"{Files:N0} archived files · {Bytes / 1048576d:N1} MB unpacked\n{Downloads} additional files to download\n\n" +
+        (Note.Length > 0 ? Note + "\n\n" : "") +
         "A new, independent instance will be created. Existing instances will not be overwritten.";
 
     public static ArchivePreview Inspect(string path)
@@ -27,22 +28,29 @@ public sealed record ArchivePreview(string Fingerprint, string Format, string Na
         using var archive = new ZipArchive(stream);
         var plan = ArchiveImportPlan.Read(archive, Path.GetFileNameWithoutExtension(path));
         var paths = plan.ContentPaths;
+        int curseForge = plan.CurseForge?.Files.Count ?? 0;
         return new(fingerprint, plan.Format, plan.Instance.Name, plan.Instance.Version, plan.Instance.Loader,
-            plan.Instance.LoaderVersion, paths.Count(p => p.StartsWith("mods/", StringComparison.OrdinalIgnoreCase)),
+            plan.Instance.LoaderVersion, curseForge + paths.Count(p => p.StartsWith("mods/", StringComparison.OrdinalIgnoreCase)),
             paths.Count(p => p.StartsWith("resourcepacks/", StringComparison.OrdinalIgnoreCase)),
             paths.Count(p => p.StartsWith("shaderpacks/", StringComparison.OrdinalIgnoreCase)),
             paths.Where(p => p.StartsWith("saves/", StringComparison.OrdinalIgnoreCase)).Select(p => p.Split('/').ElementAtOrDefault(1)).Distinct().Count(),
-            archive.Entries.Count(e => !e.FullName.EndsWith('/')), archive.Entries.Sum(e => e.Length), plan.Downloads.Count);
+            archive.Entries.Count(e => !e.FullName.EndsWith('/')), archive.Entries.Sum(e => e.Length), plan.Downloads.Count + curseForge,
+            curseForge == 0 ? "" : $"CurseForge pack: its {curseForge} files are downloaded through CurseForge with your own free API key (Settings → Java → CurseForge). " +
+                "Files whose authors block other launchers are listed in a text file for you to download by hand.");
     }
 }
 
 internal sealed record ImportDownload(string Path, string Url, string Sha1, long Size);
+
+/// <summary>A CurseForge pack: only (project, file) ids; the files themselves are looked up through the CurseForge API.</summary>
+internal sealed record CurseForgePack(IReadOnlyList<(int Project, int File)> Files);
 
 internal sealed class ArchiveImportPlan
 {
     public string Format { get; private set; } = "";
     public InstanceModel Instance { get; private set; } = new();
     public PolyMcArchive? PolyMc { get; private set; }
+    public CurseForgePack? CurseForge { get; private set; }
     public List<(ZipArchiveEntry Entry, string Path)> Entries { get; } = new();
     public List<ImportDownload> Downloads { get; } = new();
     public IReadOnlyList<string> ContentPaths => PolyMc?.ContentPaths ?? Entries.Select(e => e.Path).Concat(Downloads.Select(d => d.Path)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
@@ -124,7 +132,8 @@ internal sealed class ArchiveImportPlan
                 plan.Entries.Add((entry, path));
             }
         }
-        else throw new InvalidDataException("Unsupported archive. Choose a Vortex, PolyMC/MultiMC/Prism ZIP or Modrinth .mrpack.");
+        else if (archive.GetEntry("manifest.json") is { } curseManifest && ReadCurseForge(plan, archive, curseManifest, fallback)) { }
+        else throw new InvalidDataException("Unsupported archive. Choose a Vortex, PolyMC/MultiMC/Prism ZIP, Modrinth .mrpack or CurseForge pack.");
         ValidatePath(plan.Instance.Version);
         if (plan.Instance.Version.Contains('/') || plan.Instance.Version.Contains('\\')) throw new InvalidDataException("Invalid Minecraft version.");
         if (!string.IsNullOrEmpty(plan.Instance.LoaderVersion))
@@ -140,6 +149,59 @@ internal sealed class ArchiveImportPlan
         plan.Instance.CoverImagePath = "";
         plan.Instance.IconPath = "";
         return plan;
+    }
+
+    internal const int MaxCurseForgeFiles = 2000;
+
+    /// <summary>CurseForge export (manifest.json): game version, loader, file ids and an overrides folder. False when it is some other manifest.json.</summary>
+    private static bool ReadCurseForge(ArchiveImportPlan plan, ZipArchive archive, ZipArchiveEntry manifest, string fallback)
+    {
+        using var document = ReadJson(manifest);
+        var root = document.RootElement;
+        if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("manifestType", out var type) || type.GetString() != "minecraftModpack") return false;
+        plan.Format = "CurseForge";
+        var game = root.TryGetProperty("minecraft", out var minecraft) && minecraft.ValueKind == JsonValueKind.Object ? minecraft : throw new InvalidDataException("The CurseForge pack has no Minecraft section.");
+        plan.Instance = new() { Name = root.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String ? name.GetString() ?? fallback : fallback,
+            Version = game.TryGetProperty("version", out var version) ? version.GetString() ?? "" : "" };
+        string loader = "";
+        if (game.TryGetProperty("modLoaders", out var loaders) && loaders.ValueKind == JsonValueKind.Array && loaders.GetArrayLength() > 0)
+        {
+            var chosen = loaders.EnumerateArray().FirstOrDefault(l => l.TryGetProperty("primary", out var p) && p.ValueKind == JsonValueKind.True);
+            if (chosen.ValueKind != JsonValueKind.Object) chosen = loaders[0];
+            loader = chosen.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "";
+        }
+        int dash = loader.IndexOf('-');
+        string loaderName = dash > 0 ? loader[..dash] : loader;
+        plan.Instance.Loader = loaderName.ToLowerInvariant() switch
+        {
+            "" => "Vanilla", "forge" => "Forge", "fabric" => "Fabric", "quilt" => "Quilt",
+            "neoforge" => throw new InvalidDataException("NeoForge packs are not supported yet."),
+            _ => throw new InvalidDataException($"Unsupported pack loader: {loaderName}")
+        };
+        plan.Instance.LoaderVersion = dash > 0 ? loader[(dash + 1)..] : "";
+        var files = new List<(int, int)>();
+        if (root.TryGetProperty("files", out var list) && list.ValueKind == JsonValueKind.Array)
+        {
+            if (list.GetArrayLength() > MaxCurseForgeFiles) throw new InvalidDataException($"The pack lists more than {MaxCurseForgeFiles} files.");
+            foreach (var file in list.EnumerateArray())
+            {
+                if (!file.TryGetProperty("projectID", out var project) || !project.TryGetInt32(out int projectId) || projectId <= 0 ||
+                    !file.TryGetProperty("fileID", out var fileId) || !fileId.TryGetInt32(out int fileValue) || fileValue <= 0)
+                    throw new InvalidDataException("The CurseForge pack has an invalid file entry.");
+                if (!files.Contains((projectId, fileValue))) files.Add((projectId, fileValue));
+            }
+        }
+        plan.CurseForge = new CurseForgePack(files);
+        string overrides = root.TryGetProperty("overrides", out var folder) && folder.ValueKind == JsonValueKind.String ? folder.GetString() ?? "overrides" : "overrides";
+        ValidatePath(overrides);
+        string prefix = overrides + "/";
+        foreach (var entry in archive.Entries.Where(e => e.FullName.StartsWith(prefix, StringComparison.Ordinal) && !e.FullName.EndsWith('/')))
+        {
+            string path = entry.FullName[prefix.Length..];
+            ValidateContentPath(path);
+            plan.Entries.Add((entry, path));
+        }
+        return true;
     }
 
     private static JsonDocument ReadJson(ZipArchiveEntry entry)

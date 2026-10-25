@@ -454,6 +454,9 @@
                                                 <TextBlock Classes="FieldLabel" Text="JVM arguments" Margin="0,8,0,0" />
                                                 <TextBox Text="{Binding JvmArgs}" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="80" VerticalContentAlignment="Top" />
                                                 <TextBlock Classes="Muted" Text="Only change these arguments if you know what they do." FontSize="12" />
+                                                <TextBlock Classes="SectionTitle" Text="CurseForge" Margin="0,14,0,0" />
+                                                <TextBlock Classes="Muted" Text="Needed to import CurseForge packs. Get a free key at console.curseforge.com; it stays on this computer." FontSize="12" TextWrapping="Wrap" />
+                                                <TextBox x:Name="curseForgeKeyBox" Text="{Binding CurseForgeApiKey}" PasswordChar="•" Watermark="CurseForge API key (optional)" />
                                             </StackPanel>
                                         </Border></ScrollViewer>
 <ScrollViewer x:Name="settingsUpdates" views:SurfaceMotion.Kind="Section" IsVisible="{Binding #SettingsTabs.SelectedIndex, Converter={StaticResource IndexEquals}, ConverterParameter=3}" HorizontalScrollBarVisibility="Disabled"><Border Margin="28,4,8,20">

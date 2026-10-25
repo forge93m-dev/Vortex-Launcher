@@ -13,6 +13,8 @@ public class LauncherSettings
     public int RamAllocationGb { get; set; } = 4;
     public string CustomJavaPath { get; set; } = string.Empty;
     public string JvmArguments { get; set; } = "-XX:+UseG1GC -XX:+UnlockExperimentalVMOptions";
+    /// <summary>The user's own CurseForge API key (needed to import CurseForge packs); stored only in this settings file.</summary>
+    public string CurseForgeApiKey { get; set; } = string.Empty;
     public string AccentColor { get; set; } = "#A78BFA";
     public string ThemeName { get; set; } = "Midnight";
     public bool HasLaunchedBefore { get; set; }

@@ -67,8 +67,10 @@ Run both smoke suites after every change. UI motion tests are timing-sensitive.
 
 ## Backlog (owner's choice of order)
 1. NeoForge support (shown in the UI but disabled).
-2. Import Modrinth `.mrpack` and CurseForge packs (only PolyMC/MultiMC import exists today).
-3. Java, RAM and JVM settings per instance.
+2. ~~Import Modrinth `.mrpack` and CurseForge packs~~ Done: `.mrpack` was already supported; CurseForge `manifest.json` packs
+   import through the CurseForge API with the user's own key (Settings → Java → CurseForge). Files whose authors block other
+   launchers are listed in `CurseForge manual downloads.txt`. NeoForge packs are refused until NeoForge is supported.
+3. ~~Java, RAM and JVM settings per instance~~ Done (`Core/Launch/LaunchSettings.cs`, panel on the instance Settings tab).
 4. Avalonia upgrade (see above).
 5. Split `MainWindowViewModel`; move the tests to xUnit.
 

@@ -192,6 +192,9 @@ public partial class MainWindowViewModel : ObservableObject
     private string _jvmArgs = "-XX:+UseG1GC -XX:+UnlockExperimentalVMOptions";
 
     [ObservableProperty]
+    private string _curseForgeApiKey = string.Empty;
+
+    [ObservableProperty]
     private string _accentColor = "#A78BFA";
 
     [ObservableProperty]
@@ -225,6 +228,7 @@ public partial class MainWindowViewModel : ObservableObject
         _discordPresence.StatusChanged += status => Dispatcher.UIThread.Post(() => DiscordPresenceStatus = status);
         _discordPresence.InvitationReceived += invite => Dispatcher.UIThread.Post(() => _ = ReviewDiscordInvitationAsync(invite));
         _instanceManager = instances; _settingsManager = settings; _accountManager = accounts;
+        _instanceManager.CurseForgeApiKey = () => CurseForgeApiKey;
         Library = new InstanceLibraryViewModel(Instances);
         Library.PropertyChanged += (_, e) =>
         {
@@ -314,6 +318,7 @@ public partial class MainWindowViewModel : ObservableObject
             SortInstances();
             SelectedInstance = imported;
             StatusMessage = $"Imported {imported.Name}";
+            if (_instanceManager.ImportNotes.Count > 0) StatusMessage += " · " + string.Join(" ", _instanceManager.ImportNotes);
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
@@ -368,6 +373,7 @@ public partial class MainWindowViewModel : ObservableObject
         UiMotion.Enabled = InterfaceAnimationsEnabled;
         CustomJavaPath = settings.CustomJavaPath;
         JvmArgs = settings.JvmArguments;
+        CurseForgeApiKey = settings.CurseForgeApiKey ?? string.Empty;
         ThemeName = settings.ThemeName;
         AccentColor = string.IsNullOrWhiteSpace(settings.AccentColor) ? "#A78BFA" : settings.AccentColor;
         // Players still on the untouched pre-0.2.6 default move to the new default look;
@@ -436,6 +442,7 @@ public partial class MainWindowViewModel : ObservableObject
         settings.RamAllocationGb = RamGb;
         settings.CustomJavaPath = CustomJavaPath;
         settings.JvmArguments = JvmArgs;
+        settings.CurseForgeApiKey = (CurseForgeApiKey ?? string.Empty).Trim();
         settings.AccentColor = AccentColor;
         settings.ThemeName = ThemeName;
         settings.InterfaceAnimationsEnabled = InterfaceAnimationsEnabled;

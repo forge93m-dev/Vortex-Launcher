@@ -5,6 +5,8 @@ using System.IO.Compression;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using VortexLauncher.Core.Network;
 using VortexLauncher.Models;
 using VortexLauncher.Core.Management;
 using System.Threading;
@@ -22,6 +24,12 @@ public class InstanceManager
     }
 
     public List<string> LoadNotices { get; } = new();
+    /// <summary>The user's own CurseForge API key, read when a CurseForge pack is imported.</summary>
+    public Func<string?>? CurseForgeApiKey { get; set; }
+    /// <summary>What the last import could not do for the user (files to download by hand); empty when everything arrived.</summary>
+    public List<string> ImportNotes { get; } = new();
+    internal HttpClient? CurseForgeClient { get; set; }
+    internal HttpClient? DownloadClient { get; set; }
     internal string ValidateRecoveryTarget(string target) => OperationJournal.ValidateTarget(_instancesDirectory, target);
     internal static bool ValidMetadata(InstanceModel item) => !string.IsNullOrWhiteSpace(item.Name) && !string.IsNullOrWhiteSpace(item.Version) && !string.IsNullOrWhiteSpace(item.Loader);
     public List<InstanceModel> LoadInstances(CancellationToken cancellationToken = default)
@@ -172,6 +180,9 @@ public class InstanceManager
         using var archive = new ZipArchive(input);
         var plan = ArchiveImportPlan.Read(archive, Path.GetFileNameWithoutExtension(archivePath));
         cancellationToken.ThrowIfCancellationRequested();
+        ImportNotes.Clear();
+        // Resolved before anything is created, so a missing key or a refused request leaves no half-made instance.
+        var manual = plan.CurseForge != null ? await ResolveCurseForgeAsync(plan, cancellationToken) : new List<string>();
         string target = resumeTarget == null ? CreateUniqueInstanceDirectory(plan.Instance.Name) : OperationJournal.ValidateTarget(_instancesDirectory, resumeTarget);
         Directory.CreateDirectory(target);
         var journal = OperationJournal.Begin(target, "Import", Path.GetFullPath(archivePath), fingerprint, resumeTarget != null);
@@ -203,16 +214,68 @@ public class InstanceManager
                 if (!File.Exists(destination))
                 {
                     long received = 0;
-                    await DownloadCache.EnsureAsync(file.Url, destination, downloadToken, file.Sha1, file.Size, bytes => { received += bytes; transfer?.Received(bytes); });
+                    await DownloadCache.EnsureAsync(file.Url, destination, downloadToken, file.Sha1, file.Size, bytes => { received += bytes; transfer?.Received(bytes); }, DownloadClient);
                     transfer?.Complete(file.Size, received);
                 }
                 else transfer?.Complete(file.Size, 0);
             }, cancellationToken);
         }
+        if (manual.Count > 0)
+        {
+            await File.WriteAllTextAsync(Path.Combine(target, "CurseForge manual downloads.txt"),
+                "These files of the CurseForge pack could not be downloaded by the launcher.\r\n" +
+                "Download them from CurseForge and put them in this instance's mods folder (or the folder that fits their type).\r\n\r\n" +
+                string.Join("\r\n", manual) + "\r\n", cancellationToken);
+            ImportNotes.Add($"{manual.Count} file(s) must be downloaded by hand: see \"CurseForge manual downloads.txt\" in the instance folder.");
+        }
         plan.Instance.InstancePath = target;
         SaveInstance(plan.Instance);
         OperationJournal.Complete(target);
         return plan.Instance;
+    }
+
+    /// <summary>
+    /// Turns a CurseForge pack's file ids into verified downloads. Files whose authors block other launchers, or
+    /// that cannot be verified, are never fetched; they come back as lines for a "download by hand" list.
+    /// </summary>
+    private async Task<List<string>> ResolveCurseForgeAsync(ArchiveImportPlan plan, CancellationToken cancellationToken)
+    {
+        string key = CurseForgeApiKey?.Invoke()?.Trim() ?? "";
+        if (key.Length == 0)
+            throw new InvalidOperationException("CurseForge packs need your own free CurseForge API key. Get one at console.curseforge.com and enter it in Settings → Java → CurseForge.");
+        var manual = new List<string>();
+        var resolved = await new CurseForgeService(key, CurseForgeClient).ResolveAsync(plan.CurseForge!.Files, cancellationToken);
+        foreach (var file in resolved)
+        {
+            string label = file.ProjectName.Length > 0 ? file.ProjectName : $"Project {file.ProjectId}";
+            string? folder = file.ClassId switch
+            {
+                6 => "mods", 12 => "resourcepacks", 6552 => "shaderpacks",
+                0 => file.FileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) ? "mods" : "resourcepacks",
+                _ => null
+            };
+            string? problem = null;
+            if (file.FileName.Length == 0) problem = "was not found on CurseForge";
+            else if (folder == null) problem = "is content the launcher does not install by itself (for example a world)";
+            else if (file.DownloadUrl == null) problem = "does not allow downloads outside CurseForge";
+            else if (!CurseForgeService.IsTrustedDownload(file.DownloadUrl)) problem = "has an untrusted download address";
+            else if (!Regex.IsMatch(file.Sha1, "^[a-fA-F0-9]{40}$") || file.Size <= 0 || file.Size > 2L * 1024 * 1024 * 1024) problem = "could not be verified";
+            else
+            {
+                try { ArchiveImportPlan.ValidateContentPath(folder + "/" + file.FileName); }
+                catch (InvalidDataException) { problem = "has an unsafe file name"; }
+            }
+            if (problem != null)
+            {
+                manual.Add($"{label} (file {file.FileId}) {problem}. {file.Website ?? $"https://www.curseforge.com/projects/{file.ProjectId}"}");
+                continue;
+            }
+            string path = folder + "/" + file.FileName;
+            // Files the pack itself ships in its overrides win over a downloaded copy.
+            if (plan.Entries.Any(e => e.Path.Equals(path, StringComparison.OrdinalIgnoreCase)) || plan.Downloads.Any(d => d.Path.Equals(path, StringComparison.OrdinalIgnoreCase))) continue;
+            plan.Downloads.Add(new(path, file.DownloadUrl!, file.Sha1, file.Size));
+        }
+        return manual;
     }
 
     public void ExportArchive(InstanceModel instance, string archivePath)
