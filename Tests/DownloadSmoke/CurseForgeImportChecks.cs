@@ -132,7 +132,7 @@ internal static class CurseForgeImportChecks
         Check(manual.Contains("Blocked Mod") && manual.Contains("does not allow downloads") && manual.Contains("https://www.curseforge.com/minecraft/mc-mods/blocked") && manual.Contains("untrusted download address") &&
               manual.Contains("unsafe file name") && manual.Contains("was not found on CurseForge") && !manual.Contains(key), "files that must be fetched by hand are listed with their pages, and the key is never written down");
         Check(manager.ImportNotes.Count == 1 && manager.ImportNotes[0].Contains("by hand"), "the import reports how many files need manual downloads");
-        Check(fixture.CdnCalls > 0 && fixture.Hosts.All(h => h is "edge.forgecdn.net" or "mediafilez.forgecdn.net" or "media.forgecdn.net"), "only CurseForge's own CDN hosts are ever requested for files");
+        Check(fixture.CdnCalls > 0 && fixture.Hosts.All(h => h is "edge.forgecdn.net" or "mediafilez.forgecdn.net" or "media.forgecdn.net"), "only CurseForge's own CDN hosts are ever requested for files (calls " + fixture.CdnCalls + ", hosts " + string.Join(",", fixture.Hosts) + ")");
 
         // Settings: the key persists in the launcher settings file only.
         var settings = new SettingsManager(Path.Combine(work, "settings"));
