@@ -418,6 +418,16 @@ public partial class MainWindow : Window
         menu.Items.Add(item);
     }
 
+    private void OnAccentSwatchClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: string hex } && DataContext is MainWindowViewModel mainVm) mainVm.AccentColor = hex;
+    }
+
+    private void OnDensityClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string density } && DataContext is MainWindowViewModel mainVm) mainVm.UiDensity = density;
+    }
+
     private void OnThemePresetClick(object? sender, RoutedEventArgs e)
     {
         if (sender is Button { DataContext: ThemePresetViewModel preset } &&

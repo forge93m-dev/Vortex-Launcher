@@ -110,6 +110,7 @@ try
     LaunchSettingsPanelChecks.Run(Pump);
     CurseForgeSettingsChecks.Run(window, fixture, Pump);
     NeoForgeUiChecks.Run();
+    AppearanceChecks.Run(window, fixture, Pump, output);
     AlignmentSettingsChecks.Run(window, fixture, Pump, output);
     if (args.Contains("--library")) { Console.WriteLine("Rendered previews: " + output); return; }
     WorkspaceMotionChecks.Run(window, fixture, Pump, output);
@@ -437,6 +438,9 @@ sealed class SidebarFixture : INotifyPropertyChanged
     public bool MinimizeOnGameLaunch { get; set; } = true;
     public bool InterfaceAnimationsEnabled { get; set; } = true;
     public string AccentColor { get; set; } = "#F5C2E7";
+    public string[] AccentSwatches { get; } = { "#A78BFA", "#6EA8FE", "#6EE7A8", "#F472B6", "#F0B44C", "#F87171", "#2DD4BF", "#94A3B8" };
+    public bool IsComfortableDensity => true;
+    public bool IsCompactDensity => false;
     public string NewAccountUsername { get; set; } = "";
     public ObservableCollection<ThemePresetViewModel> ThemePresets { get; } = new()
     {

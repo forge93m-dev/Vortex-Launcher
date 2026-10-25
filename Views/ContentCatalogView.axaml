@@ -15,7 +15,7 @@
       <ListBox x:Name="CatalogResults" ItemsSource="{Binding SearchResults}" SelectedItem="{Binding SelectedMod}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
         <ListBox.Styles><Style Selector="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style></ListBox.Styles>
         <ListBox.ItemTemplate><DataTemplate>
-          <Border Classes="WorkspaceRow" Padding="6,10"><Grid ColumnDefinitions="Auto,Auto,*">
+          <Border Classes="WorkspaceRow" Padding="{DynamicResource RowPaddingMedium}"><Grid ColumnDefinitions="Auto,Auto,*">
             <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,10,0" AutomationProperties.Name="Select content"/>
             <Border Grid.Column="1" Width="48" Height="48" CornerRadius="7" Background="{DynamicResource ThemePanelBrush}" ClipToBounds="True" VerticalAlignment="Center" Margin="0,0,12,0"><Panel>
               <PathIcon IsVisible="{Binding !HasIcon}" Width="24" Height="24" Classes="Line" Foreground="{DynamicResource ThemeSubtextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M12,3 L20,7.5 L20,16.5 L12,21 L4,16.5 L4,7.5 Z M4,7.5 L12,12 L20,7.5 M12,12 L12,21"/>

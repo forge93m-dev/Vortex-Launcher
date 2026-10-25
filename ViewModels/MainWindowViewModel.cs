@@ -74,6 +74,16 @@ public partial class MainWindowViewModel : ObservableObject
     private bool _minimizeOnGameLaunch = true;
     [ObservableProperty] private bool _interfaceAnimationsEnabled = true;
     partial void OnInterfaceAnimationsEnabledChanged(bool value) => UiMotion.Enabled = value;
+    [ObservableProperty] private string _uiDensity = "Comfortable";
+    partial void OnUiDensityChanged(string value)
+    {
+        ThemeManager.SetDensity(value == "Compact");
+        OnPropertyChanged(nameof(IsCompactDensity)); OnPropertyChanged(nameof(IsComfortableDensity));
+    }
+    public bool IsCompactDensity => UiDensity == "Compact";
+    public bool IsComfortableDensity => !IsCompactDensity;
+    /// <summary>The same eight accent colours Vortex Client offers.</summary>
+    public IReadOnlyList<string> AccentSwatches { get; } = new[] { "#A78BFA", "#6EA8FE", "#6EE7A8", "#F472B6", "#F0B44C", "#F87171", "#2DD4BF", "#94A3B8" };
 
     [RelayCommand]
     private void CancelInstallation()
@@ -251,15 +261,7 @@ public partial class MainWindowViewModel : ObservableObject
                 else Dispatcher.UIThread.Post(ApplyLoadingState);
             });
 
-        ThemePresets.Add(new ThemePresetViewModel("Midnight", "#A78BFA", "#15161C", "#1D1F27", "#252833", "#2E3140", "#ECEDF3", "#A0A4B3"));
-        ThemePresets.Add(new ThemePresetViewModel("Graphite", "#D7F36A", "#101214", "#15181B", "#1D2125", "#2E3439", "#F0F2EE", "#9BA49E"));
-        ThemePresets.Add(new ThemePresetViewModel("Soft Slate", "#8BA8D8", "#181C24", "#1E232D", "#252B36", "#394353", "#E2E6EF", "#A4AFC2"));
-        ThemePresets.Add(new ThemePresetViewModel("Tokyo Night", "#7AA2F7", "#131722", "#191E2B", "#202636", "#344059", "#DFE6F3", "#A0ADC4"));
-        ThemePresets.Add(new ThemePresetViewModel("Catppuccin", "#F5C2E7", "#11111B", "#181825", "#1E1E2E", "#313244", "#CDD6F4", "#A6ADC8"));
-        ThemePresets.Add(new ThemePresetViewModel("Nord", "#88C0D0", "#2E3440", "#3B4252", "#434C5E", "#4C566A", "#ECEFF4", "#D8DEE9"));
-        ThemePresets.Add(new ThemePresetViewModel("Dracula", "#BD93F9", "#191A21", "#21222C", "#282A36", "#44475A", "#F8F8F2", "#BFBFBF"));
-        ThemePresets.Add(new ThemePresetViewModel("Cyber Neon", "#FF007F", "#090A12", "#111225", "#171A32", "#30365C", "#FFFFFF", "#9CA8D7"));
-        ThemePresets.Add(new ThemePresetViewModel("Emerald", "#50FA7B", "#07110D", "#0C1B14", "#10251A", "#1B4930", "#F0FFF4", "#91B7A0"));
+        foreach (var preset in ThemePresetViewModel.BuiltIn()) ThemePresets.Add(preset);
 
         Library.IsLoading = true;
     }
@@ -369,6 +371,7 @@ public partial class MainWindowViewModel : ObservableObject
         RamGb = settings.RamAllocationGb;
         MinimizeOnGameLaunch = settings.MinimizeOnGameLaunch;
         InterfaceAnimationsEnabled = settings.InterfaceAnimationsEnabled;
+        UiDensity = settings.UiDensity == "Compact" ? "Compact" : "Comfortable";
         DiscordPresenceEnabled = settings.DiscordPresenceEnabled;
         ReceiveDiscordInvites = settings.ReceiveDiscordInvites;
         UiMotion.Enabled = InterfaceAnimationsEnabled;
@@ -386,7 +389,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
         var preset = ThemePresets.FirstOrDefault(x => x.Name == ThemeName) ?? ThemePresets[0];
         ThemeManager.SetTheme(preset.Name, AccentColor, preset.Background, preset.Sidebar,
-            preset.Panel, preset.Border, preset.Text, preset.Subtext);
+            preset.Panel, preset.Border, preset.Text, preset.Subtext, preset.IsLight);
     }
 
     [RelayCommand]
@@ -397,7 +400,7 @@ public partial class MainWindowViewModel : ObservableObject
             ThemeName = preset.Name;
             AccentColor = preset.HexColor;
             ThemeManager.SetTheme(preset.Name, preset.HexColor, preset.Background, preset.Sidebar,
-                preset.Panel, preset.Border, preset.Text, preset.Subtext);
+                preset.Panel, preset.Border, preset.Text, preset.Subtext, preset.IsLight);
         }
     }
 
@@ -447,6 +450,7 @@ public partial class MainWindowViewModel : ObservableObject
         settings.AccentColor = AccentColor;
         settings.ThemeName = ThemeName;
         settings.InterfaceAnimationsEnabled = InterfaceAnimationsEnabled;
+        settings.UiDensity = UiDensity;
         settings.DiscordPresenceEnabled = DiscordPresenceEnabled;
         settings.ReceiveDiscordInvites = ReceiveDiscordInvites;
         settings.MinimizeOnGameLaunch = MinimizeOnGameLaunch;
@@ -1120,11 +1124,28 @@ public class ThemePresetViewModel
     public string Border { get; }
     public string Text { get; }
     public string Subtext { get; }
+    public bool IsLight { get; }
+
+    /// <summary>The palettes offered in Settings. Exactly one is light.</summary>
+    public static IReadOnlyList<ThemePresetViewModel> BuiltIn() => new[]
+    {
+        new ThemePresetViewModel("Midnight", "#A78BFA", "#15161C", "#1D1F27", "#252833", "#2E3140", "#ECEDF3", "#A0A4B3"),
+        new ThemePresetViewModel("Graphite", "#D7F36A", "#101214", "#15181B", "#1D2125", "#2E3439", "#F0F2EE", "#9BA49E"),
+        new ThemePresetViewModel("Soft Slate", "#8BA8D8", "#181C24", "#1E232D", "#252B36", "#394353", "#E2E6EF", "#A4AFC2"),
+        new ThemePresetViewModel("Tokyo Night", "#7AA2F7", "#131722", "#191E2B", "#202636", "#344059", "#DFE6F3", "#A0ADC4"),
+        new ThemePresetViewModel("Catppuccin", "#F5C2E7", "#11111B", "#181825", "#1E1E2E", "#313244", "#CDD6F4", "#A6ADC8"),
+        new ThemePresetViewModel("Nord", "#88C0D0", "#2E3440", "#3B4252", "#434C5E", "#4C566A", "#ECEFF4", "#D8DEE9"),
+        new ThemePresetViewModel("Dracula", "#BD93F9", "#191A21", "#21222C", "#282A36", "#44475A", "#F8F8F2", "#BFBFBF"),
+        new ThemePresetViewModel("Cyber Neon", "#FF007F", "#090A12", "#111225", "#171A32", "#30365C", "#FFFFFF", "#9CA8D7"),
+        new ThemePresetViewModel("Emerald", "#50FA7B", "#07110D", "#0C1B14", "#10251A", "#1B4930", "#F0FFF4", "#91B7A0"),
+        new ThemePresetViewModel("Light", "#6D4AE0", "#F4F5F9", "#EAECF2", "#FFFFFF", "#D3D7E2", "#1B1E27", "#5B6376", isLight: true),
+    };
 
     public ThemePresetViewModel(string name, string hexColor,
         string background = "#0A0D14", string sidebar = "#0E121B", string panel = "#121722",
-        string border = "#1C2433", string text = "#F8FAFC", string subtext = "#64748B")
+        string border = "#1C2433", string text = "#F8FAFC", string subtext = "#64748B", bool isLight = false)
     {
+        IsLight = isLight;
         Name = name;
         HexColor = hexColor;
         Background = background;

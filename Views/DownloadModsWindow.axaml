@@ -47,7 +47,7 @@
                     <ListBox ItemsSource="{Binding SearchResults}" SelectedItem="{Binding SelectedMod}" Background="Transparent" BorderThickness="0" Padding="0">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Border Classes="WorkspaceRow" Padding="8,16" Margin="0,0,0,4">
+                                <Border Classes="WorkspaceRow" Padding="{DynamicResource RowPaddingTall}" Margin="0,0,0,4">
                                     <Grid ColumnDefinitions="Auto, Auto, *">
                                         <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="4,0,10,0" />
                                         <Border Grid.Column="1" Width="44" Height="44" CornerRadius="10" ClipToBounds="True" Background="{DynamicResource ThemeBorderBrush}" Margin="0,0,10,0" VerticalAlignment="Center">

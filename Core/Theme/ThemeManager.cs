@@ -9,13 +9,34 @@ namespace VortexLauncher.Core.Theme;
 
 public static class ThemeManager
 {
+    /// <summary>"Compact" halves the vertical padding of long lists (mods, files, catalog results); "Comfortable" restores it.</summary>
+    public static void SetDensity(bool compact)
+    {
+        var resources = Application.Current?.Resources;
+        if (resources is null) return;
+        resources["RowPadding"] = compact ? new Thickness(8, 3) : new Thickness(8, 6);
+        resources["RowPaddingMedium"] = compact ? new Thickness(8, 6) : new Thickness(8, 12);
+        resources["RowPaddingTall"] = compact ? new Thickness(8, 8) : new Thickness(8, 16);
+    }
+
+    /// <summary>Light palettes switch the built-in controls (text boxes, drop-downs) to their light look as well.</summary>
+    public static void SetVariant(bool light)
+    {
+        if (Application.Current is not { } app) return;
+        app.RequestedThemeVariant = light ? ThemeVariant.Light : ThemeVariant.Dark;
+        // Pastel "good" greens read well on dark panels but vanish on light ones.
+        app.Resources["StatusGoodBrush"] = new SolidColorBrush(Color.Parse(light ? "#17794F" : "#86EFC4"));
+        app.Resources["StatusGoodSoftBrush"] = new SolidColorBrush(Color.Parse(light ? "#2617794F" : "#296EE7B7"));
+    }
+
     public static void SetTheme(string name, string accent, string background, string sidebar,
-        string panel, string border, string text, string subtext)
+        string panel, string border, string text, string subtext, bool light = false)
     {
         var resources = Application.Current?.Resources;
         if (resources is null) return;
 
         resources["ThemeName"] = name;
+        SetVariant(light);
         var backgroundColor = Parse(background, Colors.Black);
         resources["ThemeBackgroundBrush"] = new SolidColorBrush(backgroundColor);
         // Translucent panels laid over cover art.

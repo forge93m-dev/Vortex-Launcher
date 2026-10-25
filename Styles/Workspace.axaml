@@ -25,6 +25,8 @@
     <Style Selector="Border.StartupOverlay"><Setter Property="Transitions"><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.22"/></Transitions></Setter></Style>
     <Style Selector="Border.WorkspaceSection"><Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderBrush}"/><Setter Property="BorderThickness" Value="0,0,0,1"/></Style>
     <Style Selector="Border.IdentityBanner"><Setter Property="Background" Value="{DynamicResource ThemePanelBrush}"/><Setter Property="CornerRadius" Value="18"/></Style>
+    <Style Selector="Button.SecondaryBtn.active"><Setter Property="Background" Value="{DynamicResource AccentBrush}"/><Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/></Style>
+    <Style Selector="Button.AccentSwatch:pointerover"><Setter Property="BorderBrush" Value="{DynamicResource ThemeTextBrush}"/></Style>
     <Style Selector="Border.WorkspaceAside"><Setter Property="Background" Value="{DynamicResource ThemeSidebarBrush}"/><Setter Property="CornerRadius" Value="22"/></Style>
     <Style Selector="Border.WorkspaceRow">
         <Setter Property="Background" Value="Transparent"/><Setter Property="BorderBrush" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/>

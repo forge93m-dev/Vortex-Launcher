@@ -36,6 +36,14 @@ internal static class UnifiedWorkspaceChecks
                 var selected = workspace.FindControl<StackPanel>("SectionTabs")!.Children.OfType<Button>().Count(b => b.Classes.Contains("active"));
                 Check(selected == 1, "one selected workspace tab");
                 if (section == "Mods") Check(workspace.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("ModRow")).All(b => b.Bounds.Height <= 60), "installed mod rows stay compact");
+                if (section == "Mods" && size.Width == 960) {
+                    double Rows() => workspace.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("ModRow")).Max(b => b.Bounds.Height);
+                    double comfortable = Rows();
+                    VortexLauncher.Core.Theme.ThemeManager.SetDensity(true); pump(60);
+                    double compact = Rows();
+                    VortexLauncher.Core.Theme.ThemeManager.SetDensity(false); pump(60);
+                    Check(compact < comfortable && Rows() == comfortable, "compact density makes mod rows shorter and comfortable density restores them");
+                }
                 if(section=="Overview"){
                     var clientAction=workspace.FindControl<Button>("OverviewClientButton")!;
                     Check(clientAction.IsEffectivelyVisible && clientAction.Command!=null,"client install/update is discoverable without opening Settings or More");

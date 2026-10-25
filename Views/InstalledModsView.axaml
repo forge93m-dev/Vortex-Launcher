@@ -27,7 +27,7 @@
       <Grid Grid.Row="1">
         <ListBox x:Name="InstalledModsList" ItemsSource="{Binding VisibleMods}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
           <ListBox.ItemTemplate><DataTemplate>
-            <Border Classes="WorkspaceRow ModRow" Padding="8,6"><Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="4,0">
+            <Border Classes="WorkspaceRow ModRow" Padding="{DynamicResource RowPadding}"><Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="4,0">
               <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,12,0" AutomationProperties.Name="Select mod"/>
               <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3" Margin="0,0,12,0">
                 <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FileName}" FontSize="13" Foreground="{DynamicResource ThemeTextBrush}"/>

@@ -21,6 +21,8 @@ public class LauncherSettings
     public string UpdateManifestUrl { get; set; } = DefaultUpdateManifestUrl;
     public bool MinimizeOnGameLaunch { get; set; } = true;
     public bool InterfaceAnimationsEnabled { get; set; } = true;
+    /// <summary>"Comfortable" or "Compact" list rows.</summary>
+    public string UiDensity { get; set; } = "Comfortable";
     public bool DiscordPresenceEnabled { get; set; }
     public bool ReceiveDiscordInvites { get; set; }
 }

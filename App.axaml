@@ -112,6 +112,12 @@
         <StyleInclude Source="avares://Vortex Launcher/Styles/Workspace.axaml" />
     </Application.Styles>
     <Application.Resources>
+        <!-- List density: the three row paddings the settings page switches between "Comfortable" and "Compact". -->
+        <Thickness x:Key="RowPadding">8,6</Thickness>
+        <Thickness x:Key="RowPaddingMedium">8,12</Thickness>
+        <Thickness x:Key="RowPaddingTall">8,16</Thickness>
+        <SolidColorBrush x:Key="StatusGoodBrush" Color="#86EFC4" />
+        <SolidColorBrush x:Key="StatusGoodSoftBrush" Color="#296EE7B7" />
         <Color x:Key="AccentColor">#A78BFA</Color>
         <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
         <SolidColorBrush x:Key="AccentHoverBrush" Color="#BFA3FF" />
