@@ -63,7 +63,10 @@ Run both smoke suites after every change. UI motion tests are timing-sensitive.
   idle periods (`NavigationMotionChecks` "press surface" check). Before upgrading, verify on real
   Windows. This would also remove the vulnerable `Tmds.DBus.Protocol 0.15.0`, which is Linux-only.
 - `DragEventArgs.Data` is obsolete in newer Avalonia; it will need `DataTransfer`.
-- The owner does NOT want Microsoft account login. Keep offline profiles.
+- Microsoft account login is shelved: it was built (device-code flow, DPAPI-sealed refresh token, tested against a fake
+  Microsoft) in commit 1a21665 on 2026-10-25 and removed again at the owner's request in the commit that reverts it.
+  Restore it with `git revert` of that revert. It needs the owner's own Azure client ID and Mojang's approval of that app.
+  Until the owner asks again, keep offline profiles only.
 
 ## Backlog (owner's choice of order)
 1. ~~NeoForge support~~ done: `ForgeService.InstallNeoForgeProfileAsync` (official NeoForged Maven only, SHA-1 checked, no mirror),
