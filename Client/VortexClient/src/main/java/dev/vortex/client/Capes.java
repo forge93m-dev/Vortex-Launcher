@@ -36,12 +36,20 @@ public final class Capes {
     private record Patched(PlayerSkin source, String id, PlayerSkin skin) { }
     private Capes() { }
     public static boolean busy() { return BUSY.get() || choosing; }
+    /** True for you and for players whose Vortex cape the service has published to this client. */
+    public static boolean isVortexPlayer(UUID player) { return player != null && (player.equals(profile()) || visible.containsKey(player)); }
     public static String customPreview() {return CapeCatalog.custom(restoredCustom) ? restoredCustom : "";}
     public static UUID profile() { var mc = Minecraft.getInstance(); return mc.player == null ? null : mc.player.getUUID(); }
     public static PlayerSkin skin(UUID player, PlayerSkin original) {
-        if (!VortexClient.config.capesEnabled || original == null) return original;
-        String cape = player.equals(self) ? VortexClient.config.selectedCape : visible.get(player);
+        if (original == null) return original;
+        boolean mine = player.equals(self);
+        // The online cape setting only governs other players' capes (it contacts the cape service). The cape you
+        // chose yourself is shown on your own character regardless: showing it sends nothing anywhere.
+        if (!mine && !VortexClient.config.capesEnabled) return original;
+        String cape = mine ? VortexClient.config.selectedCape : visible.get(player);
         if (cape == null || "none".equals(cape) || !CapeCatalog.valid(cape)) return original;
+        // An animated cape's texture changes over time, so it is never served from the per-player cache.
+        if (CapeCatalog.animated(cape)) return CapeCatalog.patch(original, cape);
         var old = patched.get(player);
         if (old != null && old.source() == original && cape.equals(old.id())) return old.skin();
         var changed = CapeCatalog.patch(original,cape);
@@ -264,6 +272,11 @@ public final class Capes {
     public static void publish() {
         UUID id = LocalSkins.profile(Minecraft.getInstance()); String cape = VortexClient.config.selectedCape;
         if (busy()) { message = "Another cape request is in progress. Wait a moment."; return; }
+        if (!CapeCatalog.ANIMATED_ONLINE && CapeCatalog.animated(cape)) {
+            // The cape service does not know animated capes yet; sending one would only fail.
+            message = "Animated capes are shown on your side only until the Vortex cape service is updated.";
+            ClientNotifications.info("cape-animated-local","Animated cape",message); return;
+        }
         if (!VortexClient.config.capesEnabled || id == null) { message = "Enable capes and choose a valid launch profile first.";ClientNotifications.info("cape-publish-needs-profile","Publish cape","Enable capes and choose a valid launch profile first."); return; }
         var request=PUBLICATION.begin(id,cape);
         submit(() -> {

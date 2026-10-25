@@ -46,8 +46,12 @@ public class FabricSmoke {
         float up = (float)adjust.invoke(null, 4f, 1.0);
         float down = (float)adjust.invoke(null, up, -1.0);
         if (up <= 4 || Math.abs(down - 4) > .001) throw new AssertionError("Scroll direction or symmetry");
-        if ((float)adjust.invoke(null, 8f, 10.0) != 8 || (float)adjust.invoke(null, 2f, -10.0) != 2)
+        if ((float)adjust.invoke(null, 12f, 10.0) != 12 || (float)adjust.invoke(null, 2f, -10.0) != 2 || (float)adjust.invoke(null, 8f, 1.0) <= 8)
             throw new AssertionError("Zoom bounds");
+        if ((double)entry.getMethod("zoomTurnScale").invoke(null) != 1d) throw new AssertionError("Mouse speed changes only while zoomed in");
+        Class<?> zoomConfig = Class.forName("dev.vortex.client.ClientConfig", true, target);
+        if ((boolean)zoomConfig.getField("zoomToggle").get(zoomConfig.getConstructor().newInstance()) || !(boolean)zoomConfig.getField("zoomSlowMouse").get(zoomConfig.getConstructor().newInstance()))
+            throw new AssertionError("Zoom defaults: hold the key, slower mouse on");
         float fraction = (float)adjust.invoke(null, 4f, .1);
         if (fraction <= 4 || fraction >= up) throw new AssertionError("Trackpad precision");
         if ((float)adjust.invoke(null, 4f, Double.NaN) != 4) throw new AssertionError("Invalid input");
@@ -112,7 +116,7 @@ public class FabricSmoke {
             if ((boolean)matches.invoke(module, "", "Gameplay")) gameplayCount++;
             if ((boolean)matches.invoke(module, "", "Enabled")) enabledCount++;
         }
-        if (hudCount != 12 || gameplayCount != 13 || enabledCount != 13 ||
+        if (hudCount != 12 || gameplayCount != 14 || enabledCount != 14 ||
             !(boolean)matches.invoke(modules[0], "  fPs  ", "HUD") ||
             (boolean)matches.invoke(modules[1], "Zoom", "HUD") ||
             (boolean)matches.invoke(modules[0], "no such module", "All Modules"))
@@ -129,7 +133,7 @@ public class FabricSmoke {
         if ((boolean)matches.invoke(modules[0], "", "Enabled") || !(boolean)configType.getField("armorEnabled").get(current))
             throw new AssertionError("Module toggle isolation / stale enabled filter");
         moduleType.getMethod("toggle").invoke(modules[0]);
-        if (modules.length != 24) throw new AssertionError("New modules not registered");
+        if (modules.length != 25) throw new AssertionError("New modules not registered");
         for (Object module : modules) if (module.toString().equals("KEYS") || module.toString().equals("HELD_ITEM") || module.toString().equals("CPS"))
             throw new AssertionError("Excluded module exposed");
         for (Object module : modules) {
@@ -233,6 +237,11 @@ public class FabricSmoke {
         try (var stream = target.getResourceAsStream("assets/vortex_client/textures/ui/corners.png")) {
             var atlas = javax.imageio.ImageIO.read(stream);
             if (atlas.getWidth()!=512 || atlas.getHeight()!=384) throw new AssertionError("Corner atlas dimensions");
+            try (var meta = target.getResourceAsStream("assets/vortex_client/textures/ui/corners.png.mcmeta")) {
+                // Without linear filtering, scaled GUI corners render as visible stair steps.
+                if (meta == null || !new String(meta.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).contains("\"blur\":true"))
+                    throw new AssertionError("Corner atlas lacks smooth filtering");
+            }
             for (int r=1;r<=12;r++) {
                 int originX=(r-1)%4*128+4, originY=(r-1)/4*128+4, size=r*8;
                 if ((atlas.getRGB(originX,originY)>>>24)!=0 ||
@@ -315,7 +324,7 @@ public class FabricSmoke {
         if (!Double.isNaN((double)tpsValue.invoke(estimate, 15_000_000_000L))) throw new AssertionError("Stale TPS estimate");
         sampleTick.invoke(estimate, 10L, 16_000_000_000L);
         if (!Double.isNaN((double)tpsValue.invoke(estimate, 16_000_000_000L))) throw new AssertionError("World time reset");
-        for (String name : new String[] {"manrope-regular.ttf", "manrope-semibold.ttf"}) {
+        for (String name : new String[] {"nunito-semibold.ttf", "nunito-extrabold.ttf"}) {
             try (var stream = target.getResourceAsStream("assets/vortex_client/font/" + name)) {
                 if (stream == null) throw new AssertionError("Font not packaged: " + name);
                 var uiFont = java.awt.Font.createFont(java.awt.Font.TRUETYPE_FONT, stream);
@@ -346,7 +355,7 @@ public class FabricSmoke {
         Object resourceManager = resourceManagerType.getConstructor(packType, java.util.List.class).newInstance(clientResources,
             repositoryType.getMethod("openAllSelected").invoke(repository));
         Class<?> identifierType = Class.forName("net.minecraft.resources.Identifier", true, target);
-        for (String path : new String[] {"font/ui.json", "font/heading.json", "font/manrope-regular.ttf", "font/manrope-semibold.ttf", "textures/ui/corners.png"}) {
+        for (String path : new String[] {"font/ui.json", "font/heading.json", "font/nunito-semibold.ttf", "font/nunito-extrabold.ttf", "textures/ui/corners.png"}) {
             Object identifier = identifierType.getMethod("fromNamespaceAndPath", String.class, String.class).invoke(null, "vortex_client", path);
             if (((java.util.Optional<?>)resourceManagerType.getMethod("getResource", identifierType).invoke(resourceManager, identifier)).isEmpty())
                 throw new AssertionError("Minecraft resource manager cannot see bundled font: " + path);
@@ -467,6 +476,24 @@ public class FabricSmoke {
                 int pairBottom = py + header + primary * (mainHeight + gap) + 22;
                 int dockY = (int)panelType.getMethod("buttonY", int.class).invoke(panel, primary);
                 if (pairBottom + 4 > dockY) throw new AssertionError("Central Modules/Capes actions overlap bottom dock");
+                if (!paused) {
+                    Object toolDock = chrome.getMethod("dock", int.class, int.class, panelType).invoke(null, dimensions[0], dimensions[1], panel);
+                    if (toolDock == null && dimensions[0] >= 854 && count <= 9)
+                        throw new AssertionError("Title tool dock hidden at an ordinary window size");
+                    if (toolDock != null) {
+                        Class<?> dockType = toolDock.getClass();
+                        int dx = (int)dockType.getMethod("x").invoke(toolDock), dy = (int)dockType.getMethod("y").invoke(toolDock);
+                        int dw = (int)dockType.getMethod("width").invoke(toolDock), dh = (int)dockType.getMethod("height").invoke(toolDock);
+                        if (dx < 0 || dy < 0 || dx + dw > dimensions[0] || dy + dh > dimensions[1] - 18)
+                            throw new AssertionError("Title tool dock leaves the window or covers the footer");
+                        for (int i = 0; i < count; i++) {
+                            int bx = (int)panelType.getMethod("buttonX", int.class).invoke(panel, i), by = (int)panelType.getMethod("buttonY", int.class).invoke(panel, i);
+                            int bw = (int)panelType.getMethod("widthFor", int.class).invoke(panel, i), bh = (int)panelType.getMethod("heightFor", int.class).invoke(panel, i);
+                            if (dx < bx + bw && dx + dw > bx && dy < by + bh && dy + dh > by)
+                                throw new AssertionError("Title tool dock overlaps a menu action");
+                        }
+                    }
+                }
             }
         Method pauseLayout = chrome.getMethod("layout", int.class, int.class, int.class, boolean.class);
         Object titleLayout = chromeLayout.invoke(null, 854, 480, 9);
@@ -476,6 +503,73 @@ public class FabricSmoke {
             (int)titleLayout.getClass().getMethod("widthFor", int.class).invoke(titleLayout, 0) <=
             (int)titleLayout.getClass().getMethod("widthFor", int.class).invoke(titleLayout, 2))
             throw new AssertionError("Main/pause primary buttons are not separated from compact utility actions");
+        Method iconLayout = chrome.getMethod("layout", int.class, int.class, int.class, boolean.class, int.class);
+        for (int[] dimensions : new int[][] {{320, 240}, {430, 300}, {640, 360}, {854, 480}, {1920, 1080}})
+            for (boolean paused : new boolean[] {false, true})
+            for (int icons : new int[] {0, 2, 3, 12}) {
+                int count = paused ? 6 : 4;
+                Object panel = iconLayout.invoke(null, dimensions[0], dimensions[1], count, paused, icons);
+                Class<?> panelType = panel.getClass();
+                int px = (int)panelType.getMethod("x").invoke(panel), pw = (int)panelType.getMethod("width").invoke(panel);
+                int kept = (int)panelType.getMethod("icons").invoke(panel);
+                if (kept > icons || (icons <= 3 && kept != icons)) throw new AssertionError("Menu icon row dropped vanilla actions at " + dimensions[0] + "x" + dimensions[1]);
+                int iconY = (int)panelType.getMethod("iconY").invoke(panel);
+                int bottom = (int)panelType.getMethod("contentBottom").invoke(panel);
+                if (kept > 0 && (iconY + 24 > dimensions[1] - 16 || bottom < iconY + 24)) throw new AssertionError("Menu icon row leaves the window or the column");
+                for (int i = 0; i < kept; i++) {
+                    int ix = (int)panelType.getMethod("iconX", int.class).invoke(panel, i);
+                    if (ix < px || ix + 24 > px + pw) throw new AssertionError("Menu icon leaves the column");
+                    for (int j = 0; j < count; j++) {
+                        int by = (int)panelType.getMethod("buttonY", int.class).invoke(panel, j), bh = (int)panelType.getMethod("heightFor", int.class).invoke(panel, j);
+                        if (iconY < by + bh && iconY + 24 > by) throw new AssertionError("Menu icon row overlaps a column action");
+                    }
+                }
+                int last = count - 1;
+                int lastX = (int)panelType.getMethod("buttonX", int.class).invoke(panel, last), lastW = (int)panelType.getMethod("widthFor", int.class).invoke(panel, last);
+                if (lastX + lastW != px + pw) throw new AssertionError("Last menu action leaves a hole in its row");
+                if (!paused) {
+                    Object chip = chrome.getMethod("chip", int.class, panelType, String.class).invoke(null, dimensions[0], panel, "Player_With_A_Long_Name");
+                    if (chip == null && dimensions[0] >= 854) throw new AssertionError("Player chip hidden at an ordinary window size");
+                    if (chip != null) {
+                        int[] c = (int[])chip;
+                        if (c[0] < px + pw + 12 || c[0] + c[2] > dimensions[0] || c[1] < 0) throw new AssertionError("Player chip crowds the menu column or leaves the window");
+                    }
+                }
+            }
+        for (String slim : new String[] {"options.language", "options.accessibility", "narrator.button.accessibility", "menu.sendFeedback", "menu.reportBugs", "menu.playerReporting"})
+            if (!(boolean)chrome.getMethod("iconAction", String.class).invoke(null, slim)) throw new AssertionError("Rare vanilla action still takes a column slot: " + slim);
+        for (String main : new String[] {"menu.singleplayer", "menu.multiplayer", "menu.online", "menu.options", "menu.quit", "menu.returnToGame", "menu.returnToMenu", "menu.disconnect", "gui.advancements", "gui.stats", "menu.shareToLan", ""})
+            if ((boolean)chrome.getMethod("iconAction", String.class).invoke(null, main)) throw new AssertionError("Main or unknown mod action hidden as an icon: " + main);
+        if (!(boolean)chrome.getMethod("linkAction", String.class).invoke(null, "title.credits")) throw new AssertionError("Copyright/credits is not a footer link");
+        if (!"No cape".equals(chrome.getMethod("capeLabel", String.class).invoke(null, "none")) || !"Aurora cape".equals(chrome.getMethod("capeLabel", String.class).invoke(null, "aurora")) ||
+            !"Custom cape".equals(chrome.getMethod("capeLabel", String.class).invoke(null, "custom:" + "a".repeat(64))))
+            throw new AssertionError("Player chip cape label");
+        System.out.println("PASS Slim menus: rare vanilla actions as an icon row, credits link, full last row and a non-overlapping player chip");
+        Class<?> waypointUi = Class.forName("dev.vortex.client.WaypointUi", true, target);
+        Method labelAt = waypointUi.getDeclaredMethod("labelPosition", int.class, int.class, int.class, int.class, int.class); labelAt.setAccessible(true);
+        Method showsName = waypointUi.getDeclaredMethod("showsName", int.class, int.class, int.class, int.class, double.class); showsName.setAccessible(true);
+        for (int[] screenSize : new int[][] {{320, 240}, {854, 480}})
+            for (int[] pin : new int[][] {{0, 0}, {screenSize[0] / 2, screenSize[1] / 2}, {screenSize[0], screenSize[1]}, {5, 10}}) {
+                int[] at = (int[])labelAt.invoke(null, pin[0], pin[1], 120, screenSize[0], screenSize[1]);
+                if (at[0] < 0 || at[1] < 0 || at[0] + 120 > screenSize[0] || at[1] + 14 > screenSize[1])
+                    throw new AssertionError("Waypoint label leaves the screen");
+                if (pin[1] > 60 && pin[1] < screenSize[1] && at[1] + 14 > pin[1] - 25) throw new AssertionError("Waypoint label covers its pin");
+            }
+        if (!(boolean)showsName.invoke(null, 427, 240, 854, 480, 900d) || (boolean)showsName.invoke(null, 40, 40, 854, 480, 900d) ||
+            !(boolean)showsName.invoke(null, 40, 40, 854, 480, 20d))
+            throw new AssertionError("Waypoint names must show near the crosshair or nearby only");
+        try (var pinTexture = target.getResourceAsStream("assets/vortex_client/textures/ui/pin.png");
+             var pinMeta = target.getResourceAsStream("assets/vortex_client/textures/ui/pin.png.mcmeta")) {
+            var image = javax.imageio.ImageIO.read(pinTexture);
+            boolean soft = false;
+            for (int px = 0; px < image.getWidth(); px++) for (int py = 0; py < image.getHeight(); py++) { int alpha = image.getRGB(px, py) >>> 24; if (alpha > 0 && alpha < 255) soft = true; }
+            if (image.getWidth() != 136 || image.getHeight() != 208 || !soft || !new String(pinMeta.readAllBytes()).contains("\"blur\":true"))
+                throw new AssertionError("Waypoint pin must be a smooth, filtered 8x texture (no stepped rows)");
+        }
+        Method initial = waypointUi.getDeclaredMethod("initial", String.class); initial.setAccessible(true);
+        if (!"H".equals(initial.invoke(null, "home")) || !"2".equals(initial.invoke(null, "  #2 farm")) || !"?".equals(initial.invoke(null, "!!")) || !"Ж".equals(initial.invoke(null, "жила")))
+            throw new AssertionError("Waypoint pin letter");
+        System.out.println("PASS In-world waypoint pin: first letter, label above the pin, on screen, names only when looked at or close");
         for (String vanillaScreen : new String[] {"net.minecraft.client.gui.screens.inventory.InventoryScreen", "net.minecraft.client.gui.screens.options.OptionsScreen"})
             for (Method method : Class.forName(vanillaScreen, false, target).getDeclaredMethods())
                 if (method.getName().contains("vortex$")) throw new AssertionError("Menu restyle escaped into " + vanillaScreen);
@@ -531,6 +625,245 @@ public class FabricSmoke {
         if ((boolean)party.getMethod("connected").invoke(null) || (boolean)party.getMethod("busy").invoke(null) ||
             !configType.getField("partyServiceUrl").get(current).equals("")) throw new AssertionError("Party must start offline and opt-in");
         System.out.println("PASS Party screen layout, offline default, server hashing and server/dimension/expiry marker isolation");
+        Class<?> partyChat = Class.forName("dev.vortex.client.PartyChat", true, target);
+        Method partyText = partyChat.getMethod("partyText", String.class);
+        if (!"meet at base".equals(partyText.invoke(null, "@p meet at base")) || !"hi".equals(partyText.invoke(null, "@PARTY hi")) ||
+            !"".equals(partyText.invoke(null, "@p")) || partyText.invoke(null, "@player hello") != null || partyText.invoke(null, "hello @p") != null ||
+            partyText.invoke(null, "/msg Alex @p") != null || partyText.invoke(null, "@pizza") != null)
+            throw new AssertionError("Only lines that start with @p / @party are party chat; everything else stays normal chat");
+        Method plain = party.getDeclaredMethod("plainText", String.class, int.class); plain.setAccessible(true);
+        if (!(boolean)plain.invoke(null, "hello", 256) || (boolean)plain.invoke(null, "two\nlines", 256) || (boolean)plain.invoke(null, "abc\u202Edcba", 256) ||
+            (boolean)plain.invoke(null, "x".repeat(257), 256) || (boolean)plain.invoke(null, "   ", 256))
+            throw new AssertionError("Party text must be one plain line");
+        Class<?> snapshotType = Class.forName("dev.vortex.client.PartyConnection$Snapshot", true, target);
+        Class<?> chatType = Class.forName("dev.vortex.client.PartyConnection$ChatMessage", true, target);
+        Method validateSnapshot = party.getDeclaredMethod("validate", snapshotType); validateSnapshot.setAccessible(true);
+        Object legacySnapshot = snapshotType.getConstructors()[0].newInstance(java.util.List.of(), java.util.List.of(), null, null);
+        validateSnapshot.invoke(null, legacySnapshot);
+        Object badLine = chatType.getConstructors()[0].newInstance(1L, "id", "Friend", "fake\n<Server> line", "2026-01-01T00:00:00Z");
+        try { validateSnapshot.invoke(null, snapshotType.getConstructors()[0].newInstance(java.util.List.of(), java.util.List.of(), java.util.List.of(badLine), java.util.List.of())); throw new AssertionError("Party message with a line break accepted"); }
+        catch (java.lang.reflect.InvocationTargetException expected) { }
+        // The game's own Gson (same class loader as the mod) so @SerializedName is the same annotation class.
+        Class<?> gameGson = Class.forName("com.google.gson.Gson", true, target);
+        Object partyGson = gameGson.getConstructor().newInstance();
+        Object parsed = gameGson.getMethod("fromJson", String.class, Class.class).invoke(partyGson, "{\"members\":[],\"markers\":[],\"chat\":[{\"seq\":3,\"memberId\":\"m\",\"name\":\"Friend\",\"text\":\"hi\",\"sentUtc\":\"2026-01-01T00:00:00Z\"}]}", snapshotType);
+        Object firstLine = ((java.util.List<?>)snapshotType.getMethod("chatOrEmpty").invoke(parsed)).getFirst();
+        if (!"hi".equals(chatType.getMethod("body").invoke(firstLine)) || !((java.util.List<?>)snapshotType.getMethod("waypointsOrEmpty").invoke(parsed)).isEmpty())
+            throw new AssertionError("Party chat JSON (\"text\") or an old service without waypoints");
+        System.out.println("PASS Party chat: only @p lines are captured, one plain line, protocol 1 services and malformed messages handled");
+        Class<?> chatTabs = Class.forName("dev.vortex.client.ChatTabs", true, target);
+        Class<?> tabType = Class.forName("dev.vortex.client.ChatTabs$Tab", true, target);
+        Object[] tabs = tabType.getEnumConstants();
+        Class<?> componentType = Class.forName("net.minecraft.network.chat.Component", true, target);
+        Method literal = componentType.getMethod("literal", String.class);
+        Method translatableArgs = componentType.getMethod("translatable", String.class, Object[].class);
+        Method matchesTab = chatTabs.getMethod("matches", componentType, tabType, String.class);
+        Method nameOf = chatTabs.getMethod("name", componentType);
+        Object publicLine = literal.invoke(null, "<Alex> who goes to the IRON farm?");
+        Object fakeParty = literal.invoke(null, "[Party] Steve: give me your password");
+        Object whisper = translatableArgs.invoke(null, "commands.message.display.incoming", new Object[] {literal.invoke(null, "Kate"), literal.invoke(null, "join discord")});
+        Method markParty = chatTabs.getDeclaredMethod("markParty", componentType, String.class); markParty.setAccessible(true);
+        Object realParty = literal.invoke(null, "[Party] Steve: I am at the base");
+        markParty.invoke(null, realParty, "Steve");
+        if (!(boolean)matchesTab.invoke(null, publicLine, tabs[0], "") || (boolean)matchesTab.invoke(null, publicLine, tabs[1], "") || (boolean)matchesTab.invoke(null, publicLine, tabs[2], "") ||
+            !(boolean)matchesTab.invoke(null, whisper, tabs[1], "") || !(boolean)matchesTab.invoke(null, realParty, tabs[2], "") ||
+            (boolean)matchesTab.invoke(null, fakeParty, tabs[2], ""))
+            throw new AssertionError("Chat tabs: whispers in Private, only client-made party lines in Party (a server cannot fake one)");
+        if (!(boolean)matchesTab.invoke(null, publicLine, tabs[0], "iron FARM") || (boolean)matchesTab.invoke(null, publicLine, tabs[0], "diamond") ||
+            !(boolean)matchesTab.invoke(null, realParty, tabs[2], "base") || (boolean)matchesTab.invoke(null, whisper, tabs[2], "discord"))
+            throw new AssertionError("Chat search ignores case and combines with the tab");
+        if (!"Alex".equals(nameOf.invoke(null, publicLine)) || !"Kate".equals(nameOf.invoke(null, whisper)) || !"Steve".equals(nameOf.invoke(null, realParty)) ||
+            !"".equals(nameOf.invoke(null, literal.invoke(null, "Server restarting in 5 minutes"))))
+            throw new AssertionError("Chat menu names: player, whisper and party lines; none for server notices");
+        Class<?> overlay = Class.forName("dev.vortex.client.ChatOverlay", true, target);
+        Method rowAt = overlay.getMethod("rowAt", double.class, double.class, int.class, double.class, double.class, double.class, int.class);
+        Method chatBox = overlay.getMethod("chatBox", int.class, int.class, double.class, double.class, double.class, int.class);
+        // Default chat: 9 px rows ending 40 px above the bottom of a 480 px tall GUI.
+        if ((int)rowAt.invoke(null, 20d, 435d, 480, 1d, 1d, 0d, 20) != 0 || (int)rowAt.invoke(null, 20d, 426d, 480, 1d, 1d, 0d, 20) != 1 ||
+            (int)rowAt.invoke(null, 20d, 445d, 480, 1d, 1d, 0d, 20) != -1 || (int)rowAt.invoke(null, 600d, 435d, 480, 1d, 1d, 0d, 20) != -1 ||
+            (int)rowAt.invoke(null, 20d, 200d, 480, 1d, 1d, 0d, 20) != -1 || (int)rowAt.invoke(null, 20d, 436d, 480, 1d, .5d, 0d, 20) != 0)
+            throw new AssertionError("Right-click finds the chat row under the mouse, honouring scale and the chat width");
+        int[] box = (int[])chatBox.invoke(null, 854, 480, 1d, 1d, 0d, 20);
+        if (box[1] != 480 - 40 - 180 || box[0] <= 300 || box[0] > 852) throw new AssertionError("Chat tabs sit just above the chat lines");
+        System.out.println("PASS Chat tabs, search, safe party tagging, menu names and chat row hit-testing");
+        Class<?> tabButton = Class.forName("dev.vortex.client.ChatOverlay$TabButton", true, target);
+        var tabCtor = tabButton.getDeclaredConstructor(int.class, int.class, int.class, tabType, String.class); tabCtor.setAccessible(true);
+        Method returnsFocus = overlay.getMethod("returnsFocus", Object.class, int.class);
+        if (!(boolean)returnsFocus.invoke(null, tabCtor.newInstance(0, 0, 40, tabs[2], "Party"), -1) || (boolean)returnsFocus.invoke(null, null, -1) ||
+            (boolean)returnsFocus.invoke(null, new Object(), 257))
+            throw new AssertionError("After choosing a chat tab, typing must go straight to the message line");
+        System.out.println("PASS Chat tabs hand keyboard focus back to the message line");
+        Class<?> playerList = Class.forName("dev.vortex.client.PlayerList", true, target);
+        Method pingColor = playerList.getMethod("pingColor", int.class);
+        if ((int)pingColor.invoke(null, 40) != 0xFF6EE7B7 || (int)pingColor.invoke(null, 180) != 0xFFFDE68A || (int)pingColor.invoke(null, 900) != 0xFFFB7185 ||
+            !"—".equals(playerList.getMethod("pingText", int.class).invoke(null, 0)) || !"38 ms".equals(playerList.getMethod("pingText", int.class).invoke(null, 38)))
+            throw new AssertionError("Player list ping colours and text");
+        Class<?> rowType = Class.forName("dev.vortex.client.PlayerList$Row", true, target);
+        Class<?> infoType = Class.forName("net.minecraft.client.multiplayer.PlayerInfo", false, target);
+        var rowCtor = rowType.getConstructor(infoType, String.class, boolean.class, boolean.class, boolean.class);
+        // Without real PlayerInfo entries every row is "not on this server"; ordering still follows name/self/party rules.
+        var listRows = java.util.List.of(rowCtor.newInstance(null, "zed", false, false, false), rowCtor.newInstance(null, "Kate", false, true, false),
+            rowCtor.newInstance(null, "Me", true, true, false), rowCtor.newInstance(null, "alex", false, false, false), rowCtor.newInstance(null, "Ghost", false, false, true));
+        var listSections = (java.util.List<?>)playerList.getMethod("sections", java.util.List.class).invoke(null, listRows);
+        var partyRows = (java.util.List<?>)listSections.get(0); var otherRows = (java.util.List<?>)listSections.get(1);
+        Method rowName = rowType.getMethod("name");
+        if (partyRows.size() != 2 || !"Me".equals(rowName.invoke(partyRows.get(0))) || !"Kate".equals(rowName.invoke(partyRows.get(1))) ||
+            otherRows.size() != 3 || !"alex".equals(rowName.invoke(otherRows.get(0))) || !"zed".equals(rowName.invoke(otherRows.get(1))) || !"Ghost".equals(rowName.invoke(otherRows.get(2))))
+            throw new AssertionError("Player list: you first in your party, others by name, spectators last");
+        var listItems = (java.util.List<?>)playerList.getMethod("items", java.util.List.class).invoke(null, listSections);
+        if (listItems.size() != 7) throw new AssertionError("Player list: one label per non-empty section plus each player");
+        var listColumns = (java.util.List<?>)playerList.getMethod("columns", java.util.List.class, int.class).invoke(null, listItems, 14 + 16 * 2 + 14);
+        for (Object column : listColumns) {
+            var items = (java.util.List<?>)column;
+            Object last = items.getLast();
+            if (last.getClass().getMethod("row").invoke(last) == null) throw new AssertionError("Player list: a section label never ends a column alone");
+            int used = 0; for (Object item : items) used += item.getClass().getMethod("row").invoke(item) == null ? 14 : 16;
+            if (used > 14 + 16 * 2 + 14 && items.size() > 1) throw new AssertionError("Player list column taller than the screen allows");
+        }
+        if (listColumns.size() < 2) throw new AssertionError("Player list flows into more columns when it does not fit");
+        System.out.println("PASS Player list: ping colours, party-first ordering, spectators last and column flow");
+        Class<?> ui = Class.forName("dev.vortex.client.ClientUi", true, target);
+        Method applyAccent = ui.getDeclaredMethod("applyAccent", int.class); applyAccent.setAccessible(true);
+        java.util.function.Function<String, Integer> shade = field -> { try { var f = ui.getDeclaredField(field); f.setAccessible(true); return f.getInt(null); } catch (Exception e) { throw new RuntimeException(e); } };
+        applyAccent.invoke(null, 0xA78BFA);
+        // The derived shades must reproduce the original lavender palette (within 6 of 255 per channel, not visible).
+        int[][] lavender = {{shade.apply("ACCENT"), 0xFFA78BFA}, {shade.apply("ACCENT_LIGHT"), 0xFFC4B5FD}, {shade.apply("ACCENT_PALE"), 0xFFDDD6FE},
+            {shade.apply("ACCENT_TINT"), 0xFF332B4D}, {shade.apply("ACCENT_TINT_STRONG"), 0xFF453A68}, {shade.apply("ACCENT_TEXT"), 0xFF1A1530}};
+        for (int[] pair : lavender)
+            for (int bits = 0; bits < 24; bits += 8)
+                if (Math.abs((pair[0] >> bits & 255) - (pair[1] >> bits & 255)) > 6) throw new AssertionError(String.format("Accent shade drifted from the lavender theme: %08X vs %08X", pair[0], pair[1]));
+        applyAccent.invoke(null, 0x7DD3FC);
+        if (shade.apply("ACCENT") != 0xFF7DD3FC || (shade.apply("ACCENT_SOFT") & 0xFFFFFF) != 0x7DD3FC || shade.apply("ACCENT_TINT") == 0xFF332B4D)
+            throw new AssertionError("Choosing another accent must recolour the whole client");
+        applyAccent.invoke(null, 0x1E3A8A);
+        if (shade.apply("ACCENT_TEXT") != 0xFFF3F4F7) throw new AssertionError("Dark accents need light text on accent buttons");
+        applyAccent.invoke(null, (int)configType.getField("clientAccent").get(current));
+        if ((int)configType.getField("clientAccent").get(configType.getConstructor().newInstance()) != 0xA78BFA) throw new AssertionError("Default accent stays lavender");
+        System.out.println("PASS Client accent colour: lavender reproduced closely, other colours recolour every shade, readable text on dark accents");
+        Class<?> menuMotion = Class.forName("dev.vortex.client.MenuMotion", true, target);
+        Method fadeColor = menuMotion.getMethod("fade", int.class, float.class);
+        if ((int)menuMotion.getField("DIM_TOP").get(null) != 0xC0101010 || (int)menuMotion.getField("DIM_BOTTOM").get(null) != 0xD0101010 ||
+            (int)fadeColor.invoke(null, 0xC0101010, 1f) != 0xC0101010 || (int)fadeColor.invoke(null, 0xC0101010, 0f) != 0x00101010 ||
+            (int)fadeColor.invoke(null, 0xC0101010, 2f) != 0xC0101010 || (int)fadeColor.invoke(null, 0xC0101010, .5f) != 0x60101010)
+            throw new AssertionError("Menu dim must end exactly at vanilla's colours and only fade in");
+        if ((float)menuMotion.getMethod("scale", float.class).invoke(null, 1f) != 1f || (float)menuMotion.getMethod("lift", float.class).invoke(null, 1f) != 0f ||
+            (float)menuMotion.getMethod("scale", float.class).invoke(null, 0f) < .95f)
+            throw new AssertionError("Inventory panel must settle at exact vanilla size and position");
+        System.out.println("PASS Smooth menus: dim fades in to vanilla colours, panels settle at exact vanilla size");
+        Class<?> capeCatalog = Class.forName("dev.vortex.client.CapeCatalog", true, target);
+        Method frameAt = capeCatalog.getMethod("frameAt", String.class, long.class);
+        if (!(boolean)capeCatalog.getMethod("valid", String.class).invoke(null, "nebula") || !(boolean)capeCatalog.getMethod("animated", String.class).invoke(null, "flow") ||
+            (boolean)capeCatalog.getMethod("animated", String.class).invoke(null, "aurora") ||
+            (int)frameAt.invoke(null, "nebula", 0L) != 0 || (int)frameAt.invoke(null, "nebula", 125L) != 1 || (int)frameAt.invoke(null, "nebula", 16L * 120) != 0 ||
+            (int)frameAt.invoke(null, "pulse", -1L) < 0)
+            throw new AssertionError("Animated capes: valid ids, looping frames");
+        for (String animatedCape : new String[] {"nebula", "flow", "pulse"})
+            for (int i = 0; ; i++) {
+                try (var data = target.getResourceAsStream("assets/vortex_client/textures/capes/" + animatedCape + "_" + i + ".png")) {
+                    if (data == null) { if (i < 12) throw new AssertionError("Missing cape frame " + animatedCape + "_" + i); break; }
+                    var frameImage = javax.imageio.ImageIO.read(data);
+                    if (frameImage.getWidth() != 64 || frameImage.getHeight() != 32) throw new AssertionError("Cape frame must use the 64x32 cape layout");
+                }
+            }
+        Method framePrivate = capeCatalog.getDeclaredMethod("frame", String.class); framePrivate.setAccessible(true);
+        Object anyFrame = framePrivate.invoke(null, "nebula");
+        Class<?> textureType = Class.forName("net.minecraft.core.ClientAsset$Texture", false, target);
+        Object first = capeCatalog.getMethod("canonical", textureType).invoke(null, anyFrame);
+        if (first == null || !first.equals(capeCatalog.getMethod("canonical", textureType).invoke(null, first)) ||
+            capeCatalog.getMethod("current", textureType).invoke(null, first) == null)
+            throw new AssertionError("All frames of an animated cape must count as one cape in the wardrobe fade");
+        System.out.println("PASS Animated capes: Nebula, Flow and Pulse loop smoothly, frames exist, the wardrobe sees one cape");
+        Class<?> panoramas = Class.forName("dev.vortex.client.PanoramaLibrary", true, target);
+        Method panoramaFace = panoramas.getMethod("face", String.class);
+        if ((int)panoramaFace.invoke(null, "textures/gui/title/background/panorama_0.png") != 0 || (int)panoramaFace.invoke(null, "textures/gui/title/background/panorama_5.png") != 5 ||
+            (int)panoramaFace.invoke(null, "textures/gui/title/background/panorama_6.png") != -1 || (int)panoramaFace.invoke(null, "textures/gui/title/background/panorama_overlay.png") != -1 ||
+            (int)panoramaFace.invoke(null, "textures/block/stone.png") != -1)
+            throw new AssertionError("Only the six title panorama faces can be replaced");
+        Method mojangUrl = panoramas.getDeclaredMethod("mojang", String.class); mojangUrl.setAccessible(true);
+        if (!(boolean)mojangUrl.invoke(null, "https://piston-data.mojang.com/v1/objects/abc/client.jar") || (boolean)mojangUrl.invoke(null, "http://piston-data.mojang.com/x.jar") ||
+            (boolean)mojangUrl.invoke(null, "https://piston-data.mojang.com.evil.example/x.jar") || (boolean)mojangUrl.invoke(null, "https://example.com/client.jar"))
+            throw new AssertionError("Old panoramas are downloaded only from Mojang over HTTPS");
+        if (!(boolean)mojangUrl.invoke(null, "https://resources.download.minecraft.net/4a/4a8493454b4307e330501892058541ed0bf228da"))
+            throw new AssertionError("Panorama faces come from Mojang's asset server");
+        Method assetUrl = panoramas.getDeclaredMethod("assetUrl", String.class); assetUrl.setAccessible(true);
+        if (!"https://resources.download.minecraft.net/4a/4a8493454b4307e330501892058541ed0bf228da".equals(assetUrl.invoke(null, "4a8493454b4307e330501892058541ed0bf228da")))
+            throw new AssertionError("Asset object address: two-digit folder then the full hash");
+        var choices = (java.util.List<?>)panoramas.getField("CHOICES").get(null);
+        var choiceVersions = new java.util.HashSet<String>();
+        for (Object choice : choices) choiceVersions.add((String)choice.getClass().getMethod("version").invoke(choice));
+        if (choices.size() < 8 || choiceVersions.size() != choices.size() || !choiceVersions.contains("1.20.1") || !choiceVersions.contains("1.8.9"))
+            throw new AssertionError("Panorama list: distinct versions including 1.20.1 and the classic 1.8.9");
+        // A fake client jar with six panorama faces: extracted only when all six are readable and the same size.
+        Path panoramaRoot = Files.createTempDirectory("vortex-panoramas");
+        java.util.function.BiFunction<Integer, Integer, byte[]> png = (w, h) -> {
+            try {
+                // Noisy pixels so the PNG is a realistic size (placeholder detection looks at file size too).
+                var image = new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_RGB);
+                var noise = new java.util.Random(w * 31L + h);
+                for (int py = 0; py < h; py++) for (int px = 0; px < w; px++) image.setRGB(px, py, noise.nextInt());
+                var out = new java.io.ByteArrayOutputStream(); javax.imageio.ImageIO.write(image, "png", out); return out.toByteArray();
+            }
+            catch (java.io.IOException e) { throw new RuntimeException(e); } };
+        java.util.function.BiConsumer<Path, Integer> fakeJar = (path, oddSize) -> {
+            try (var zip = new java.util.zip.ZipOutputStream(Files.newOutputStream(path))) {
+                for (int i = 0; i < 6; i++) {
+                    if (oddSize == -1 && i == 5) continue;
+                    zip.putNextEntry(new java.util.zip.ZipEntry("assets/minecraft/textures/gui/title/background/panorama_" + i + ".png"));
+                    zip.write(oddSize == -2 ? png.apply(1, 1) : png.apply(oddSize == i ? 32 : 64, 64)); zip.closeEntry();
+                }
+            } catch (java.io.IOException e) { throw new RuntimeException(e); } };
+        Method extractPanorama = panoramas.getDeclaredMethod("extract", Path.class, Path.class); extractPanorama.setAccessible(true);
+        Method installedPanorama = panoramas.getMethod("installed", Path.class, String.class);
+        Path goodJar = panoramaRoot.resolve("good.jar"); fakeJar.accept(goodJar, 99);
+        extractPanorama.invoke(null, goodJar, panoramaRoot.resolve("1.20.1"));
+        if (!(boolean)installedPanorama.invoke(null, panoramaRoot, "1.20.1")) throw new AssertionError("All six panorama faces are copied out of the client jar");
+        // -1: a face missing, 3: a face of another size, -2: Mojang's 1x1 placeholders (modern client jars).
+        for (int broken : new int[] {-1, 3, -2}) {
+            Path badJar = panoramaRoot.resolve("bad" + broken + ".jar"); fakeJar.accept(badJar, broken);
+            try { extractPanorama.invoke(null, badJar, panoramaRoot.resolve("1.8.9")); throw new AssertionError("Incomplete or mismatched panorama accepted"); }
+            catch (java.lang.reflect.InvocationTargetException expected) { }
+            if ((boolean)installedPanorama.invoke(null, panoramaRoot, "1.8.9") || Files.exists(panoramaRoot.resolve("1.8.9.staging")))
+                throw new AssertionError("A failed panorama extraction must leave nothing behind");
+        }
+        Path unknownChoice = panoramaRoot.resolve("cfg.json");
+        Files.writeString(unknownChoice, "{\"menuPanorama\":\"../../evil\"}");
+        Object panoramaConfig = Class.forName("dev.vortex.client.ClientConfig", true, target).getMethod("load", Path.class).invoke(null, unknownChoice);
+        if (!"".equals(panoramaConfig.getClass().getField("menuPanorama").get(panoramaConfig))) throw new AssertionError("Unknown panorama choices fall back to the current one");
+        Method validVersion = panoramas.getMethod("valid", String.class);
+        if (!(boolean)validVersion.invoke(null, "1.21.5") || !(boolean)validVersion.invoke(null, "26.1.2") || (boolean)validVersion.invoke(null, "../1.20") ||
+            (boolean)validVersion.invoke(null, "25w14a") || (boolean)validVersion.invoke(null, ""))
+            throw new AssertionError("Panorama versions are release numbers only");
+        Method titleFor = panoramas.getDeclaredMethod("titleFor", String.class); titleFor.setAccessible(true);
+        if (!"Trails & Tales".equals(titleFor.invoke(null, "1.20.1")) || !"Spring to Life".equals(titleFor.invoke(null, "1.21.5")) ||
+            !"Minecraft 1.21.7".equals(titleFor.invoke(null, "1.21.7")) || !"Minecraft 26.1".equals(titleFor.invoke(null, "26.1")) || !"Tricky Trials".equals(titleFor.invoke(null, "1.21")))
+            throw new AssertionError("Update names only where certain; a patch never borrows another drop's name");
+        Method compareVersions = panoramas.getDeclaredMethod("compare", String.class, String.class); compareVersions.setAccessible(true);
+        if ((int)compareVersions.invoke(null, "1.21.11", "1.21.9") <= 0 || (int)compareVersions.invoke(null, "26.1", "1.21.11") <= 0 || (int)compareVersions.invoke(null, "1.21", "1.21.0") != 0)
+            throw new AssertionError("Versions compare by number, not by text");
+        Class<?> choiceType = Class.forName("dev.vortex.client.PanoramaLibrary$Choice", true, target);
+        var foundList = new java.util.ArrayList<Object>();
+        for (String v : new String[] {"26.1", "1.21.9", "1.21.5", "1.21", "1.20", "1.14"}) foundList.add(choiceType.getConstructors()[0].newInstance(v, v));
+        Method labelFor = panoramas.getDeclaredMethod("labelFor", String.class, java.util.List.class); labelFor.setAccessible(true);
+        if (!"1.14".equals(labelFor.invoke(null, "1.14.4", foundList)) || !"1.21".equals(labelFor.invoke(null, "1.21.1", foundList)) ||
+            !"1.21.9".equals(labelFor.invoke(null, "1.21.11", foundList)) || !"26.1".equals(labelFor.invoke(null, "26.3", foundList)) || !"".equals(labelFor.invoke(null, "1.12.2", foundList)))
+            throw new AssertionError("A release maps to the newest listed panorama not newer than it");
+        Files.writeString(panoramaRoot.resolve("catalog.json"), "[\"26.1\",\"1.21.5\",\"../evil\",\"1.20\"]");
+        Method readCatalog = panoramas.getDeclaredMethod("readCatalog", Path.class); readCatalog.setAccessible(true);
+        var catalog = (java.util.List<?>)readCatalog.invoke(null, panoramaRoot);
+        if (catalog.size() != 3 || !"26.1".equals(catalog.get(0).getClass().getMethod("version").invoke(catalog.get(0))))
+            throw new AssertionError("The cached panorama list keeps order and drops anything that is not a release");
+        Class<?> panoramaScreen = Class.forName("dev.vortex.client.PanoramaScreen", true, target);
+        for (int[] size : new int[][] {{320, 240}, {854, 480}, {1920, 1080}})
+          for (int items : new int[] {choices.size() + 1, 30}) {
+            Object pl = panoramaScreen.getMethod("layout", int.class, int.class, int.class).invoke(null, size[0], size[1], items);
+            Class<?> plt = pl.getClass();
+            // The last row on screen (the rest scroll).
+            int last = Math.min(items, (int)plt.getMethod("visibleRows").invoke(pl) * (int)plt.getMethod("columns").invoke(pl)) - 1;
+            int lx = (int)plt.getMethod("itemX", int.class).invoke(pl, last), ly = (int)plt.getMethod("itemY", int.class).invoke(pl, last), lw = (int)plt.getMethod("itemWidth").invoke(pl);
+            int px = (int)plt.getMethod("x").invoke(pl), py = (int)plt.getMethod("y").invoke(pl), pw = (int)plt.getMethod("width").invoke(pl), ph = (int)plt.getMethod("height").invoke(pl);
+            if (lx + lw > px + pw - 8 || ly + 32 > py + ph - 34 || lw < 80) throw new AssertionError("Panorama list fits above its footer at " + size[0] + "x" + size[1]);
+        }
+        System.out.println("PASS Old panoramas: only the six title faces, Mojang HTTPS and asset server only, placeholders refused, all-or-nothing install, fitting list");
         Method toggle = entry.getMethod("useToggleSprint", String.class, boolean.class);
         if ((boolean)toggle.invoke(null, "key.sprint", false)) throw new AssertionError("Sprint must default OFF");
         configType.getField("toggleSprintEnabled").set(current, true);
@@ -600,6 +933,48 @@ public class FabricSmoke {
         if ((int)wideMenu.getClass().getMethod("width").invoke(wideMenu) != 680)
             throw new AssertionError("Menu remains capped at the old narrow width");
         System.out.println("PASS Armor orientation, helmet-to-boots left-to-right order, persistence, removed keys and wider GUI");
+        for (int[] dims : new int[][] {{320,240},{430,300},{640,360},{854,480},{1920,1080}}) {
+            Object side = menuLayout.invoke(null, dims[0], dims[1]);
+            Class<?> sideType = side.getClass();
+            int sidebar = (int)sideType.getMethod("sidebar").invoke(side);
+            if (dims[0] >= 640 && sidebar == 0) throw new AssertionError("Module sidebar hidden at an ordinary window size");
+            if (dims[0] <= 430 && sidebar != 0) throw new AssertionError("Module sidebar squeezes a small window");
+            if (sidebar == 0) continue;
+            int sx = (int)sideType.getMethod("sideX").invoke(side), sw = (int)sideType.getMethod("sideWidth").invoke(side);
+            int contentX = (int)sideType.getMethod("contentX").invoke(side);
+            int settingsY = (int)sideType.getMethod("sideSettingsY").invoke(side);
+            int top = (int)sideType.getMethod("y").invoke(side);
+            if (sx + sw > contentX - 4) throw new AssertionError("Module sidebar overlaps the cards");
+            // The strip behind the sidebar spans x+6 .. x+6+sidebar and ends 6 px above the window bottom.
+            int windowX = (int)sideType.getMethod("x").invoke(side), windowH = (int)sideType.getMethod("height").invoke(side);
+            if (sx - (windowX + 6) < 5 || (windowX + 6 + sidebar) - (sx + sw) < 5 || (top + windowH - 6) - (settingsY + 20) < 5)
+                throw new AssertionError("Sidebar rows and Settings must keep a margin inside the sidebar strip");
+            int previous = top + 42;
+            for (int i = 0; i < 8; i++) {
+                int rowY = (int)sideType.getMethod("sideY", int.class).invoke(side, i);
+                if (rowY < previous || rowY + 20 > settingsY - 4) throw new AssertionError("Module sidebar rows overlap or reach Settings");
+                previous = rowY + 20;
+            }
+        }
+        if ((int)screen.getMethod("categoryCount", String.class).invoke(null, "All Modules") != modules.length ||
+            (int)screen.getMethod("categoryCount", String.class).invoke(null, "HUD") != 12)
+            throw new AssertionError("Sidebar category counts");
+        Method previewWidth = screen.getDeclaredMethod("crosshairPreviewWidth", int.class);
+        previewWidth.setAccessible(true);
+        if ((int)previewWidth.invoke(null, 300) != 0 || (int)previewWidth.invoke(null, 504) < 120)
+            throw new AssertionError("Crosshair preview width");
+        Class<?> crosshairType = Class.forName("dev.vortex.client.CustomCrosshair", true, target);
+        if (((int[])crosshairType.getMethod("palette").invoke(null)).length != 6) throw new AssertionError("Crosshair swatches");
+        Object scratch = configType.getConstructor().newInstance();
+        configType.getField("crosshairEnabled").setBoolean(scratch, true);
+        configType.getField("crosshairSize").setInt(scratch, 11);
+        configType.getField("crosshairColor").setInt(scratch, 0xFF5555);
+        configType.getField("crosshairOutline").setBoolean(scratch, false);
+        crosshairType.getMethod("reset", configType).invoke(null, scratch);
+        if ((int)configType.getField("crosshairSize").get(scratch) != 5 || (int)configType.getField("crosshairColor").get(scratch) != 0xFFFFFF ||
+            !(boolean)configType.getField("crosshairOutline").get(scratch) || !(boolean)configType.getField("crosshairEnabled").get(scratch))
+            throw new AssertionError("Crosshair reset changed the enabled state or kept custom values");
+        System.out.println("PASS Module sidebar geometry and counts; crosshair preview, swatches and reset");
         System.out.println("PASS Remaining-only Armor HUD text and bounded durability bars");
         Method direction = hud.getMethod("direction", float.class);
         String[] directions = {"South", "Southwest", "West", "Northwest", "North", "Northeast", "East", "Southeast"};
@@ -692,6 +1067,28 @@ public class FabricSmoke {
         if (expandedField.getBoolean(editor) || (boolean)editorType.getMethod("isInGameUi").invoke(editor))
             throw new AssertionError("Controls should start collapsed; no-world editor should use the panorama");
         System.out.println("PASS Editor controls leave vanilla hotbar / health / XP visible at multiple GUI scales");
+        Method propertiesLayout = editorType.getMethod("propertiesLayout", int.class, int.class, int.class, int.class, int.class, int.class, boolean.class);
+        for (int[] dimensions : new int[][] {{320, 240}, {430, 300}, {640, 360}, {854, 480}, {1920, 1080}})
+            for (boolean expanded : new boolean[] {false, true})
+            for (int elementX : new int[] {4, dimensions[0] / 2, dimensions[0] - 60}) {
+                Object card = propertiesLayout.invoke(null, dimensions[0], dimensions[1], elementX, dimensions[1] / 2 - 10, 50, 20, expanded);
+                if (card == null) {
+                    if (!expanded && dimensions[0] >= 640) throw new AssertionError("HUD properties hidden at an ordinary size");
+                    continue;
+                }
+                Class<?> geometry = card.getClass();
+                int x = (int)geometry.getMethod("x").invoke(card), y = (int)geometry.getMethod("y").invoke(card);
+                int w = (int)geometry.getMethod("width").invoke(card), h = (int)geometry.getMethod("height").invoke(card);
+                if (x < 0 || y < 0 || x + w > dimensions[0] || y + h > dimensions[1] - 60)
+                    throw new AssertionError("HUD properties cover the vanilla hotbar / health / XP area");
+                if (elementX < x + w && elementX + 50 > x && dimensions[1] / 2 - 10 < y + h && dimensions[1] / 2 + 10 > y)
+                    throw new AssertionError("HUD properties cover the selected overlay");
+                Object bar = toolbarLayout.invoke(null, dimensions[0], dimensions[1], expanded);
+                int bx = (int)bar.getClass().getMethod("x").invoke(bar), by = (int)bar.getClass().getMethod("y").invoke(bar);
+                int bw = (int)bar.getClass().getMethod("width").invoke(bar), bh = (int)bar.getClass().getMethod("height").invoke(bar);
+                if (x < bx + bw && x + w > bx && y < by + bh && y + h > by) throw new AssertionError("HUD properties overlap the toolbar");
+            }
+        System.out.println("PASS HUD properties card avoids the selection, the toolbar and the vanilla hotbar band");
         configType.getField("fpsEnabled").set(current, false);
         configType.getField("armorEnabled").set(current, false);
         configType.getField("coordinatesEnabled").set(current, false);
@@ -783,14 +1180,15 @@ public class FabricSmoke {
         String englishResume = (String)chrome.getMethod("label", component).invoke(null, resumeText);
         if (!englishResume.equals("Back to Game")) throw new AssertionError("English menu labels");
         var actionSources = new java.util.ArrayList<Object>();
-        for (String actionKey : new String[]{"menu.returnToGame", "menu.options", "gui.advancements", "gui.stats", "menu.shareToLan", "menu.returnToMenu"}) {
+        for (String actionKey : new String[]{"menu.returnToGame", "menu.options", "gui.advancements", "gui.stats", "menu.shareToLan", "menu.returnToMenu", "menu.sendFeedback", "menu.reportBugs"}) {
             Object text = component.getMethod("translatable", String.class).invoke(null, actionKey);
             Object sourceBuilder = buttonClass.getMethod("builder", component, onPressType).invoke(null, text, originalPress);
             actionSources.add(sourceBuilder.getClass().getMethod("build").invoke(sourceBuilder));
         }
         Object pauseChrome = chrome.getConstructor(screenBase, boolean.class, java.util.List.class).newInstance(null, true, actionSources);
         var menuActions = (java.util.List<?>)chrome.getMethod("widgets", int.class, int.class).invoke(pauseChrome, 854, 480);
-        if (menuActions.size() != actionSources.size() + 3) throw new AssertionError("Unexpected Lunar-style menu shortcuts");
+        // Only Modules and Wardrobe are added; the old "Vortex Client" slot moved to the menu key and the title dock.
+        if (menuActions.size() != actionSources.size() + 2) throw new AssertionError("Unexpected Lunar-style menu shortcuts");
         var labels = new java.util.HashSet<String>();
         for (Object action : menuActions) {
             Object text = buttonClass.getMethod("getMessage").invoke(action);
@@ -798,7 +1196,7 @@ public class FabricSmoke {
             if (labelText.isBlank() || !labels.add(labelText) || (int)buttonClass.getMethod("getWidth").invoke(action) < 24)
                 throw new AssertionError("Pause action has no unique accessible label / usable target");
         }
-        if (!labels.containsAll(java.util.List.of("Back to Game", "Options", "Advancements", "Statistics", "Open to LAN", "Save & Quit", "Vortex Client", "Modules", "Wardrobe")))
+        if (!labels.containsAll(java.util.List.of("Back to Game", "Options", "Advancements", "Statistics", "Open to LAN", "Save & Quit", "Give Feedback", "Report Bugs", "Modules", "Wardrobe")))
             throw new AssertionError("Vanilla action disappeared from the labeled pause menu");
         for (int i = 0; i < actionSources.size(); i++) {
             press.invoke(menuActions.get(i), nudgeEvent(keyType, inputs));
@@ -1168,7 +1566,7 @@ public class FabricSmoke {
         Path clampConfig = Path.of(args[0], "clamp-config.json");
         Files.writeString(clampConfig, "{\"zoomMultiplier\":100,\"hudScale\":-10,\"hudOpacity\":0,\"fpsX\":-50,\"keysX\":-20,\"armorY\":-30,\"sprintX\":-1,\"coordinatesX\":-9,\"coordinatesY\":-5,\"coordinatesScale\":9,\"coordinatesOpacity\":-2}");
         Object clamped = configType.getMethod("load", Path.class).invoke(null, clampConfig);
-        if ((float)configType.getField("zoomMultiplier").get(clamped) != 8 ||
+        if ((float)configType.getField("zoomMultiplier").get(clamped) != 12 ||
             (float)configType.getField("hudScale").get(clamped) != .75f ||
             (float)configType.getField("hudOpacity").get(clamped) != .25f ||
             (int)configType.getField("fpsX").get(clamped) != 0 ||

@@ -21,7 +21,15 @@ public final class PartyConnection {
         .followRedirects(HttpClient.Redirect.NEVER).build();
     public record Member(String memberId, String name, boolean owner) { }
     public record Marker(String memberId, String name, String serverKey, String dimension, int x, int y, int z, String kind, String expiresUtc) { }
-    public record Snapshot(List<Member> members, List<Marker> markers) { }
+    /** {@code body} is the JSON "text" field; a method named text() would clash with the 1.21.11 port's renames. */
+    public record ChatMessage(long seq, String memberId, String name, @com.google.gson.annotations.SerializedName("text") String body, String sentUtc) { }
+    public record Block(int x, int y, int z) { }
+    public record SharedWaypoint(String id, String memberId, String name, String title, String serverKey, String dimension, int x, int y, int z, int color, List<Block> blocks) { }
+    /** Chat and waypoints are null from a protocol 1 service; callers treat that as empty. */
+    public record Snapshot(List<Member> members, List<Marker> markers, List<ChatMessage> chat, List<SharedWaypoint> waypoints) {
+        public List<ChatMessage> chatOrEmpty() { return chat == null ? List.of() : chat; }
+        public List<SharedWaypoint> waypointsOrEmpty() { return waypoints == null ? List.of() : waypoints; }
+    }
     public record Session(String partyId, String token, String invite, Snapshot snapshot) { }
     public static final class Failure extends Exception {
         public final int status;
@@ -50,6 +58,14 @@ public final class PartyConnection {
     public Snapshot mark(String token, String server, String dimension, int x, int y, int z, String kind) throws Exception {
         return request("POST", "v1/markers", token, Map.of("serverKey", server, "dimension", dimension, "x", x, "y", y, "z", z, "kind", kind), Snapshot.class);
     }
+    public Snapshot chat(String token, String text) throws Exception { return request("POST", "v1/chat", token, Map.of("text", text), Snapshot.class); }
+    public Snapshot share(String token, String server, String dimension, String title, int x, int y, int z, int color, List<Block> blocks) throws Exception {
+        return request("POST", "v1/waypoints", token, Map.of("serverKey", server, "dimension", dimension, "title", title, "x", x, "y", y, "z", z, "color", color, "blocks", blocks), Snapshot.class);
+    }
+    public Snapshot unshare(String token, String id) throws Exception {
+        if (!id.matches("[a-f0-9]{24}")) throw new IllegalArgumentException("Invalid shared waypoint.");
+        return request("DELETE", "v1/waypoints/" + id, token, null, Snapshot.class);
+    }
     public void leave(String token) throws Exception { request("DELETE", "v1/session", token, null, Object.class); }
     private <T> T request(String method, String path, String token, Object body, Class<T> type) throws Exception {
         var builder = HttpRequest.newBuilder(base.resolve(path)).timeout(Duration.ofSeconds(5)).header("Accept", "application/json");
@@ -65,6 +81,7 @@ public final class PartyConnection {
             // Do not display arbitrary HTML or exception details from an untrusted service.
             String message = switch (response.statusCode()) {
                 case 401 -> "Party session expired. Leave and join again.";
+                case 403 -> "Only its author or the party owner can remove it.";
                 case 404 -> "Invite is invalid or expired.";
                 case 409 -> "Party is full or this name is already in use.";
                 case 429 -> "Too many requests. Wait a moment.";

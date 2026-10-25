@@ -12,7 +12,10 @@ import org.slf4j.LoggerFactory;
 public final class VortexClient implements ClientModInitializer {
     public static ClientConfig config = new ClientConfig();
     private static boolean menuWasDown;
+    /** Strongest zoom: 12x (was 8x). */
+    public static final float MAX_ZOOM = 12;
     private static float zoomFactor = 1;
+    private static boolean zoomToggled, zoomKeyWasDown;
     private static long previousZoomFrame;
     private static boolean zoomSettingsDirty;
     public static void ignoreMenuUntilRelease() { menuWasDown = true; }
@@ -20,6 +23,7 @@ public final class VortexClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         config = ClientConfig.load(FabricLoader.getInstance().getConfigDir().resolve("vortex-client.json"));
+        ClientUi.applyAccent(config.clientAccent);
         LoggerFactory.getLogger("Vortex Client").info("Vortex Client 0.2.2 initialized. Resource Counter and remembered storage tools; experimental visibility optimization remains disabled.");
     }
 
@@ -31,6 +35,8 @@ public final class VortexClient implements ClientModInitializer {
         Capes.tick(minecraft);
         PartyFeature.tick(minecraft);
         WaypointsFeature.tick(minecraft);
+        WaypointBlocks.emit(minecraft);
+        ChatTabs.tick(minecraft);
         ResourceCounter.tick(minecraft);
         StorageMemory.tick(minecraft);
         DeathWaypoints.tick(minecraft);
@@ -48,6 +54,11 @@ public final class VortexClient implements ClientModInitializer {
                 minecraft.gui.setScreen(new VortexHomeScreen(screen));
         }
         menuWasDown = down;
+        // Toggle mode: one press turns zoom on, the next turns it off; leaving the world or opening a menu turns it off.
+        boolean zoomKey = minecraft.isWindowActive() && ClientBindings.down(ClientBindings.Action.ZOOM);
+        if (config.zoomToggle && zoomKey && !zoomKeyWasDown && minecraft.gui.screen() == null) zoomToggled = !zoomToggled;
+        if (!config.zoomToggle || minecraft.level == null || minecraft.gui.screen() != null) zoomToggled = false;
+        zoomKeyWasDown = zoomKey;
         if (zoomSettingsDirty && !isZoomActive(minecraft)) {
             zoomSettingsDirty = false;
             config.save();
@@ -60,7 +71,8 @@ public final class VortexClient implements ClientModInitializer {
 
     private static boolean isZoomActive(Minecraft minecraft) {
         return config.zoomEnabled && minecraft.level != null && minecraft.gui.screen() == null &&
-            minecraft.gui.overlay() == null && minecraft.isWindowActive() && ClientBindings.down(ClientBindings.Action.ZOOM);
+            minecraft.gui.overlay() == null && minecraft.isWindowActive() &&
+            (config.zoomToggle ? zoomToggled : ClientBindings.down(ClientBindings.Action.ZOOM));
     }
 
     public static boolean scrollZoom(long window, double vertical) {
@@ -79,7 +91,7 @@ public final class VortexClient implements ClientModInitializer {
     public static float adjustZoomStrength(float current, double scroll) {
         if (!Double.isFinite(scroll) || !Float.isFinite(current)) return Float.isFinite(current) ? current : 4;
         // Fractional deltas keep trackpads smooth; positive scroll zooms in.
-        return (float)Math.clamp(current * Math.pow(1.15, Math.clamp(scroll, -50, 50)), 2, 8);
+        return (float)Math.clamp(current * Math.pow(1.15, Math.clamp(scroll, -50, 50)), 2, MAX_ZOOM);
     }
 
     public static float zoom(float originalFov) {
@@ -94,6 +106,10 @@ public final class VortexClient implements ClientModInitializer {
         return originalFov * zoomFactor;
     }
 
+    /** Mouse turn multiplier: while zoomed in, turning slows down with the field of view so aiming stays steady. */
+    public static double zoomTurnScale() {
+        return config.zoomEnabled && config.zoomSlowMouse ? Math.clamp(zoomFactor, 1 / MAX_ZOOM, 1) : 1;
+    }
     public static void drawFps(GuiGraphicsExtractor graphics, boolean preview) {
         Minecraft minecraft = Minecraft.getInstance();
         if (!config.fpsEnabled || (!preview && (minecraft.level == null || minecraft.gui.hud.isHidden()))) return;
@@ -114,7 +130,15 @@ public final class VortexClient implements ClientModInitializer {
     public static void drawZoom(GuiGraphicsExtractor graphics) {
         Minecraft minecraft = Minecraft.getInstance();
         if (!isZoomActive(minecraft) || minecraft.gui.hud.isHidden()) return;
-        graphics.centeredText(minecraft.font, String.format(java.util.Locale.ROOT, "Zoom %.1fx  ·  Scroll to adjust", config.zoomMultiplier),
-            graphics.guiWidth() / 2, graphics.guiHeight() / 2 + 22, 0xFFF1B9DF);
+        // A small pill under the crosshair: strength and a bar from 2x to 12x.
+        var font = UiFonts.body();
+        String label = String.format(java.util.Locale.ROOT, "%.1f×", config.zoomMultiplier), hint = "scroll";
+        int w = Math.max(64, font.width(label) + font.width(hint) + 26), x = graphics.guiWidth() / 2 - w / 2, y = graphics.guiHeight() / 2 + 18;
+        ClientUi.pill(graphics, x, y, w, 18, 0xC015161C);
+        graphics.text(font, label, x + 9, y + 3, ClientUi.TEXT, false);
+        graphics.text(font, hint, x + w - font.width(hint) - 9, y + 3, ClientUi.MUTED, false);
+        float amount = (config.zoomMultiplier - 2) / (MAX_ZOOM - 2);
+        ClientUi.rounded(graphics, x + 8, y + 13, w - 16, 2, 1, ClientUi.TRACK);
+        ClientUi.rounded(graphics, x + 8, y + 13, Math.max(2, Math.round((w - 16) * amount)), 2, 1, ClientUi.ACCENT);
     }
 }

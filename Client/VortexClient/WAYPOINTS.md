@@ -13,7 +13,7 @@ marker are retained. Inventory/hotbar UI is not modified.
 
 ## Pick real blocks
 
-In the editor choose **Select blocks in world**. The editor draft stays in memory;
+In the editor choose **Select blocks** (next to the colours). The editor draft stays in memory;
 the screen closes so the player can walk and aim normally.
 
 - Aim at an actual block within normal Minecraft interaction reach, and press **H**.
@@ -22,9 +22,11 @@ the screen closes so the player can walk and aim normally.
 - **Enter** or **B** returns to the editor with the selection. **Esc** cancels that
   selection session, leaving the prior editor draft unchanged.
 - Press **Save** to persist the marker and block coordinates. Cancel never writes.
-- New waypoints use the first selected block as their initial XYZ anchor; existing
-  waypoints retain their XYZ. Current XYZ explicitly resets the anchor to the player.
-- Pick block is configurable under Key bindings; the default H only acts during picking.
+- With blocks selected, the marker moves to the centre of the selection, on top of it
+  (new and existing waypoints alike, every time blocks are added or removed). With no
+  blocks the marker stays where it was placed; removing all blocks does not move it.
+- H and Enter are fixed and only act during picking; B is the normal waypoints key.
+- While picking, a hint at the top shows how many blocks are selected.
 
 Selections are immutable when saved. The safety bound is 256 explicit block coordinates
 per marker (independent of waypoint visibility distance). Show/Hide, groups and editing

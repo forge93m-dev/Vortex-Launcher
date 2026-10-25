@@ -12,6 +12,17 @@ public final class PartyTransportSmoke {
         first.mark(owner.token(), "a".repeat(64), "minecraft:overworld", 42, 70, -10, "HERE");
         var marks = second.read(guest.token()).markers();
         if (marks.size() != 1 || marks.getFirst().x() != 42 || !marks.getFirst().name().equals("JavaOwner")) throw new AssertionError("Shared point lost");
+        var chatted = second.chat(guest.token(), "hello from java");
+        if (chatted.chatOrEmpty().size() != 1 || !chatted.chatOrEmpty().getFirst().body().equals("hello from java") || !chatted.chatOrEmpty().getFirst().name().equals("JavaGuest"))
+            throw new AssertionError("Party chat round trip");
+        var sharedPlace = first.share(owner.token(), "a".repeat(64), "minecraft:overworld", "Iron farm", 5, 64, 6, 0x7DD3FC,
+            java.util.List.of(new PartyConnection.Block(5, 63, 6))).waypointsOrEmpty();
+        if (sharedPlace.size() != 1 || !second.read(guest.token()).waypointsOrEmpty().getFirst().title().equals("Iron farm") || sharedPlace.getFirst().blocks().size() != 1)
+            throw new AssertionError("Shared waypoint round trip");
+        try { second.unshare(guest.token(), sharedPlace.getFirst().id()); throw new AssertionError("Guest removed the owner's place"); }
+        catch (PartyConnection.Failure expected) { if (expected.status != 403) throw expected; }
+        if (!first.unshare(owner.token(), sharedPlace.getFirst().id()).waypointsOrEmpty().isEmpty()) throw new AssertionError("Owner could not remove a shared place");
+        System.out.println("PASS Java transport: party chat, shared waypoint with blocks, and author/owner-only removal");
         try { second.read(owner.invite()); throw new AssertionError("Invite used as token"); }
         catch (PartyConnection.Failure expected) { if (expected.status != 401) throw expected; }
         first.leave(owner.token());

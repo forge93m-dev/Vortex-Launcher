@@ -20,7 +20,7 @@ public final class WardrobeScreen extends Screen {
     private int draftGeneration;
     private WardrobePreview preview;
     private final WardrobePreview.Camera camera=new WardrobePreview.Camera();
-    public boolean retainsCape(ClientAsset.Texture texture){return camera.capeFade.retains(texture);}
+    public boolean retainsCape(ClientAsset.Texture texture){return camera.capeFade.retains(CapeCatalog.canonical(texture));}
     private boolean wasBusy;
     private boolean modelChosen;
     private SkinPixels.Selection shownSkin;
@@ -73,7 +73,8 @@ public final class WardrobeScreen extends Screen {
             if(!VortexClient.config.capesEnabled && !Capes.enabled(true))return;Capes.publish();
         },false);
         buildTiles(l);
-        preview=addRenderableWidget(new WardrobePreview(l.previewX(),y+44,l.previewWidth(),h-99,this::appearance,camera));
+        // The model starts under the "Preview" caption so the head never covers the text.
+        preview=addRenderableWidget(new WardrobePreview(l.previewX(),y+70,l.previewWidth(),h-125,this::appearance,camera));
         int half=(l.previewWidth()-4)/2;
         button(l.previewX(),y+h-49,half,21,"Front",preview::front,false);
         button(l.previewX()+half+4,y+h-49,half,21,"Back",preview::back,false);
@@ -151,21 +152,30 @@ public final class WardrobeScreen extends Screen {
         String key=(skinTab?"skin/":"cape/")+(thumb!=null?thumb.toString():cape!=null?cape:label);
         var motion=tileMotions.computeIfAbsent(key,k->new UiMotion.Feedback());
         var tile=new WardrobeTile(l.listX()+index%l.columns()*(l.tileWidth()+6),0,l.tileWidth(),index,label,thumb,cape,selected,()->{if(!skinTab || !LocalSkins.busy())choose.run();},motion,sectionStarted);
+        tile.badge=()->{boolean applied=applied(cape,label);return selected.getAsBoolean()&&!applied?"PREVIEW":applied?"APPLIED":"";};
         tiles.add(addWidget(tile));return tile;
+    }
+    /** Built-in capes and the Vanilla tiles; gallery tiles get their own check through {@link #managed}. */
+    private boolean applied(String cape,String label){
+        if(cape!=null)return cape.equals(VortexClient.config.selectedCape);
+        if(skinTab && label.equals("Vanilla"))return LocalSkins.saved()==null || !LocalSkins.saved().enabled();
+        return false;
     }
     private boolean isApplied(WardrobeGallery.Item item){
         if(item.entry().kind()==CosmeticCollection.Kind.CAPE)return item.entry().id().equals(VortexClient.config.selectedCape.replace(':','_'));
         try{var saved=LocalSkins.saved();return saved!=null && saved.enabled() && item.entry().id().equals(CosmeticCollection.skinId(saved));}catch(Exception ignored){return true;}
     }
     private void managed(WardrobeTile tile,WardrobeGallery.Item item){
-        tile.favorite=item.favorite();tile.manage=()->minecraft.gui.setScreen(new WardrobeItemScreen(this,item,()->!isApplied(item)));
+        tile.favorite=item.favorite();
+        var chosen=tile.badge;
+        tile.badge=()->isApplied(item)?"APPLIED":chosen.get();tile.manage=()->minecraft.gui.setScreen(new WardrobeItemScreen(this,item,()->!isApplied(item)));
     }
     private void buildTiles(Layout l) {
         if(skinTab) {
             tile(l,"Vanilla",null,null,()->vanillaSkin || draftTexture==null && (LocalSkins.saved()==null || !LocalSkins.saved().enabled()),this::previewVanillaSkin);
             for(var item:gallery.skins())managed(tile(l,item.label(),thumbnail(item),null,()->skinSelected(item),()->selectSkin(item)),item);
         } else {
-            for(String id:CapeCatalog.IDS)tile(l,id.equals("none")?"Vanilla":id,null,id,()->id.equals(pendingCape()),()->previewBuiltinCape(id));
+            for(String id:CapeCatalog.IDS)tile(l,id.equals("none")?"Vanilla":Character.toUpperCase(id.charAt(0))+id.substring(1),null,id,()->id.equals(pendingCape()),()->previewBuiltinCape(id));
             for(var item:gallery.capes())managed(tile(l,item.label(),thumbnail(item),null,()->item.entry().id().equals(pendingCape().replace(':','_')),()->selectCape(item)),item);
         }
         scroll=Math.clamp(scroll,0,maximumScroll(l));positionTiles(l);
@@ -223,18 +233,23 @@ public final class WardrobeScreen extends Screen {
         if(isInGameUi())minecraft.gui.hud.extractDeferredSubtitles();else extractPanorama(g,delta);
     }
     @Override public void extractRenderState(GuiGraphicsExtractor g,int mx,int my,float delta) {
-        var l=layout(width,height);g.fill(0,0,width,height,0x9007090D);
-        ClientUi.panel(g,l.x(),l.y(),l.width(),l.height(),10,ClientUi.BORDER,ClientUi.PANEL);
+        var l=layout(width,height);g.fill(0,0,width,height,0xA00C0D12);
+        ClientUi.rounded(g,l.x()-2,l.y()+5,l.width()+4,l.height(),12,0x40000000);
+        ClientUi.rounded(g,l.x(),l.y(),l.width(),l.height(),12,ClientUi.GLASS);
         ClientUi.heading(g,"Wardrobe",l.listX(),l.y()+17,l.width()-l.sidebar()-25);
         ClientUi.icon(g,"brand",l.x()+18,l.y()+13,26,ClientUi.TEXT);
         g.fill(l.x()+l.sidebar(),l.y()+10,l.x()+l.sidebar()+1,l.y()+l.height()-10,ClientUi.BORDER);
         long now=System.nanoTime();navigationPosition=ClientUi.approach(navigationPosition,skinTab?0:1,(now-navigationFrame)/1e9);navigationFrame=now;
-        ClientUi.rounded(g,l.x()+4,l.y()+53+Math.round(navigationPosition*30),2,16,1,ClientUi.ACCENT);
-        ClientUi.rounded(g,l.previewX(),l.y()+42,l.previewWidth(),l.height()-66,7,0xFF14161B);
+        ClientUi.rounded(g,l.x()+4,l.y()+53+Math.round(navigationPosition*30),3,16,1,ClientUi.ACCENT);
+        ClientUi.rounded(g,l.previewX(),l.y()+42,l.previewWidth(),l.height()-66,12,0xFF1D1F27);
+        // The preview is labeled with what it shows, so a draft is never mistaken for the applied look.
+        ClientUi.eyebrow(g,"Preview · drag to turn",l.previewX()+10,l.y()+50,l.previewWidth()-20);
+        String shown=skinTab?(vanillaSkin?"Vanilla skin":skinDirty?"New skin":"Your skin"):VortexMenuChrome.capeLabel(pendingCape());
+        ClientUi.text(g,shown,l.previewX()+10,l.y()+60,l.previewWidth()-20,ClientUi.TEXT);
         if(skinTab)ClientUi.text(g,"Apply automatically syncs with your Vortex account",l.listX(),l.y()+83,l.listWidth(),ClientUi.MUTED);
         if(!skinTab){
             var publication=Capes.status(draftCape!=null && !draftCape.equals(VortexClient.config.selectedCape));
-            int color=switch(publication.state()){case PUBLISHED->0xFF93C6A4;case UNCONFIRMED->0xFFE39198;default->ClientUi.ACCENT;};
+            int color=switch(publication.state()){case PUBLISHED->0xFF86EFC4;case UNCONFIRMED->0xFFFDA4AF;default->ClientUi.ACCENT;};
             ClientUi.rounded(g,l.listX(),l.y()+84,4,4,2,color);
             ClientUi.text(g,publication.label(),l.listX()+9,l.y()+81,l.listWidth()-9,color);
             if(mx>=l.listX() && mx<l.listX()+l.listWidth() && my>=l.y()+78 && my<l.y()+98)
@@ -246,8 +261,8 @@ public final class WardrobeScreen extends Screen {
         g.disableScissor();
         int max=maximumScroll(l);
         if(max>0){int vh=l.galleryBottom()-l.galleryTop(),thumb=Math.max(12,vh*vh/(vh+max));
-            ClientUi.rounded(g,l.previewX()-8,l.galleryTop(),2,vh,1,ClientUi.BORDER);
-            ClientUi.rounded(g,l.previewX()-8,l.galleryTop()+scroll*(vh-thumb)/max,2,thumb,1,ClientUi.ACCENT);}
+            ClientUi.rounded(g,l.previewX()-8,l.galleryTop(),3,vh,1,ClientUi.TRACK);
+            ClientUi.rounded(g,l.previewX()-8,l.galleryTop()+scroll*(vh-thumb)/max,3,thumb,1,ClientUi.ACCENT);}
         String status=skinTab?LocalSkins.message:Capes.busy()?Capes.progressMessage:Capes.message;
         if(!gallery.notice().isEmpty())status=gallery.notice();
         ClientUi.text(g,status,l.listX(),l.y()+l.height()-21,l.width()-l.sidebar()-24,ClientUi.MUTED);

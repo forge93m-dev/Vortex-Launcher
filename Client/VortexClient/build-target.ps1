@@ -84,6 +84,7 @@ foreach ($source in Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'src/mai
         $content = $content.Replace('extractImage(', 'renderImage(').Replace('extractText(', 'renderText(')
         $content = $content.Replace('extractContents(', 'renderContents(').Replace('net.minecraft.client.renderer.state.gui.', 'net.minecraft.client.gui.render.state.')
         $content = $content.Replace('extractWidgetRenderState(', 'renderWidget(').Replace('g.entity(', 'g.submitEntityRenderState(').Replace('.areComponentsBound()', '.isBound()')
+        $content = $content.Replace('extractTransparentBackground', 'renderTransparentBackground').Replace('PlayerFaceExtractor.render(', 'PlayerFaceRenderer.draw(').Replace('.addClientSystemMessage(', '.addMessage(').Replace('trimmedMessages.get(index).parent().content()', 'vortex$legacyMessage(index)')
         $content = $content.Replace('extractSlot', 'renderSlot').Replace('extractCrosshair', 'renderCrosshair').Replace('extractEffects', 'renderEffects')
         $content = $content.Replace('message.source() == previous.source() && ', 'message.signature() == null && previous.signature() == null && ')
         $content = $content.Replace('message.signature(), message.source(), message.tag()', 'message.signature(), message.tag()')

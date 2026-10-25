@@ -48,7 +48,8 @@ public final class PartyScreen extends Screen {
                 if (PartyFeature.owner() && !confirmClose) { confirmClose = true; PartyFeature.message = "Closing removes everyone. Click Confirm close, or Back to cancel."; rebuildWidgets(); }
                 else { PartyFeature.leave(); confirmClose = false; rebuildWidgets(); }
             }, false);
-            button(x + 20 + (w - 32) / 2, y + 172, (w - 32) / 2, "Marker key", () -> minecraft.gui.setScreen(new KeybindScreen(this, ClientBindings.Action.PARTY_MARKER)), false);
+            // The marker key is still in Key bindings; this slot opens the places the party shares.
+            button(x + 20 + (w - 32) / 2, y + 172, (w - 32) / 2, "Shared waypoints · " + PartyFeature.sharedPlaces().size(), () -> minecraft.gui.setScreen(new PartyWaypointsScreen(this)), false);
         }
         button(x + w - 64, y + 8, 52, "Back", this::onClose, false);
     }
@@ -60,7 +61,10 @@ public final class PartyScreen extends Screen {
         if (!VortexClient.config.save()) { PartyFeature.message = "Could not save service address. See game log."; return; }
         PartyFeature.connect(url, code, create);
     }
-    @Override public void tick() { if (wasConnected != PartyFeature.connected()) rebuildWidgets(); }
+    private int sharedCount = -1;
+    @Override public void tick() {
+        if (wasConnected != PartyFeature.connected() || sharedCount != PartyFeature.sharedPlaces().size()) { sharedCount = PartyFeature.sharedPlaces().size(); rebuildWidgets(); }
+    }
     @Override public boolean isInGameUi() { return minecraft.level != null; }
     @Override public void extractBackground(GuiGraphicsExtractor g, int mx, int my, float delta) {
         if (isInGameUi()) minecraft.gui.hud.extractDeferredSubtitles();
@@ -73,11 +77,11 @@ public final class PartyScreen extends Screen {
             ClientUi.text(g, "Service URL (HTTPS)", x + 12, y + 37, w - 24, ClientUi.MUTED);
             ClientUi.text(g, "Invite code (only needed to join)", x + 12, y + 74, w - 24, ClientUi.MUTED);
             ClientUi.text(g, "Only manual markers share coordinates.", x + 12, y + 157, w - 24, ClientUi.MUTED);
-            ClientUi.text(g, "No public chat messages. No player tracking.", x + 12, y + 171, w - 24, ClientUi.MUTED);
+            ClientUi.text(g, "Party chat (@p) never reaches the server. No tracking.", x + 12, y + 171, w - 24, ClientUi.MUTED);
             ClientUi.text(g, "Your service must be hosted before online use.", x + 12, y + 185, w - 24, ClientUi.MUTED);
         } else {
             var members = PartyFeature.members();
-            ClientUi.text(g, "Friends: " + members.size() + "/8 · Local names, not verified accounts", x + 12, y + 38, w - 24, ClientUi.MUTED);
+            ClientUi.text(g, "Friends: " + members.size() + "/8 · Chat: start a message with @p · Ping: " + ClientBindings.label(VortexClient.config.partyMarkerKey), x + 12, y + 38, w - 24, ClientUi.MUTED);
             for (int i = 0; i < members.size(); i++) {
                 var member = members.get(i);
                 ClientUi.text(g, member.name() + (member.owner() ? " *" : ""), x + 12 + i % 2 * ((w - 24) / 2), y + 76 + i / 2 * 14, (w - 32) / 2, ClientUi.TEXT);

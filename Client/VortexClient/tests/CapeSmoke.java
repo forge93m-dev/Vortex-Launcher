@@ -124,6 +124,14 @@ public final class CapeSmoke {
         Object first=skinMethod.invoke(null,mine,skin);
         if(first==skin || skinMethod.invoke(null,mine,skin)!=first || skinMethod.invoke(null,friend,skin)==skin || skinMethod.invoke(null,UUID.randomUUID(),skin)!=skin)
             throw new AssertionError("Cape UUID isolation/cache/fallback");
+        // The cape you chose shows on your own character even with the online cape setting off; nobody else's does.
+        configType.getField("capesEnabled").setBoolean(config,false);
+        if(skinMethod.invoke(null,mine,skin)==skin || skinMethod.invoke(null,friend,skin)!=skin) throw new AssertionError("Own cape shows locally with capes off; other players' capes need the setting");
+        // Animated capes are not cached: the cape texture moves on to the next frame.
+        configType.getField("selectedCape").set(config,"nebula");
+        Method capeOf=skinType.getMethod("cape");
+        Object frameA=capeOf.invoke(skinMethod.invoke(null,mine,skin)); Thread.sleep(300); Object frameB=capeOf.invoke(skinMethod.invoke(null,mine,skin));
+        if(frameA==null || Objects.equals(frameA,frameB)) throw new AssertionError("Animated cape stuck on one frame");
         configType.getField("capesEnabled").setBoolean(config,false); configType.getField("selectedCape").set(config,"none"); visible.set(null,Map.of()); self.set(null,null);
 
         Class<?> keys=Class.forName("dev.vortex.client.CapeKeys",true,target);

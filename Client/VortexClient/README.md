@@ -87,11 +87,11 @@ The same JAR is used on Windows and macOS, including Apple Silicon.
   Clock uses the computer's local time in 24-hour format. TPS is explicitly approximate,
   derived passively from server time packets over five intervals; unknown/stale data shows
   a dash. Changing world/server resets the estimate. No extra packets or commands are sent.
-- **Modern local UI fonts**: bundled Manrope regular/semibold, oversampled TrueType glyphs,
+- **Modern local UI fonts**: bundled Nunito semibold/extrabold (matching the launcher), oversampled TrueType glyphs,
   dark navy surfaces and lavender accents. The title menu uses a quiet gradient instead
   of the Minecraft panorama. Pause keeps the world visible. Only Vortex menus/editor use
   the custom font: vanilla inventory, hotbar, chat and Options are unchanged. The bundled
-  font's SIL OFL license is included under `assets/vortex_client/font/OFL-Manrope.txt`.
+  font's SIL OFL license is included under `assets/vortex_client/font/ofl-nunito.txt`.
   A required, namespaced client resource pack registers the assets with Minecraft even
   without Fabric API. Missing/unavailable UI fonts fall back to readable vanilla text.
 - **Zoom**: hold **C**, then scroll up to zoom in or down to zoom out (2x–8x).

@@ -39,13 +39,31 @@ public final class WaypointsScreen extends Screen {
         searchBox=new WaypointUi.Input(font,x+9,y+55,w-132,Component.literal("Search waypoints"));searchBox.setMaxLength(128);searchBox.setValue(search);searchBox.setResponder(value->{search=value;scroll=0;searchDirty=true;});addRenderableWidget(searchBox);searchDirty=false;
         if(restoreSearch){setFocused(searchBox);searchBox.setCursorPosition(Math.min(searchCursor,search.length()));restoreSearch=false;}
         button(x+w-106,y+55,106,26,"+ New waypoint",()->edit(null),true,!wasBusy);
-        button(x,y+88,w-106,22,group.isEmpty()?"All groups":"Group: "+group,()->minecraft.gui.setScreen(new WaypointGroupsScreen(this)),false,true);
-        button(x+w-98,y+88,98,22,nearest?"Nearest first":"Name A–Z",()->{nearest=!nearest;scroll=0;rebuildWidgets();},false,true);
+        // Sort is a two-way segmented control; groups open their own screen.
+        addRenderableWidget(new VortexScreen.FilterPill(x,y+88,70,22,Component.literal("Nearest"),()->nearest,b->{if(!nearest){nearest=true;scroll=0;rebuildWidgets();}}));
+        addRenderableWidget(new VortexScreen.FilterPill(x+74,y+88,60,22,Component.literal("Name"),()->!nearest,b->{if(nearest){nearest=false;scroll=0;rebuildWidgets();}}));
+        button(x+w-120,y+88,120,22,group.isEmpty()?"Groups · All":"Groups · "+group,()->minecraft.gui.setScreen(new WaypointGroupsScreen(this)),false,true);
         for(int i=0;i<l.rows()&&scroll+i<shown.size();i++){
             var point=shown.get(scroll+i);int rowY=y+l.listY()+i*44;
             addRenderableWidget(new Row(x,rowY,w-64,point,()->edit(point)));
             boolean groupHidden=WaypointsFeature.groupHidden(point.group());
-            button(x+w-58,rowY+7,52,26,groupHidden?"Group":point.hidden()?"Show":"Hide",()->{if(groupHidden)minecraft.gui.setScreen(new WaypointGroupsScreen(this));else WaypointsFeature.save(point.hidden(!point.hidden()),null,ok->{if(minecraft.gui.screen()==this)rebuildWidgets();});},false,!wasBusy);
+            var visibility=new Visibility(x+w-58,rowY+7,52,26,point,groupHidden,()->{if(groupHidden)minecraft.gui.setScreen(new WaypointGroupsScreen(this));else WaypointsFeature.save(point.hidden(!point.hidden()),null,ok->{if(minecraft.gui.screen()==this)rebuildWidgets();});});
+            visibility.active=!wasBusy;addRenderableWidget(visibility);
+        }
+    }
+    /** Show/hide as a switch; a hidden group points to the groups screen instead. Narration keeps the words. */
+    private static final class Visibility extends ClientUi.ActionButton {
+        private final WaypointsStore.Point point;private final boolean groupHidden;private float state;
+        Visibility(int x,int y,int w,int h,WaypointsStore.Point point,boolean groupHidden,Runnable action){
+            super(x,y,w,h,Component.literal(groupHidden?"Group hidden":point.hidden()?"Show":"Hide"),b->action.run());this.point=point;this.groupHidden=groupHidden;state=point.hidden()||groupHidden?0:1;
+            setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal(groupHidden?"This group is hidden. Open groups to show it.":point.hidden()?"Show this waypoint in the world":"Hide this waypoint in the world")));
+        }
+        @Override protected void extractContents(GuiGraphicsExtractor g,int mx,int my,float delta){
+            state=ClientUi.approach(state,point.hidden()||groupHidden?0:1,1/60.0);
+            UiMotion.begin(g,getX(),getY(),getWidth(),getHeight(),pressScale(System.nanoTime()),0);
+            if(groupHidden)ClientUi.text(g,"Group",getX()+6,getY()+(getHeight()-9)/2,getWidth()-8,isHoveredOrFocused()?ClientUi.TEXT:ClientUi.MUTED);
+            else ClientUi.toggle(g,getX()+getWidth()-30,getY()+(getHeight()-14)/2,state);
+            g.pose().popMatrix();
         }
     }
     private final class Row extends ClientUi.ActionButton {
@@ -54,8 +72,8 @@ public final class WaypointsScreen extends Screen {
         @Override protected void extractContents(GuiGraphicsExtractor g,int mx,int my,float delta){
             UiMotion.begin(g,getX(),getY(),getWidth(),getHeight(),pressScale(System.nanoTime()),0);
             boolean hidden=point.hidden()||WaypointsFeature.groupHidden(point.group());int x=getX(),y=getY(),w=getWidth();
-            ClientUi.rounded(g,x,y,w,40,5,isHoveredOrFocused()?0xFF252832:0xFF1A1C22);
-            ClientUi.rounded(g,x+10,y+16,8,8,4,(hidden?0x55000000:0xFF000000)|point.color());
+            ClientUi.rounded(g,x,y,w,40,12,isHoveredOrFocused()?ClientUi.RAISED:ClientUi.SURFACE);
+            ClientUi.rounded(g,x+8,y+14,12,12,6,(hidden?0x55000000:0xFF000000)|point.color());
             int right=w>330?96:0;
             ClientUi.text(g,point.name(),x+28,y+7,w-40-right,hidden?ClientUi.MUTED:ClientUi.TEXT);
             ClientUi.text(g,point.group()+" · "+point.x()+" / "+point.y()+" / "+point.z(),x+28,y+23,w-40-right,ClientUi.MUTED);
@@ -67,7 +85,9 @@ public final class WaypointsScreen extends Screen {
     @Override public boolean mouseScrolled(double x,double y,double horizontal,double vertical){var l=layout(width,height);if(Double.isFinite(vertical)&&vertical!=0&&x>=l.x()&&x<l.x()+l.width()&&y>=l.y()+l.listY()&&y<l.y()+l.height()-30){wheel+=vertical*2;int steps=(int)wheel;if(steps!=0){wheel-=steps;scroll=Math.clamp(scroll-steps,0,Math.max(0,shown.size()-l.rows()));rebuildWidgets();}return true;}return super.mouseScrolled(x,y,horizontal,vertical);}
     @Override public void extractRenderState(GuiGraphicsExtractor g,int mx,int my,float delta){
         var l=layout(width,height);int x=l.x()+16,y=l.y(),w=l.width()-32;
-        WaypointUi.begin(g,width,height,l.x(),y,l.width(),l.height(),"Waypoints","Your places in this world.",opened);
+        String world=VortexMenuChrome.worldName(minecraft);
+        String subtitle=(world.isBlank()?"This world":world)+" · "+WaypointsFeature.points().size()+(WaypointsFeature.points().size()==1?" marker":" markers");
+        WaypointUi.begin(g,width,height,l.x(),y,l.width(),l.height(),"Waypoints",subtitle,opened);
         WaypointUi.field(g,x,y+55,w-114,26,searchBox!=null&&searchBox.isFocused());
         if(search.isEmpty()&&(searchBox==null||!searchBox.isFocused()))ClientUi.text(g,"Search name, group, coordinates…",x+9,y+63,w-132,ClientUi.MUTED);
         ClientUi.text(g,"SAVED PLACES",x+2,y+116,w-64,ClientUi.MUTED);
@@ -77,7 +97,7 @@ public final class WaypointsScreen extends Screen {
         }
         if(shown.size()>l.rows()){
             int track=l.rows()*44-4,thumb=Math.max(14,track*l.rows()/shown.size()),sy=y+l.listY()+(track-thumb)*scroll/(shown.size()-l.rows());
-            ClientUi.rounded(g,l.x()+l.width()-7,y+l.listY(),2,track,1,0xFF282A32);ClientUi.rounded(g,l.x()+l.width()-7,sy,2,thumb,1,0xFFABB6CE);
+            ClientUi.rounded(g,l.x()+l.width()-7,y+l.listY(),3,track,1,ClientUi.TRACK);ClientUi.rounded(g,l.x()+l.width()-7,sy,3,thumb,1,ClientUi.ACCENT);
         }
         ClientUi.text(g,shown.size()+" places · "+(group.isEmpty()?"All groups":group),x,y+l.height()-26,w,ClientUi.MUTED);
         ClientUi.text(g,WaypointsFeature.message,x,y+l.height()-13,w,ClientUi.MUTED);

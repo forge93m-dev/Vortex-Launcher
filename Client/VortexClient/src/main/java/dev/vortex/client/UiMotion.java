@@ -29,7 +29,9 @@ public final class UiMotion {
     }
     public static void begin(net.minecraft.client.gui.GuiGraphicsExtractor g, int x, int y, int width, int height, float scale, float offset) {
         g.pose().pushMatrix();
-        g.pose().translate(x + width / 2f, y + height / 2f + offset);
+        // Whole GUI pixels only: a fractional shift misaligns the solid strips and corner masks
+        // of rounded shapes and shows small squares at their corners.
+        g.pose().translate(x + width / 2f, y + height / 2f + Math.round(offset));
         g.pose().scale(scale, scale);
         g.pose().translate(-x - width / 2f, -y - height / 2f);
     }

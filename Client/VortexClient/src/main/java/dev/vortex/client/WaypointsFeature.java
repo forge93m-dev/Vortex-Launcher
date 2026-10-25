@@ -46,25 +46,27 @@ public final class WaypointsFeature {
             }refreshVisible();if(scope!=null && !loaded && !busy)load();
         }
         boolean down=mc.isWindowActive() && ClientBindings.down(ClientBindings.Action.WAYPOINTS);
+        // While picking blocks the waypoints key means "done", handled by WaypointBlocks.
+        if(WaypointBlocks.picking()){WaypointBlocks.tick(mc);keyDown=true;return;}
         if(VortexClient.config.waypointsEnabled && down && !keyDown && mc.player!=null && mc.gui.screen()==null && mc.gui.overlay()==null)open(null,false);keyDown=down;
     }
     public static void draw(GuiGraphicsExtractor g){
         var mc=Minecraft.getInstance();var storageMarker=StorageMemory.marker();
-        if(!VortexClient.config.waypointsEnabled && storageMarker==null || mc.level==null || mc.player==null || mc.gui.hud.isHidden() || mc.gui.screen()!=null)return;
+        var partyPoints=PartyFeature.worldPoints();
+        if(!VortexClient.config.waypointsEnabled && storageMarker==null && !WaypointBlocks.picking() && partyPoints.isEmpty() || mc.level==null || mc.player==null || mc.gui.hud.isHidden() || mc.gui.screen()!=null)return;
         var camera=mc.gameRenderer.mainCamera();var origin=camera.position();var matrix=camera.getViewRotationProjectionMatrix(new Matrix4f());var font=UiFonts.body();
         List<WaypointsStore.Point> renderPoints=VortexClient.config.waypointsEnabled?visible:List.of();
-        if(storageMarker!=null){renderPoints=new ArrayList<>(renderPoints);renderPoints.add(storageMarker);}
+        if(storageMarker!=null||!partyPoints.isEmpty()){renderPoints=new ArrayList<>(renderPoints);if(storageMarker!=null)renderPoints.add(storageMarker);renderPoints.addAll(partyPoints);}
+        // Block highlights are world gizmos emitted each tick by WaypointBlocks.emit; only pins and labels are GUI.
+        WaypointBlocks.drawHint(g);
         for(var point:renderPoints){
-            double dx=point.x()+.5-origin.x,dy=point.y()+1-origin.y,dz=point.z()+.5-origin.z;
+            // A marker with blocks stands on top of their exact centre (it can fall between two blocks).
+            double[] at=point.blocks().isEmpty()?new double[]{point.x()+.5,point.y()+1,point.z()+.5}:WaypointBlocks.center(point.blocks());
+            double dx=at[0]-origin.x,dy=at[1]-origin.y,dz=at[2]-origin.z;
             var pin=WaypointProjection.project(dx,dy,dz,matrix,g.guiWidth(),g.guiHeight());if(pin==null)continue;
-            int x=pin.x(),y=pin.y(),color=0xFF000000|point.color();
-            ClientUi.rounded(g,x-4,y-4,8,8,4,color);ClientUi.rounded(g,x-1,y-1,2,2,1,0xFFFFFFFF);
-            String name=font.plainSubstrByWidth(point.name(),112),distance=WaypointProjection.distance(Math.sqrt(dx*dx+dy*dy+dz*dz));
-            int labelWidth=Math.max(font.width(name),font.width(distance))+14;
-            int tx=Math.clamp(x-labelWidth/2,3,Math.max(3,g.guiWidth()-labelWidth-3));
-            int labelY=Math.min(y+8,g.guiHeight()-24);
-            ClientUi.panel(g,tx,labelY-3,labelWidth,25,5,0x66000000|point.color(),0xD910151C);
-            g.text(font,name,tx+7,labelY,0xFFF3F4F7,false);g.text(font,distance,tx+7,labelY+11,0xFFB6BCC9,false);
+            double meters=Math.sqrt(dx*dx+dy*dy+dz*dz);
+            WaypointUi.marker(g,font,pin.x(),pin.y(),point.color(),point.name(),WaypointProjection.distance(meters),
+                WaypointUi.showsName(pin.x(),pin.y(),g.guiWidth(),g.guiHeight(),meters),g.guiWidth(),g.guiHeight());
         }
     }
 }

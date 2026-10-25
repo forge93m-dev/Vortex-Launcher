@@ -11,6 +11,16 @@ public final class CustomCrosshair {
     private static List<Rect> cachedRects = List.of();
     private static final int[] COLORS = {0xFFFFFF, 0x55FF55, 0xF1B9DF, 0x55FFFF, 0xFF5555, 0xFFFF55};
     private static final String[] COLOR_NAMES = {"White", "Green", "Pink", "Cyan", "Red", "Yellow"};
+    /** The preset colours, in the order the swatches show them. */
+    public static int[] palette() { return COLORS.clone(); }
+    /** Restores the default look; whether the module is enabled is left alone. */
+    public static void reset(ClientConfig c) {
+        var defaults = new ClientConfig();
+        c.crosshairShape = defaults.crosshairShape; c.crosshairColor = defaults.crosshairColor;
+        c.crosshairSize = defaults.crosshairSize; c.crosshairGap = defaults.crosshairGap;
+        c.crosshairThickness = defaults.crosshairThickness; c.crosshairOutline = defaults.crosshairOutline;
+        c.crosshairDot = defaults.crosshairDot; c.crosshairOpacity = defaults.crosshairOpacity;
+    }
     public static String shapeName(int shape) { return switch (Math.clamp(shape, 0, 2)) { case 1 -> "Dot"; case 2 -> "Circle"; default -> "Cross"; }; }
     public static String colorName(int color) {
         for (int i = 0; i < COLORS.length; i++) if (COLORS[i] == color) return COLOR_NAMES[i];

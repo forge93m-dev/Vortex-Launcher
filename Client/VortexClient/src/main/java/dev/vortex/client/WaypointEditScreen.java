@@ -15,6 +15,18 @@ public final class WaypointEditScreen extends Screen {
     private final long opened=System.nanoTime();
     private String name="Waypoint",group="General",x="0",y="64",z="0",message="";
     private int color=0xBDA5FF;
+    private List<WaypointsStore.Block> blocks=List.of();
+    List<WaypointsStore.Block> blocks(){return blocks;}
+    private String[] beforePicking;
+    /** Esc while picking puts back both the earlier selection and the earlier position. */
+    void rememberPosition(){beforePicking=new String[]{x,y,z};}
+    void restoreBlocks(List<WaypointsStore.Block> value){blocks=List.copyOf(value);if(beforePicking!=null){x=beforePicking[0];y=beforePicking[1];z=beforePicking[2];}}
+    /** Called while picking in the world; the first picked block becomes a new waypoint's position. */
+    /** With blocks selected the marker follows their centre; without blocks its position is left as placed. */
+    private void recenter(){if(blocks.isEmpty())return;int[] anchor=WaypointBlocks.anchor(blocks);x=""+anchor[0];y=""+anchor[1];z=""+anchor[2];}
+    void toggleBlock(WaypointsStore.Block block){
+        blocks=WaypointBlocks.toggle(blocks,block);recenter();
+    }
     private boolean confirmDelete,wasBusy;
     private final List<Field> fields=new ArrayList<>();
     private record Field(EditBox widget,int x,int y,int width){}
@@ -22,7 +34,7 @@ public final class WaypointEditScreen extends Screen {
     public static Layout layout(int width,int height){int w=Math.min(430,width-16),h=Math.min(292,height-16);return new Layout((width-w)/2,(height-h)/2,w,h);}
     public WaypointEditScreen(Screen parent,WaypointsStore.Point original){
         super(Minecraft.getInstance(),UiFonts.body(),Component.literal(original==null?"New waypoint":"Edit waypoint"));this.parent=parent;this.original=original;scope=WaypointsFeature.scope();
-        if(original!=null){name=original.name();group=original.group();x=""+original.x();y=""+original.y();z=""+original.z();color=original.color();}
+        if(original!=null){name=original.name();group=original.group();x=""+original.x();y=""+original.y();z=""+original.z();color=original.color();blocks=original.blocks();}
         else if(minecraft.player!=null)currentPosition();
         if(original==null&&parent instanceof WaypointsScreen list&&!list.selectedGroup().isEmpty())group=list.selectedGroup();
     }
@@ -40,11 +52,14 @@ public final class WaypointEditScreen extends Screen {
         int third=(w-16)/3;
         field(xx,yy+114,third,x,10,"X coordinate",v->x=v);field(xx+third+8,yy+114,third,y,6,"Y coordinate",v->y=v);field(xx+2*(third+8),yy+114,w-2*(third+8),z,10,"Z coordinate",v->z=v);
         button(xx+w-92,yy+92,92,18,"Use my position",()->{if(minecraft.player!=null){currentPosition();rebuildWidgets();}},false);
-        int swatch=Math.min(30,(w-7*6)/8);
+        int swatch=Math.max(12,Math.min(30,(w-112-7*6)/8));
+        var pick=new ClientUi.ActionButton(xx+w-104,yy+158,104,20,Component.literal(blocks.isEmpty()?"Select blocks":"Blocks · "+blocks.size()),b->{if(sameWorld())WaypointBlocks.start(this);});
+        pick.setTooltip(net.minecraft.client.gui.components.Tooltip.create(net.minecraft.network.chat.Component.literal("Mark exact blocks: aim at a block and press H to select or unselect it, Enter to come back. Selected blocks get an outline.")));
+        pick.active=!wasBusy;addRenderableWidget(pick);
         for(int i=0;i<WaypointsFeature.COLORS.length;i++){
             final int picked=WaypointsFeature.COLORS[i];
             var b=new ClientUi.ActionButton(xx+i*(swatch+6),yy+158,swatch,20,Component.literal("Color "+(i+1)),ignored->{color=picked;}){
-                @Override protected void extractContents(GuiGraphicsExtractor g,int mx,int my,float delta){ClientUi.panel(g,getX(),getY(),getWidth(),getHeight(),5,color==picked?0xFFF1F2F6:0xFF292B32,0xFF191B20);ClientUi.rounded(g,getX()+4,getY()+4,getWidth()-8,getHeight()-8,3,0xFF000000|picked);if(color==picked)ClientUi.rounded(g,getX()+getWidth()/2-2,getY()+8,4,4,2,0xFF111216);}
+                @Override protected void extractContents(GuiGraphicsExtractor g,int mx,int my,float delta){ClientUi.rounded(g,getX(),getY(),getWidth(),getHeight(),Math.min(12,getHeight()/2),color==picked?0xFFFFFFFF:0x00000000);ClientUi.rounded(g,getX()+2,getY()+2,getWidth()-4,getHeight()-4,Math.min(11,getHeight()/2-2),0xFF000000|picked);if(color==picked)ClientUi.rounded(g,getX()+getWidth()/2-2,getY()+8,4,4,2,0xFF111216);}
             };b.active=!wasBusy;addRenderableWidget(b);
         }
         int bottom=yy+l.actionsY();
@@ -54,12 +69,19 @@ public final class WaypointEditScreen extends Screen {
             WaypointsFeature.save(null,original.id(),ok->{if(ok&&minecraft.gui.screen()==this)onClose();else if(!ok){message=WaypointsFeature.message;rebuildWidgets();}});
         },false);
         button(xx+w-100,bottom,100,22,original==null?"Create waypoint":"Save changes",this::save,true);
+        // Sharing sends the saved waypoint, so unsaved edits never leave this computer by accident.
+        int shareX=Math.max(xx+(confirmDelete?116:82),xx+w-184),shareW=xx+w-106-shareX;
+        if(original!=null&&PartyFeature.connected()&&shareW>=48){
+            var share=new ClientUi.ActionButton(shareX,bottom,shareW,22,Component.literal("Share"),b->{PartyFeature.share(original);message=PartyFeature.message;});
+            share.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Show this saved waypoint to everyone in your party on this server.")));
+            share.active=!wasBusy;addRenderableWidget(share);
+        }
     }
     private boolean sameWorld(){if(scope!=null&&scope.equals(WaypointsFeature.scope()))return true;message="World changed. Reopen the waypoint editor.";return false;}
     private void save(){
         if(!sameWorld())return;
         final WaypointsStore.Point point;
-        try{point=new WaypointsStore.Point(original==null?UUID.randomUUID():original.id(),scope.world(),scope.dimension(),WaypointsStore.cleanName(name),Integer.parseInt(x.strip()),Integer.parseInt(y.strip()),Integer.parseInt(z.strip()),color,original!=null&&original.hidden(),WaypointsStore.cleanName(group),original==null?List.of():original.blocks());if(!WaypointsStore.valid(point)||point.group().isEmpty())throw new IllegalArgumentException();}
+        try{point=new WaypointsStore.Point(original==null?UUID.randomUUID():original.id(),scope.world(),scope.dimension(),WaypointsStore.cleanName(name),Integer.parseInt(x.strip()),Integer.parseInt(y.strip()),Integer.parseInt(z.strip()),color,original!=null&&original.hidden(),WaypointsStore.cleanName(group),blocks);if(!WaypointsStore.valid(point)||point.group().isEmpty())throw new IllegalArgumentException();}
         catch(Exception e){message="Enter a name, group and integer XYZ coordinates.";return;}
         WaypointsFeature.save(point,null,ok->{if(ok&&minecraft.gui.screen()==this)onClose();else{message=WaypointsFeature.message;if(minecraft.gui.screen()==this)rebuildWidgets();}});
     }
@@ -72,9 +94,15 @@ public final class WaypointEditScreen extends Screen {
         for(var field:fields)WaypointUi.field(g,field.x(),field.y(),field.width(),26,field.widget().isFocused());
         ClientUi.text(g,"MARKER COLOR",xx,yy+146,w,ClientUi.MUTED);
         if(!l.compact()){
-            ClientUi.rounded(g,xx,yy+191,w,42,6,0xFF1B1D23);ClientUi.rounded(g,xx+12,yy+207,8,8,4,0xFF000000|color);
-            ClientUi.text(g,name.isBlank()?"Waypoint":name,xx+30,yy+200,w-42,ClientUi.TEXT);
-            ClientUi.text(g,x+" / "+y+" / "+z+"  ·  "+group,xx+30,yy+215,w-42,ClientUi.MUTED);
+            // A small piece of sky and grass with the real in-world marker, so colour and name are seen as in game.
+            ClientUi.rounded(g,xx,yy+188,w,48,12,0xFF3B4A6B);
+            ClientUi.rounded(g,xx,yy+216,w,20,10,0xFF3F5A3A);g.fill(xx,yy+216,xx+w,yy+226,0xFF3F5A3A);
+            ClientUi.text(g,"In the world",xx+10,yy+222,90,0xCCECEDF3);
+            String distance="";
+            try{var player=minecraft.player;if(player!=null){double dx=Integer.parseInt(x.strip())+.5-player.getX(),dy=Integer.parseInt(y.strip())-player.getY(),dz=Integer.parseInt(z.strip())+.5-player.getZ();distance=WaypointProjection.distance(Math.sqrt(dx*dx+dy*dy+dz*dz));}}
+            catch(NumberFormatException invalid){distance="";}
+            if(distance.isEmpty())distance=x+" / "+y+" / "+z;
+            WaypointUi.marker(g,font,xx+w/2,yy+231,color,name.isBlank()?"Waypoint":name,distance,true,width,height);
         }
         ClientUi.text(g,WaypointsFeature.busy()?"Saving / loading…":message,xx,yy+l.height()-11,w,ClientUi.MUTED);super.extractRenderState(g,mx,my,delta);g.pose().popMatrix();
     }

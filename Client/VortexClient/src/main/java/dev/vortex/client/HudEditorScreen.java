@@ -23,6 +23,10 @@ public final class HudEditorScreen extends Screen {
     private ClientUi.ActionButton undoButton;
     private int guideX=-1,guideY=-1;
     private final List<ClientUi.ActionButton> appearanceButtons = new ArrayList<>();
+    /** Properties panel buttons with their offsets inside the panel; they follow the selection. */
+    private final List<ClientUi.ActionButton> propertyButtons = new ArrayList<>();
+    private final List<int[]> propertyOffsets = new ArrayList<>();
+    static final int PROPERTIES_WIDTH = 136, PROPERTIES_HEIGHT = 118;
     private String message = "Drag / corner resize / Shift + arrows";
     public HudEditorScreen(Screen parent) { super(net.minecraft.client.Minecraft.getInstance(), UiFonts.body(), Component.literal("HUD Editor")); this.parent = parent; }
     HudEditorScreen(net.minecraft.client.Minecraft client, net.minecraft.client.gui.Font font, Screen parent) {
@@ -37,6 +41,52 @@ public final class HudEditorScreen extends Screen {
         int w = Math.min(expanded ? 440 : 76, Math.max(1, screenWidth - 16));
         int h = Math.min(expanded ? 91 : 22, Math.max(1, screenHeight - 16));
         return new ToolbarLayout(expanded ? (screenWidth - w) / 2 : Math.max(0, screenWidth - w - 8), 8, w, h);
+    }
+    /**
+     * Properties card for the selected overlay: right edge, or the left edge when the overlay sits on the right.
+     * It stays above the vanilla hotbar/health/XP band and never covers the expanded toolbar; null when it cannot.
+     */
+    public static ToolbarLayout propertiesLayout(int screenWidth, int screenHeight, int elementX, int elementY,
+                                                 int elementWidth, int elementHeight, boolean expanded) {
+        int w = PROPERTIES_WIDTH, h = PROPERTIES_HEIGHT;
+        if (screenWidth < w + 16 || screenHeight < h + 96) return null;
+        int y = Math.min(Math.max(36, (screenHeight - h) / 2), screenHeight - 60 - h);
+        var toolbar = toolbarLayout(screenWidth, screenHeight, expanded);
+        for (int x : new int[] {screenWidth - w - 8, 8}) {
+            // Keep a few pixels of air around the selection so its handle stays easy to grab.
+            boolean coversElement = x - 6 < elementX + elementWidth && x + w + 6 > elementX && y - 6 < elementY + elementHeight && y + h + 6 > elementY;
+            boolean coversToolbar = x < toolbar.x() + toolbar.width() && x + w > toolbar.x() && y < toolbar.y() + toolbar.height() + 6;
+            if (!coversElement && !coversToolbar) return new ToolbarLayout(x, y, w, h);
+        }
+        return null;
+    }
+    private ToolbarLayout properties() {
+        if (selected == null || !HudModules.enabled(selected)) return null;
+        var b = HudModules.bounds(selected, width, height);
+        return propertiesLayout(width, height, b.x(), b.y(), b.width(), b.height(), controlsExpanded);
+    }
+    private void property(int dx, int dy, int w, int h, String label, String tooltip, Runnable action) {
+        var button = new ClientUi.ActionButton(0, 0, w, h, Component.literal(label), b -> action.run());
+        button.setTooltip(Tooltip.create(Component.literal(tooltip)));
+        propertyButtons.add(addRenderableWidget(button));
+        propertyOffsets.add(new int[] {dx, dy});
+    }
+    private void centerSelected() {
+        if (selected == null || !HudModules.enabled(selected)) return;
+        var element = selected;
+        history.change(() -> {
+            var b = HudModules.bounds(element, width, height);
+            HudModules.position(element, Math.max(0, (width - b.width()) / 2), b.y());
+        });
+        dirty = true;
+    }
+    private void layoutProperties() {
+        var panel = properties();
+        for (int i = 0; i < propertyButtons.size(); i++) {
+            var button = propertyButtons.get(i);
+            button.visible = button.active = panel != null;
+            if (panel != null) button.setPosition(panel.x() + propertyOffsets.get(i)[0], panel.y() + propertyOffsets.get(i)[1]);
+        }
     }
     private void toggleControls() {
         history.commit();dragging=resizing=null;guideX=guideY=-1;
@@ -53,7 +103,18 @@ public final class HudEditorScreen extends Screen {
         dragging = resizing = null;
         appearanceButtons.clear();
         undoButton=null;
+        propertyButtons.clear(); propertyOffsets.clear();
         if (selected != null && !HudModules.enabled(selected)) selected = null;
+        int inner = PROPERTIES_WIDTH - 16;
+        property(inner - 32, 26, 18, 16, "-", "Smaller", () -> change(-.1f, 0));
+        property(inner - 10, 26, 18, 16, "+", "Larger", () -> change(.1f, 0));
+        property(inner - 32, 48, 18, 16, "-", "More transparent", () -> change(0, -.05f));
+        property(inner - 10, 48, 18, 16, "+", "More opaque", () -> change(0, .05f));
+        property(8, 70, (inner - 4) / 2, 18, "Center", "Center horizontally", this::centerSelected);
+        property(12 + (inner - 4) / 2, 70, (inner - 4) / 2, 18, "Settings", "Open this module's settings", () -> {
+            if (selected != null) minecraft.gui.setScreen(new VortexScreen(this, ClientModule.forHud(selected)));
+        });
+        layoutProperties();
         var toolbar = toolbarLayout(width, height, controlsExpanded);
         int w = toolbar.width(), x = toolbar.x(), y = toolbar.y();
         if (!controlsExpanded) {
@@ -106,12 +167,13 @@ public final class HudEditorScreen extends Screen {
     }
     @Override public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float delta) {
         if (VortexClient.config.hudEditorGrid) {
-            for (int x = 0; x < width; x += 24) g.verticalLine(x, 0, height, 0x185F6578);
-            for (int y = 0; y < height; y += 24) g.horizontalLine(0, width, y, 0x185F6578);
+            for (int x = 0; x < width; x += 24) g.verticalLine(x, 0, height, 0x18A0A4B3);
+            for (int y = 0; y < height; y += 24) g.horizontalLine(0, width, y, 0x18A0A4B3);
         }
         if (dragging != null && VortexClient.config.hudEditorSnapping) {
-            if(guideX>=0)g.verticalLine(Math.min(width-1,guideX),0,height,0xCC9BB9DF);
-            if(guideY>=0)g.horizontalLine(0,width,Math.min(height-1,guideY),0xCC9BB9DF);
+            // Snap guides are dashed lavender lines across the whole screen.
+            if(guideX>=0)ClientUi.dashed(g,Math.min(width-1,guideX),0,1,height,ClientUi.accentAlpha(0xCC));
+            if(guideY>=0)ClientUi.dashed(g,0,Math.min(height-1,guideY),width,1,ClientUi.accentAlpha(0xCC));
         }
         VortexClient.drawFps(g, true); HudModules.draw(g, true);
         boolean any = false;
@@ -119,20 +181,23 @@ public final class HudEditorScreen extends Screen {
             if (!HudModules.enabled(element)) continue;
             any = true;
             var b = HudModules.bounds(element, width, height);
-            boolean highlighted = selected == element || b.contains(mouseX, mouseY);
-            g.outline(b.x() - 1, b.y() - 1, b.width() + 2, b.height() + 2,
-                highlighted ? ClientUi.ACCENT : 0x885F6578);
+            boolean hovered = b.contains(mouseX, mouseY);
+            if (selected != element)
+                ClientUi.dashed(g, b.x() - 2, b.y() - 2, b.width() + 4, b.height() + 4, hovered ? ClientUi.ACCENT : 0x99ECEDF3);
             if (selected == element) {
                 if (resizing == element || HudModules.resizeHandleContains(b, mouseX, mouseY))
                     g.requestCursor(com.mojang.blaze3d.platform.cursor.CursorTypes.CROSSHAIR);
                 else if (dragging == element || b.contains(mouseX, mouseY))
                     g.requestCursor(com.mojang.blaze3d.platform.cursor.CursorTypes.RESIZE_ALL);
-                for (int cornerX : new int[] {b.x() - 2, b.x() + b.width() - 2})
-                    for (int cornerY : new int[] {b.y() - 2, b.y() + b.height() - 2})
-                        g.fill(cornerX, cornerY, cornerX + 4, cornerY + 4, ClientUi.ACCENT);
-                ClientUi.rounded(g, b.x() + b.width() - 5, b.y() + b.height() - 5, 10, 10, 3, ClientUi.ACCENT);
-                g.fill(b.x() + b.width() - 2, b.y() + b.height() - 1, b.x() + b.width() + 2, b.y() + b.height(), ClientUi.PANEL);
-                g.fill(b.x() + b.width(), b.y() + b.height() - 3, b.x() + b.width() + 1, b.y() + b.height(), ClientUi.PANEL);
+                g.outline(b.x() - 2, b.y() - 2, b.width() + 4, b.height() + 4, ClientUi.ACCENT);
+                g.outline(b.x() - 3, b.y() - 3, b.width() + 6, b.height() + 6, ClientUi.accentAlpha(0x66));
+                // Name and size ride above the selection so they never cover the overlay itself.
+                String tag = HudModules.name(element) + " · " + Math.round(HudModules.scale(element) * 100) + "%";
+                int tagWidth = UiFonts.body().width(tag) + 12, tagY = b.y() - 17 >= 0 ? b.y() - 17 : b.y() + b.height() + 5;
+                ClientUi.pill(g, b.x() - 2, tagY, tagWidth, 12, ClientUi.ACCENT);
+                g.text(UiFonts.body(), tag, b.x() + 4, tagY + 2, ClientUi.ACCENT_TEXT, false);
+                ClientUi.rounded(g, b.x() + b.width() - 4, b.y() + b.height() - 4, 9, 9, 4, ClientUi.ACCENT);
+                ClientUi.rounded(g, b.x() + b.width() - 2, b.y() + b.height() - 2, 5, 5, 2, 0xFFFFFFFF);
             }
         }
         if (!any) {
@@ -142,12 +207,26 @@ public final class HudEditorScreen extends Screen {
         if (controlsExpanded) {
             var toolbar = toolbarLayout(width, height, true);
             int w = toolbar.width(), x = toolbar.x(), y = toolbar.y();
-            ClientUi.panel(g, x, y, w, toolbar.height(), 8, ClientUi.BORDER, ClientUi.PANEL);
+            ClientUi.rounded(g, x - 1, y + 3, w + 2, toolbar.height(), 12, 0x40000000);
+            ClientUi.rounded(g, x, y, w, toolbar.height(), 12, ClientUi.GLASS);
             String selection = selected == null ? "HUD Editor  /  Select an overlay" :
                 String.format(Locale.ROOT, "%s   %d%% size / %d%% opacity", HudModules.name(selected),
                     Math.round(HudModules.scale(selected) * 100), Math.round(HudModules.opacity(selected) * 100));
             ClientUi.text(g, selection, x + 8, y + 9, w - 92, ClientUi.TEXT);
             ClientUi.text(g, message, x + 8, y + 77, w - 16, ClientUi.MUTED);
+        }
+        layoutProperties();
+        var panel = properties();
+        if (panel != null) {
+            int px = panel.x(), py = panel.y();
+            ClientUi.rounded(g, px - 1, py + 3, panel.width() + 2, panel.height(), 12, 0x40000000);
+            ClientUi.rounded(g, px, py, panel.width(), panel.height(), 12, ClientUi.GLASS);
+            ClientUi.eyebrow(g, "Selected", px + 8, py + 6, panel.width() - 16);
+            ClientUi.text(g, HudModules.name(selected), px + 8, py + 15, panel.width() - 16, ClientUi.TEXT);
+            ClientUi.text(g, "Size " + Math.round(HudModules.scale(selected) * 100) + "%", px + 8, py + 30, panel.width() - 60, ClientUi.MUTED);
+            ClientUi.text(g, "Opacity " + Math.round(HudModules.opacity(selected) * 100) + "%", px + 8, py + 52, panel.width() - 60, ClientUi.MUTED);
+            var b = HudModules.bounds(selected, width, height);
+            ClientUi.text(g, "X " + b.x() + "  Y " + b.y(), px + 8, py + 96, panel.width() - 16, ClientUi.MUTED);
         }
         if (!isInGameUi())
             g.centeredText(font, "Open a world to preview Minecraft's HUD.", width / 2, height - 14, ClientUi.MUTED);
@@ -160,6 +239,9 @@ public final class HudEditorScreen extends Screen {
     @Override public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         if (super.mouseClicked(event, doubleClick)) return true;
         if (controlsExpanded && toolbarLayout(width, height, true).contains(event.x(), event.y())) return true;
+        var panel = properties();
+        // A click on the card's background keeps the selection instead of clearing it.
+        if (panel != null && panel.contains(event.x(), event.y())) return true;
         if (HudModules.isDragButton(event.button()) && selected != null && HudModules.enabled(selected)) {
             var b = HudModules.bounds(selected, width, height);
             if (HudModules.resizeHandleContains(b, event.x(), event.y())) {

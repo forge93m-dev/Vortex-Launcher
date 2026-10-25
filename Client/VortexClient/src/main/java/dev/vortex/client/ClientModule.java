@@ -28,7 +28,8 @@ public enum ClientModule {
     ENCHANTMENT_HINTS("Enchantment Hints", "Plain-English enchantment explanations", "Gameplay", null),
     DEATH_WAYPOINTS("Death Waypoints", "Save death coordinates in the Deaths group", "Gameplay", null),
     RESOURCE_COUNTER("Resource Counter", "Track inventory goals", "HUD", HudModules.Element.RESOURCES),
-    STORAGE_MEMORY("Storage Finder", "Find items in previously opened storage", "Gameplay", null);
+    STORAGE_MEMORY("Storage Finder", "Find items in previously opened storage", "Gameplay", null),
+    PLAYER_LIST("Player List", "Party on top, ping in ms, Vortex badges · Tab", "Gameplay", null);
 
     public final String title, description, category;
     public final HudModules.Element hud;
@@ -56,6 +57,7 @@ public enum ClientModule {
             case COMPACT_SHIELD -> c.compactShieldEnabled;
             case ENCHANTMENT_HINTS -> c.enchantmentHintsEnabled;
             case DEATH_WAYPOINTS -> c.deathWaypointsEnabled;
+            case PLAYER_LIST -> c.playerListEnabled;
         };
     }
     public void toggle() {
@@ -83,6 +85,7 @@ public enum ClientModule {
             case COMPACT_SHIELD -> c.compactShieldEnabled=!c.compactShieldEnabled;
             case ENCHANTMENT_HINTS -> c.enchantmentHintsEnabled=!c.enchantmentHintsEnabled;
             case DEATH_WAYPOINTS -> c.deathWaypointsEnabled=!c.deathWaypointsEnabled;
+            case PLAYER_LIST -> c.playerListEnabled=!c.playerListEnabled;
         }
     }
     public boolean matches(String search, String filter) {

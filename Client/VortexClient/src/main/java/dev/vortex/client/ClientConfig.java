@@ -37,7 +37,11 @@ public final class ClientConfig {
     public boolean chestSearchEnabled = true;
     public boolean waypointsEnabled = true;
     public boolean shulkerPreviewEnabled = true;
-    public boolean compactShieldEnabled = true, enchantmentHintsEnabled = true, deathWaypointsEnabled = true;
+    public boolean compactShieldEnabled = true, enchantmentHintsEnabled = true, deathWaypointsEnabled = true, playerListEnabled = true;
+    /** Accent colour of the client interface (RGB). */
+    public int clientAccent = 0xA78BFA;
+    /** Title-screen panorama from an older version (its Minecraft version id), or "" for the current one. */
+    public String menuPanorama = "";
     public float shieldScale=.72f;
     public java.util.Set<String> hiddenWaypointGroups=new java.util.HashSet<>();
     public boolean entityHeartsEnabled = true;
@@ -82,6 +86,8 @@ public final class ClientConfig {
     public boolean hudEditorGrid = true;
     public boolean hudEditorSnapping = true;
     public float zoomMultiplier = 4;
+    /** Zoom: press once to toggle instead of holding; slower mouse while zoomed in. */
+    public boolean zoomToggle = false, zoomSlowMouse = true;
     public float hudScale = 1;
     public float hudOpacity = 0.85f;
     public int fpsX = 110;
@@ -127,6 +133,8 @@ public final class ClientConfig {
             config.hiddenWaypointGroups=new java.util.HashSet<>(config.hiddenWaypointGroups.stream().filter(s->s!=null && s.matches("[a-f0-9]{64}")).limit(512).toList());
             config.crosshairShape = Math.clamp(config.crosshairShape, 0, 2);
             config.crosshairColor &= 0xFFFFFF;
+            config.clientAccent &= 0xFFFFFF;
+            if (config.menuPanorama == null || !config.menuPanorama.isEmpty() && !PanoramaLibrary.valid(config.menuPanorama)) config.menuPanorama = "";
             config.crosshairSize = Math.clamp(config.crosshairSize, 2, 12);
             config.crosshairGap = Math.clamp(config.crosshairGap, 0, 8);
             config.crosshairThickness = Math.clamp(config.crosshairThickness, 1, 4);
@@ -139,7 +147,7 @@ public final class ClientConfig {
             config.effectsScale = optionalClamp(config.effectsScale, .75f, 2);
             config.heldItemOpacity = optionalClamp(config.heldItemOpacity, .25f, 1);
             config.effectsOpacity = optionalClamp(config.effectsOpacity, .25f, 1);
-            config.zoomMultiplier = finiteClamp(config.zoomMultiplier, 2, 8, 4);
+            config.zoomMultiplier = finiteClamp(config.zoomMultiplier, 2, VortexClient.MAX_ZOOM, 4);
             if (!ClientBindings.valid(config.freelookKey))
                 config.freelookKey = com.mojang.blaze3d.platform.InputConstants.KEY_V;
             if (!ClientBindings.valid(config.menuKey)) config.menuKey = com.mojang.blaze3d.platform.InputConstants.KEY_RSHIFT;

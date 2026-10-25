@@ -19,6 +19,8 @@ final class WardrobeTile extends Button {
     private final java.util.function.BooleanSupplier selected;
     Runnable manage;
     boolean favorite;
+    /** Small corner badge: PREVIEW for the item on the model, APPLIED for the one others see; empty for none. */
+    java.util.function.Supplier<String> badge=()->"";
     WardrobeTile(int x,int y,int width,int index,String label,Identifier thumbnail,String builtinCape,
                  java.util.function.BooleanSupplier selected,Runnable choose,UiMotion.Feedback motion,long sectionStarted) {
         super(x,y,width,48,Component.literal(label),b->choose.run(),DEFAULT_NARRATION);
@@ -43,9 +45,9 @@ final class WardrobeTile extends Button {
         motion.frame(isHoveredOrFocused(),chosen);
         float reveal=VortexClient.config.uiAnimations?UiMotion.reveal((System.nanoTime()-Math.max(sectionStarted,motion.born))/1e6-Math.min(index,8)*12):1;
         UiMotion.begin(g,x,y,w,48,motion.scale()*(.985f+.015f*reveal),(1-reveal)*3);
-        int background=ClientUi.mix(ClientUi.SURFACE,0xFF202733,motion.selected);
-        background=ClientUi.mix(background,0xFF292D36,motion.hover);
-        ClientUi.panel(g,x,y,w,48,5,ClientUi.mix(ClientUi.PANEL,ClientUi.mix(ClientUi.BORDER,ClientUi.ACCENT,motion.selected*.8f+motion.hover*.2f),reveal),
+        int background=ClientUi.mix(ClientUi.SURFACE,ClientUi.ACCENT_FAINT,motion.selected);
+        background=ClientUi.mix(background,ClientUi.RAISED,motion.hover);
+        ClientUi.panel(g,x,y,w,48,10,ClientUi.mix(ClientUi.PANEL,ClientUi.mix(ClientUi.BORDER,ClientUi.ACCENT,motion.selected*.8f+motion.hover*.2f),reveal),
             ClientUi.mix(ClientUi.PANEL,background,reveal));
         int tint=((int)(255*reveal)<<24)|0xFFFFFF;
         if(manage!=null)for(int dot=0;dot<3;dot++)g.fill(x+w-14+dot*4,y+7,x+w-12+dot*4,y+9,ClientUi.MUTED);
@@ -55,7 +57,15 @@ final class WardrobeTile extends Button {
             int scale=CapeImages.width(builtinCape)/64;
             g.blit(RenderPipelines.GUI_TEXTURED,CapeCatalog.texture(builtinCape),x+(w-20)/2,y+3,12*scale,scale,20,32,10*scale,16*scale,64*scale,32*scale,tint);
         } else ClientUi.icon(g,builtinCape==null?"profile":"capes",x+(w-22)/2,y+7,22,ClientUi.mix(ClientUi.PANEL,ClientUi.MUTED,reveal));
-        var font=UiFonts.body();String label=font.plainSubstrByWidth(getMessage().getString(),w-8);
+        var font=UiFonts.body();
+        String tag=badge.get();
+        if(!tag.isEmpty() && w>=60){
+            int tagColor=tag.equals("APPLIED")?0xFF86EFC4:ClientUi.ACCENT,tagWidth=font.width(tag)/2+8;
+            ClientUi.pill(g,x+4,y+4,tagWidth,8,ClientUi.mix(ClientUi.PANEL,(tagColor&0xFFFFFF)|0x33000000,reveal));
+            g.pose().pushMatrix();g.pose().translate(x+8,y+6);g.pose().scale(.5f,.5f);
+            g.text(font,tag,0,0,ClientUi.mix(ClientUi.PANEL,tagColor,reveal),false);g.pose().popMatrix();
+        }
+        String label=font.plainSubstrByWidth(getMessage().getString(),w-8);
         g.text(font,label,x+(w-font.width(label))/2,y+36,ClientUi.mix(ClientUi.PANEL,chosen?ClientUi.TEXT:ClientUi.MUTED,reveal),false);
         g.pose().popMatrix();
     }

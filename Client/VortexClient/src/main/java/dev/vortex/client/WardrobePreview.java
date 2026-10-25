@@ -66,11 +66,12 @@ public final class WardrobePreview extends AbstractWidget {
         var skin=appearance.get();if(skin==null)return;
         long now=System.nanoTime();double seconds=(now-previousFrame)/1e9;previousFrame=now;
         camera.capeFade.step(seconds,VortexClient.config.uiAnimations);
-        camera.capeFade.observe(skin.cape());
+        // All frames of an animated cape count as one cape, so it animates instead of fading every frame.
+        camera.capeFade.observe(CapeCatalog.canonical(skin.cape()));
         if(!VortexClient.config.uiAnimations)camera.capeFade.step(0,false);
         camera.step(seconds,VortexClient.config.uiAnimations);
         var view=camera.view();float scale=Math.min(getHeight()/2.15f,getWidth()/1.25f)*view.zoom();
-        var cape=camera.capeFade.displayed();
+        var cape=CapeCatalog.current(camera.capeFade.displayed());
         if(!java.util.Objects.equals(cape,skin.cape()))skin=new PlayerSkin(skin.body(),cape,skin.elytra(),skin.model(),skin.secure());
         var avatar=(PreviewState)state(skin);avatar.capeOpacity=camera.capeFade.opacity();
         g.entity(avatar,scale,new Vector3f(0,view.focusY(),0),new Quaternionf().rotateZ((float)Math.PI).rotateY((float)Math.toRadians(view.yaw())),

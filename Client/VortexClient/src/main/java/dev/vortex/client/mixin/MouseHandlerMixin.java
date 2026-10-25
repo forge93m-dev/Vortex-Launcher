@@ -15,7 +15,10 @@ public abstract class MouseHandlerMixin {
     @Redirect(method = "turnPlayer(D)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;turn(DD)V"))
     private void vortex$freelook(LocalPlayer player, double dx, double dy) {
         // Vanilla has already applied sensitivity, cinematic smoothing and invert settings.
-        if (!Freelook.turn(player, dx, dy)) player.turn(dx, dy);
+        if (!Freelook.turn(player, dx, dy)) {
+            double scale = VortexClient.zoomTurnScale();
+            player.turn(dx * scale, dy * scale);
+        }
     }
     @Inject(method = "onScroll(JDD)V", at = @At("HEAD"), cancellable = true)
     private void vortex$scroll(long window, double horizontal, double vertical, CallbackInfo callback) {
