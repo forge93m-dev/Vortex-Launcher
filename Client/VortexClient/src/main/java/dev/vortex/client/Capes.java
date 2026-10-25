@@ -167,21 +167,34 @@ public final class Capes {
     private static void importPng(java.nio.file.Path path,boolean animatedMode) {
         var mc=Minecraft.getInstance(); var parent=mc.gui.screen();
         submit(()-> {
-            if(animatedMode || CapeAnimation.isGif(path)) {
-                byte[] pixels=CapeAnimation.read(path); String id=CapePixels.id(pixels);
-                var wardrobe=parent instanceof WardrobeScreen screen?screen:null;
-                CosmeticCollection.local().addCape(pixels);
-                if(wardrobe==null)CapePixels.save(customFile(),pixels);
-                return ()->{
-                    if(wardrobe!=null){if(mc.gui.screen()==wardrobe)wardrobe.stageCape(pixels);return;}
-                    var keep=new java.util.HashSet<>(visible.values()); keep.add(id); CapeImages.retain(keep);
-                    install(id,pixels); restoredCustom=id;
-                    if(preview(id)) message="Animated cape preview. Click Save online to upload it publicly.";
-                };
+            if(CapeAnimation.isGif(path) || CapeAnimation.isWebp(path)) {
+                var clip=CapeAnimation.load(path);
+                return ()->{if(mc.gui.screen()==parent) mc.gui.setScreen(new CapeCropScreen(parent,clip));};
+            }
+            if(animatedMode) {
+                byte[] pixels=CapeAnimation.read(path);
+                return finishAnimated(pixels,parent instanceof WardrobeScreen screen?screen:null);
             }
             var source=CapeArtwork.read(path);
             return ()->{if(mc.gui.screen()==parent) mc.gui.setScreen(new CapeCropScreen(parent,source));};
         },true);
+    }
+    private static Runnable finishAnimated(byte[] pixels,WardrobeScreen wardrobe) throws Exception {
+        var mc=Minecraft.getInstance(); String id=CapePixels.id(pixels);
+        CosmeticCollection.local().addCape(pixels);
+        if(wardrobe==null)CapePixels.save(customFile(),pixels);
+        return ()->{
+            if(wardrobe!=null){if(mc.gui.screen()==wardrobe)wardrobe.stageCape(pixels);return;}
+            var keep=new java.util.HashSet<>(visible.values()); keep.add(id); CapeImages.retain(keep);
+            install(id,pixels); restoredCustom=id;
+            if(preview(id)) message="Animated cape preview. Click Save online to upload it publicly.";
+        };
+    }
+    /** The crop screen's "Use image" for a GIF: the same crop is applied to every frame. */
+    public static void acceptAnimation(CapeAnimation.Clip clip,double zoom,double panX,double panY,boolean fit,boolean textureMode,int width) {
+        if(busy()) {message="Wait for the current cape request."; return;}
+        var wardrobe=Minecraft.getInstance().gui.screen() instanceof WardrobeScreen screen?screen:null;
+        submit(()->finishAnimated(CapeAnimation.pack(clip,zoom,panX,panY,fit,textureMode,width),wardrobe),true);
     }
     public static void acceptArtwork(CapeArtwork.Source source,double zoom,double panX,double panY,boolean fit,boolean textureMode) {
         if(busy()) {message="Wait for the current cape request."; return;}

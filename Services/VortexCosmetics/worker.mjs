@@ -73,7 +73,7 @@ async function validateAnimated(bytes) {
   if(bytes.length<24 || bytes.length>ANIMATED_MAX_BYTES) throw Object.assign(new Error("Invalid animated cape size"),{status:400});
   const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
   const width=view.getUint32(4),height=view.getUint32(8),frames=view.getUint32(12),frameMs=view.getUint32(16);
-  if(view.getUint32(0)!==0x56434131 || ![64,128,256].includes(width) || height!==width/2 || frames<2 || frames>32 || frameMs<50 || frameMs>1000)
+  if(view.getUint32(0)!==0x56434131 || ![64,128,256,512].includes(width) || height!==width/2 || frames<2 || frames>32 || frameMs<50 || frameMs>1000)
     throw Object.assign(new Error("Invalid animated cape header"),{status:400});
   const expected=width*height*4*frames;
   const reader=new Response(bytes.slice(20)).body.pipeThrough(new DecompressionStream("deflate")).getReader();

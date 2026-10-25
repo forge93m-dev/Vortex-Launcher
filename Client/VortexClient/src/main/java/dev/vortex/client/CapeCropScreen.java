@@ -13,13 +13,20 @@ import net.minecraft.resources.Identifier;
 public final class CapeCropScreen extends Screen {
     private static final Identifier PREVIEW=Identifier.fromNamespaceAndPath("vortex_client","cape_crop_preview");
     private final Screen parent;
-    private final CapeArtwork.Source source;
+    private CapeArtwork.Source source;
+    private final CapeAnimation.Clip clip;
+    private int quality=128,shownFrame=-1;
     private double zoom=1,panX,panY;
     private boolean fit=true,dirty=true;
     private boolean textureMode;
     private DynamicTexture texture;
     private boolean previewDragging;
-    public CapeCropScreen(Screen parent,CapeArtwork.Source source) {super(Minecraft.getInstance(),UiFonts.body(),Component.literal("Crop cape photo")); this.parent=parent; this.source=source; textureMode=source.width()==64 && source.height()==32;}
+    public CapeCropScreen(Screen parent,CapeAnimation.Clip clip) {
+        this(parent,new CapeArtwork.Source(clip.width(),clip.height(),clip.frames().get(0)),clip);
+        textureMode=CapeAnimation.isTexture(clip); fit=!textureMode;
+    }
+    public CapeCropScreen(Screen parent,CapeArtwork.Source source) {this(parent,source,null);}
+    private CapeCropScreen(Screen parent,CapeArtwork.Source source,CapeAnimation.Clip clip) {super(Minecraft.getInstance(),UiFonts.body(),Component.literal("Crop cape photo")); this.parent=parent; this.source=source; this.clip=clip; textureMode=source.width()==64 && source.height()==32;}
     public record Layout(int x,int y,int width,int height,int previewX,int previewY,int previewWidth,int previewHeight,int controlsX,int controlsWidth) { }
     public static Layout layout(int width,int height) {
         int w=Math.min(560,width-16),h=Math.min(360,height-16),x=(width-w)/2,y=(height-h)/2;
@@ -42,13 +49,21 @@ public final class CapeCropScreen extends Screen {
         addRenderableWidget(new ClientUi.Slider(cx,y+104,cw,"Horizontal",-1,1,panX,v->Math.round(v*100)+"%",v->{panX=v; dirty=true;},()->{})).active=!textureMode;
         addRenderableWidget(new ClientUi.Slider(cx,y+144,cw,"Vertical",-1,1,panY,v->Math.round(v*100)+"%",v->{panY=v; dirty=true;},()->{})).active=!textureMode;
         int by=y+l.height()-30;
+        if(clip!=null) addRenderableWidget(new ClientUi.ActionButton(cx,y+186,cw,20,Component.literal("Cape size: "+quality+" wide"),b->{
+            quality=quality==128?256:quality==256?512:128; rebuildWidgets();
+        }));
         addRenderableWidget(new ClientUi.ActionButton(l.x()+12,by,70,22,Component.literal("Reset"),b->{zoom=1;panX=panY=0;fit=true;textureMode=false;dirty=true;rebuildWidgets();}));
         addRenderableWidget(new ClientUi.ActionButton(l.x()+86,by,70,22,Component.literal("Cancel"),b->onClose()));
         addRenderableWidget(new ClientUi.ActionButton(l.x()+160,by,l.width()-172,22,Component.literal("Use image"),b->{
-            minecraft.gui.setScreen(parent); Capes.acceptArtwork(source,zoom,panX,panY,fit,textureMode);
+            minecraft.gui.setScreen(parent);
+            if(clip!=null) Capes.acceptAnimation(clip,zoom,panX,panY,fit,textureMode,quality); else Capes.acceptArtwork(source,zoom,panX,panY,fit,textureMode);
         },true));
     }
     @Override public void tick() {
+        if(clip!=null && texture!=null) {
+            int index=(int)((System.currentTimeMillis()/Math.max(50,clip.frameMs()))%clip.frames().size());
+            if(index!=shownFrame) {shownFrame=index; source=new CapeArtwork.Source(clip.width(),clip.height(),clip.frames().get(index)); dirty=true;}
+        }
         if(!dirty || texture==null) return; dirty=false;
         byte[] pixels=textureMode?CapeArtwork.textureFace(source):CapeArtwork.face(source,160,256,zoom,panX,panY,fit);
         var image=texture.getPixels();
@@ -66,9 +81,9 @@ public final class CapeCropScreen extends Screen {
     @Override public void extractRenderState(GuiGraphicsExtractor g,int mx,int my,float delta) {
         var l=layout(width,height); g.fill(0,0,width,height,0xA008090F);
         ClientUi.panel(g,l.x(),l.y(),l.width(),l.height(),10,ClientUi.BORDER,ClientUi.PANEL);
-        ClientUi.heading(g,"Photo to HD cape",l.x()+12,l.y()+12,l.width()-24);
+        ClientUi.heading(g,clip!=null?"Animation to HD cape":"Photo to HD cape",l.x()+12,l.y()+12,l.width()-24);
         if(texture!=null) g.blit(RenderPipelines.GUI_TEXTURED,PREVIEW,l.previewX(),l.previewY(),0,0,l.previewWidth(),l.previewHeight(),160,256,160,256,0xFFFFFFFF);
-        if(l.height()>280) ClientUi.text(g,"1024x512 atlas / 160x256 artwork",l.controlsX(),l.y()+194,l.controlsWidth(),ClientUi.MUTED);
+        if(l.height()>280) ClientUi.text(g,clip!=null?clip.frames().size()+" frames · "+clip.frameMs()+" ms each; frames and size shrink to fit the limit":"1024x512 atlas / 160x256 artwork",l.controlsX(),l.y()+194,l.controlsWidth(),ClientUi.MUTED);
         super.extractRenderState(g,mx,my,delta);
     }
     @Override public boolean mouseScrolled(double x,double y,double horizontal,double vertical) {

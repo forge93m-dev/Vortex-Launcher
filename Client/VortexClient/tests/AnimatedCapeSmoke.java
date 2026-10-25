@@ -38,6 +38,31 @@ public final class AnimatedCapeSmoke {
         }
         writer.dispose(); return path;
     }
+    private static int rgb(byte[] frame, int x, int y, int width) {
+        int p = (y * width + x) * 4;
+        return ((frame[p] & 255) << 16) | ((frame[p + 1] & 255) << 8) | (frame[p + 2] & 255);
+    }
+    private static Path noiseGif(Path dir, String name, int w, int h, int count) throws Exception {
+        var writer = javax.imageio.ImageIO.getImageWritersByFormatName("gif").next();
+        Path path = dir.resolve(name); var random = new Random(11);
+        try (var output = javax.imageio.ImageIO.createImageOutputStream(Files.newOutputStream(path))) {
+            writer.setOutput(output); writer.prepareWriteSequence(null);
+            for (int f = 0; f < count; f++) {
+                var image = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+                for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) image.setRGB(x, y, 0xFF000000 | random.nextInt(0xFFFFFF));
+                var type = javax.imageio.ImageTypeSpecifier.createFromRenderedImage(image);
+                var metadata = writer.getDefaultImageMetadata(type, null);
+                var tree = (javax.imageio.metadata.IIOMetadataNode) metadata.getAsTree("javax_imageio_gif_image_1.0");
+                var control = new javax.imageio.metadata.IIOMetadataNode("GraphicControlExtension");
+                control.setAttribute("disposalMethod", "none"); control.setAttribute("userInputFlag", "FALSE"); control.setAttribute("transparentColorFlag", "FALSE");
+                control.setAttribute("delayTime", "5"); control.setAttribute("transparentColorIndex", "0");
+                tree.appendChild(control); metadata.setFromTree("javax_imageio_gif_image_1.0", tree);
+                writer.writeToSequence(new javax.imageio.IIOImage(image, null, metadata), null);
+            }
+            writer.endWriteSequence();
+        }
+        writer.dispose(); return path;
+    }
     private static void fails(String what, Callable body) {
         try { body.run(); } catch (InvocationTargetException | IllegalArgumentException expected) { return; } catch (Exception other) { return; }
         throw new AssertionError("Should have been refused: " + what);
@@ -78,7 +103,7 @@ public final class AnimatedCapeSmoke {
         fails("one frame header", () -> unpack.invoke(null, (Object) fewFrames));
         byte[] fast = packed.clone(); java.nio.ByteBuffer.wrap(fast, 16, 4).putInt(10);
         fails("too fast", () -> unpack.invoke(null, (Object) fast));
-        byte[] badSize = packed.clone(); java.nio.ByteBuffer.wrap(badSize, 4, 4).putInt(512);
+        byte[] badSize = packed.clone(); java.nio.ByteBuffer.wrap(badSize, 4, 4).putInt(1024);
         fails("too large frame", () -> unpack.invoke(null, (Object) badSize));
 
         // GIF: four 128x64 frames at 0.1 s; the delay becomes the speed.
@@ -118,6 +143,48 @@ public final class AnimatedCapeSmoke {
         byte[] shrunk = (byte[]) read.invoke(null, noisy);
         if (shrunk.length > (int) pixels.getField("MAX_ANIMATED").get(null)) throw new AssertionError("Animated cape exceeds the service limit");
         if ((int) animation.getMethod("width").invoke(unpack.invoke(null, (Object) shrunk)) >= 256) throw new AssertionError("Oversized noise should have been reduced");
+        // A portrait GIF (like the 133x200 meme GIFs people try) goes through the same crop as a photo, frame by frame.
+        Class<?> clipType = Class.forName("dev.vortex.client.CapeAnimation$Clip", true, target);
+        Method load = importer.getMethod("load", Path.class);
+        Method pack = importer.getMethod("pack", clipType, double.class, double.class, double.class, boolean.class, boolean.class, int.class);
+        int[] colors = {0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0x00FFFF, 0xFF00FF};
+        Object clip = load.invoke(null, gif(dir, "portrait.gif", 133, 200, 10, colors));
+        if ((int) clipType.getMethod("width").invoke(clip) != 133 || (int) clipType.getMethod("height").invoke(clip) != 200 || ((List<?>) clipType.getMethod("frames").invoke(clip)).size() != 6)
+            throw new AssertionError("A portrait GIF keeps its own size and frames until it is cropped");
+        for (boolean fit : new boolean[] {false, true}) {
+            Object composed = unpack.invoke(null, (Object) pack.invoke(null, clip, 1.0, 0.0, 0.0, fit, false, 256));
+            if ((int) animation.getMethod("width").invoke(composed) != 256 || (int) animation.getMethod("height").invoke(composed) != 128 || ((byte[][]) animation.getMethod("frames").invoke(composed)).length != 6)
+                throw new AssertionError("Cropped animation size and frame count");
+            byte[][] frames = (byte[][]) animation.getMethod("frames").invoke(composed);
+            for (int f = 0; f < 6; f++) {
+                if (rgb(frames[f], 10, 40, 256) != colors[f]) throw new AssertionError("Cropped frame " + f + " keeps its colour inside the cape face (fit=" + fit + ")");
+                // With "fit" the picture leaves bars above and below, so only the side edge still carries the picture's colour.
+                if (rgb(frames[f], 44, 40, 256) != colors[f] || (!fit && (rgb(frames[f], 10, 0, 256) != colors[f] || rgb(frames[f], 48 + 10, 0, 256) != colors[f]))) throw new AssertionError("The cape's edges repeat the face's border colour");
+                if ((frames[f][(100 * 256 + 150) * 4 + 3] & 255) != 0 || (frames[f][(40 * 256 + 10) * 4 + 3] & 255) != 255) throw new AssertionError("Outside the cape's faces stays transparent, inside is opaque");
+            }
+        }
+        for (int width : new int[] {64, 128, 512}) {
+            Object sized = unpack.invoke(null, (Object) pack.invoke(null, clip, 1.0, 0.0, 0.0, false, false, width));
+            if ((int) animation.getMethod("width").invoke(sized) != width) throw new AssertionError("The chosen cape size " + width + " is used");
+        }
+        fails("an unsupported texture width", () -> pack.invoke(null, clip, 1.0, 0.0, 0.0, false, false, 300));
+        fails("texture mode on frames that are not a cape texture", () -> pack.invoke(null, clip, 1.0, 0.0, 0.0, false, true, 128));
+        Object texture = load.invoke(null, gif(dir, "texture.gif", 128, 64, 10, 0xFF0000, 0x00FF00, 0x0000FF));
+        Object textured = unpack.invoke(null, (Object) pack.invoke(null, texture, 1.0, 0.0, 0.0, false, true, 128));
+        if (pixel(textured, 0) != 0xFF0000 || pixel(textured, 2) != 0x0000FF) throw new AssertionError("Frames that already are cape textures are used as they are");
+        // A big noisy GIF at the largest size is made lighter instead of being refused.
+        Object noisyClip = load.invoke(null, noiseGif(dir, "noise.gif", 200, 300, 24));
+        byte[] lighter = (byte[]) pack.invoke(null, noisyClip, 1.0, 0.0, 0.0, false, false, 512);
+        if (lighter.length > (int) pixels.getField("MAX_ANIMATED").get(null)) throw new AssertionError("A big animation fits the service limit after it is made lighter");
+        Object lighterAnimation = unpack.invoke(null, (Object) lighter);
+        if (((byte[][]) animation.getMethod("frames").invoke(lighterAnimation)).length < 2) throw new AssertionError("A lighter animation still animates");
+        // A long clip is thinned when loaded.
+        Object longClip = load.invoke(null, gif(dir, "long.gif", 64, 32, 5, new int[40]));
+        if (((List<?>) clipType.getMethod("frames").invoke(longClip)).size() != 32) throw new AssertionError("A long GIF is thinned to 32 frames when it is loaded");
+        // WebP cannot be read; say so plainly.
+        Path webp = dir.resolve("anim.webp"); Files.write(webp, new byte[] {'R', 'I', 'F', 'F', 100, 0, 0, 0, 'W', 'E', 'B', 'P', 'V', 'P', '8', 'X', 0, 0, 0, 0});
+        try { load.invoke(null, webp); throw new AssertionError("WebP should be refused"); }
+        catch (InvocationTargetException expected) { if (!String.valueOf(expected.getCause().getMessage()).contains("WebP")) throw new AssertionError("The WebP refusal names WebP"); }
         System.out.println("ANIMATED_CAPE_SMOKE_OK: strip and GIF import, exact frame colours and order, speed bounds, 32-frame thinning, size fitting and shrinking, persistence, and refusal of corrupt, truncated, one-frame and mis-shaped files");
     }
 }
