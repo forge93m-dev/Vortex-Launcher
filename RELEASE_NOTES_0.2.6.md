@@ -1,4 +1,17 @@
-# Vortex Launcher 0.2.6 — .NET 10 and safer downloads
+# Vortex Launcher 0.2.6 — NeoForge, pack import, per-instance settings and safer downloads
+
+## New
+
+- **NeoForge.** Create NeoForge instances (Minecraft 1.20.2 and newer). The installer comes only from NeoForged's
+  official Maven and is checked against its published SHA-1. Modrinth `.mrpack`, CurseForge and PolyMC packs that
+  need NeoForge now import. Not yet tested with a live game launch: please report problems.
+- **CurseForge pack import.** Packs download through the CurseForge API with your own free key
+  (Settings → Java → CurseForge). Files whose authors block other launchers are listed in
+  `CurseForge manual downloads.txt` in the instance folder.
+- **Java, memory and JVM arguments per instance** (instance Settings tab). Imported packs never bring their own.
+- **New Game hub design**, Nunito font, smoother motion and faster installs.
+- **Vortex Client**: new interface, party chat and shared waypoints, better chat, player list, accent colours,
+  smooth menus, animated capes, zoom and a panorama picker.
 
 ## Platform
 
@@ -45,8 +58,8 @@
 - New `HardeningChecks` in DownloadSmoke: 24 checks covering the fixes above.
   Synthetic fixtures only, no network access.
 - Results with .NET 10:
-  - DownloadSmoke: 337 PASS
-  - SidebarSmoke: 838 PASS
+  - DownloadSmoke: 415 PASS
+  - SidebarSmoke: 926 PASS
   - DiscordSmoke: OK
 - Win-x64 and osx-arm64 single-file publishing works.
-- Not verified yet: launching real Minecraft/Forge on Windows and macOS.
+- Not verified yet: launching real Minecraft with Forge or NeoForge on Windows and macOS.
