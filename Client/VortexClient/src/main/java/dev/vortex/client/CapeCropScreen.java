@@ -61,7 +61,7 @@ public final class CapeCropScreen extends Screen {
     }
     @Override public void tick() {
         if(clip!=null && texture!=null) {
-            int index=(int)((System.currentTimeMillis()/Math.max(50,clip.frameMs()))%clip.frames().size());
+            int index=(int)((System.currentTimeMillis()/Math.max(20,clip.frameMs()))%clip.frames().size());
             if(index!=shownFrame) {shownFrame=index; source=new CapeArtwork.Source(clip.width(),clip.height(),clip.frames().get(index)); dirty=true;}
         }
         if(!dirty || texture==null) return; dirty=false;
@@ -83,7 +83,7 @@ public final class CapeCropScreen extends Screen {
         ClientUi.panel(g,l.x(),l.y(),l.width(),l.height(),10,ClientUi.BORDER,ClientUi.PANEL);
         ClientUi.heading(g,clip!=null?"Animation to HD cape":"Photo to HD cape",l.x()+12,l.y()+12,l.width()-24);
         if(texture!=null) g.blit(RenderPipelines.GUI_TEXTURED,PREVIEW,l.previewX(),l.previewY(),0,0,l.previewWidth(),l.previewHeight(),160,256,160,256,0xFFFFFFFF);
-        if(l.height()>280) ClientUi.text(g,clip!=null?clip.frames().size()+" frames · "+clip.frameMs()+" ms each; frames and size shrink to fit the limit":"1024x512 atlas / 160x256 artwork",l.controlsX(),l.y()+194,l.controlsWidth(),ClientUi.MUTED);
+        if(l.height()>280) ClientUi.text(g,clip!=null?clip.frames().size()+" frames · "+clip.frameMs()+" ms each; the size shrinks before any frame is dropped":"1024x512 atlas / 160x256 artwork",l.controlsX(),l.y()+194,l.controlsWidth(),ClientUi.MUTED);
         super.extractRenderState(g,mx,my,delta);
     }
     @Override public boolean mouseScrolled(double x,double y,double horizontal,double vertical) {

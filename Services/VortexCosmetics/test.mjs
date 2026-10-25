@@ -108,12 +108,13 @@ assert.equal((await call("/v1/lookup","POST",{uuids:[id],custom:true,hd:true})).
 assert.equal((await call("/v1/lookup","POST",{uuids:[id],custom:true,hd:true,anim:true})).value.capes[0].cape,animUpload.value.cape);
 const animResponse=await service.fetch(new Request("https://fixture.test/v2/textures/"+animUpload.value.cape.slice(5)),env);
 assert.equal(animResponse.status,200); assert.deepEqual(Buffer.from(await animResponse.arrayBuffer()),anim);
-for(const malformed of [animEnvelope(128,64,1),animEnvelope(128,64,33),animEnvelope(128,64,8,10),animEnvelope(128,64,8,5000),animEnvelope(1024,512,8),animEnvelope(128,32,8),
+for(const malformed of [animEnvelope(128,64,1),animEnvelope(128,64,121),animEnvelope(128,64,8,19),animEnvelope(512,256,62),animEnvelope(128,64,8,5000),animEnvelope(1024,512,8),animEnvelope(128,32,8),
     animEnvelope(128,64,8,100,128*64*4*8-1),animEnvelope(128,64,8,100,128*64*4*9),anim.subarray(0,anim.length-1),Buffer.concat([anim,Buffer.from([0])]),Buffer.concat([Buffer.from([0]),anim.subarray(1)])]) {
   assert.equal((await call("/v2/animated","PUT",{uuid:id,pixels:malformed.toString("base64")},owner)).status,400);
 }
-assert.equal((await call("/v2/animated","PUT",{uuid:id,pixels:"A".repeat(1048584)},owner)).status,400); // over the envelope bound
-assert.equal((await call("/v2/animated","PUT",{uuid:id,pixels:"A".repeat(1200000)},owner)).status,413); // oversized request body
+assert.equal((await call("/v2/animated","PUT",{uuid:id,pixels:"A".repeat(1333340)},owner)).status,400); // over the envelope bound
+assert.equal((await call("/v2/animated","PUT",{uuid:id,pixels:"A".repeat(1600000)},owner)).status,413); // oversized request body
+for(const frames of [animEnvelope(128,64,120,20),animEnvelope(512,256,61,20),animEnvelope(64,32,2,1000)]) assert.equal((await call("/v2/animated","PUT",{uuid:id,pixels:frames.toString("base64")},owner)).status,200); // up to 120 frames, 20 ms, within the memory budget
 const big=animEnvelope(512,256,32,50);
 const bigUpload=await call("/v2/animated","PUT",{uuid:id,pixels:big.toString("base64")},owner);
 assert.equal(bigUpload.status,200); assert.match(bigUpload.value.cape,/^anim:[a-f0-9]{64}$/); // 512-wide animated capes are accepted

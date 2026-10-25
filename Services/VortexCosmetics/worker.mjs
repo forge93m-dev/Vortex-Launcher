@@ -22,7 +22,7 @@ async function body(request) {
       const {value, done} = await reader.read(); if (done) break;
       size += value.length;
       const route = new URL(request.url).pathname;
-      const limit = route === "/v2/animated" ? 1100000 : route === "/v2/custom" ? 900000 : route === "/v1/custom" ? 12288 : 4096;
+      const limit = route === "/v2/animated" ? 1500000 : route === "/v2/custom" ? 900000 : route === "/v1/custom" ? 12288 : 4096;
       if (size > limit) { await reader.cancel(); throw Object.assign(new Error("Request too large"), {status:413}); }
       chunks.push(value);
     }
@@ -68,12 +68,12 @@ async function validateHd(bytes) {
 }
 // Animated custom cape: "VCA1", width, height, frames, milliseconds per frame (big-endian u32), then a zlib stream of
 // frames*width*height*4 RGBA bytes. Frames are stacked in one stream; every size and count is bounded.
-const ANIMATED_MAX_BYTES=786432;
+const ANIMATED_MAX_BYTES=1000000;
 async function validateAnimated(bytes) {
   if(bytes.length<24 || bytes.length>ANIMATED_MAX_BYTES) throw Object.assign(new Error("Invalid animated cape size"),{status:400});
   const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
   const width=view.getUint32(4),height=view.getUint32(8),frames=view.getUint32(12),frameMs=view.getUint32(16);
-  if(view.getUint32(0)!==0x56434131 || ![64,128,256,512].includes(width) || height!==width/2 || frames<2 || frames>32 || frameMs<50 || frameMs>1000)
+  if(view.getUint32(0)!==0x56434131 || ![64,128,256,512].includes(width) || height!==width/2 || frames<2 || frames>120 || width*height*frames>8000000 || frameMs<20 || frameMs>1000)
     throw Object.assign(new Error("Invalid animated cape header"),{status:400});
   const expected=width*height*4*frames;
   const reader=new Response(bytes.slice(20)).body.pipeThrough(new DecompressionStream("deflate")).getReader();
@@ -117,7 +117,7 @@ export default {
         const token=request.headers.get("Authorization")?.match(/^Bearer ([a-f0-9]{64})$/)?.[1];
         if(!key(token)) return json({error:"Activation required"},401);
         const value=await body(request),id=uuid(value.uuid),owner=await digest(token);
-        if(!id || typeof value.pixels!=="string" || value.pixels.length>1048580 || value.pixels.length%4 || !/^[A-Za-z0-9+/]*={0,2}$/.test(value.pixels)) return json({error:"Invalid animated envelope"},400);
+        if(!id || typeof value.pixels!=="string" || value.pixels.length>1333336 || value.pixels.length%4 || !/^[A-Za-z0-9+/]*={0,2}$/.test(value.pixels)) return json({error:"Invalid animated envelope"},400);
         const profile=await env.DB.prepare("SELECT owner_hash FROM cape_profiles WHERE uuid=?").bind(id).all();
         if(profile.results[0]?.owner_hash!==owner) return json({error:"This key cannot change that profile"},403);
         const bytes=Uint8Array.from(atob(value.pixels),c=>c.charCodeAt(0));

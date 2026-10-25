@@ -129,16 +129,16 @@ public final class AnimatedCapeSmoke {
         if ((int) animation.getMethod("frameMs").invoke(slow) != 1000 && (int) animation.getMethod("frameMs").invoke(slow) != 1000) { /* clamped below */ }
         if ((int) animation.getMethod("frameMs").invoke(slow) > 1000) throw new AssertionError("GIF speed is not bounded");
         Object quick = unpack.invoke(null, (Object) read.invoke(null, gif(dir, "quick.gif", 128, 64, 1, 0xFF0000, 0x00FF00)));
-        if ((int) animation.getMethod("frameMs").invoke(quick) < 50) throw new AssertionError("GIF speed is not bounded below");
+        if ((int) animation.getMethod("frameMs").invoke(quick) != 100) throw new AssertionError("A GIF delay of 0 or 1 hundredth means the usual 100 ms, as in browsers");
 
         // A 2:1 picture of another size is fitted to a supported size.
         Object fitted = unpack.invoke(null, (Object) read.invoke(null, gif(dir, "odd.gif", 200, 100, 10, 0x123456, 0x654321)));
         if ((int) animation.getMethod("width").invoke(fitted) != 256) throw new AssertionError("A 200x100 GIF should be fitted to a supported size");
 
-        // Too many frames are thinned out while keeping the duration.
-        Object thinned = unpack.invoke(null, (Object) read.invoke(null, strip(dir, "long.png", 64, 32, new int[40])));
-        if (((byte[][]) animation.getMethod("frames").invoke(thinned)).length != 32 || (int) animation.getMethod("frameMs").invoke(thinned) != 125)
-            throw new AssertionError("Long strips are thinned to 32 frames with the same duration");
+        // Smoothness first: a strip of 40 frames keeps all of them and its speed.
+        Object kept = unpack.invoke(null, (Object) read.invoke(null, strip(dir, "long.png", 64, 32, new int[40])));
+        if (((byte[][]) animation.getMethod("frames").invoke(kept)).length != 40 || (int) animation.getMethod("frameMs").invoke(kept) != 100)
+            throw new AssertionError("A strip of 40 frames keeps all of them at their speed");
 
         // Refusals.
         fails("a single frame", () -> read.invoke(null, strip(dir, "one.png", 128, 64, 0xFF0000)));
@@ -192,9 +192,18 @@ public final class AnimatedCapeSmoke {
         if (lighter.length > (int) pixels.getField("MAX_ANIMATED").get(null)) throw new AssertionError("A big animation fits the service limit after it is made lighter");
         Object lighterAnimation = unpack.invoke(null, (Object) lighter);
         if (((byte[][]) animation.getMethod("frames").invoke(lighterAnimation)).length < 2) throw new AssertionError("A lighter animation still animates");
-        // A long clip is thinned when loaded.
-        Object longClip = load.invoke(null, gif(dir, "long.gif", 64, 32, 5, new int[40]));
-        if (((List<?>) clipType.getMethod("frames").invoke(longClip)).size() != 32) throw new AssertionError("A long GIF is thinned to 32 frames when it is loaded");
+        // Only a clip longer than 120 frames is thinned, and its duration is kept.
+        Object longClip = load.invoke(null, gif(dir, "long.gif", 64, 32, 5, new int[150]));
+        if (((List<?>) clipType.getMethod("frames").invoke(longClip)).size() != 120 || (int) clipType.getMethod("frameMs").invoke(longClip) != 63)
+            throw new AssertionError("A 150-frame GIF is thinned to 120 frames with the same duration");
+        Object fastClip = load.invoke(null, gif(dir, "fast.gif", 64, 32, 2, new int[10]));
+        if ((int) clipType.getMethod("frameMs").invoke(fastClip) != 20) throw new AssertionError("A GIF at 50 frames per second keeps its 20 ms frames");
+        // The owner's case: 44 noisy frames at the largest size lose resolution, not frames.
+        Object smooth = load.invoke(null, noiseGif(dir, "smooth.gif", 133, 200, 44));
+        Object smoothAnimation = unpack.invoke(null, (Object) pack.invoke(null, smooth, 1.0, 0.0, 0.0, false, false, 512));
+        int smoothWidth = (int) animation.getMethod("width").invoke(smoothAnimation);
+        if (((byte[][]) animation.getMethod("frames").invoke(smoothAnimation)).length != 44 || smoothWidth < 128 || smoothWidth > 256)
+            throw new AssertionError("A heavy 44-frame animation keeps every frame and gives up resolution first (width " + smoothWidth + ")");
         // WebP cannot be read; say so plainly.
         Path webp = dir.resolve("anim.webp"); Files.write(webp, new byte[] {'R', 'I', 'F', 'F', 100, 0, 0, 0, 'W', 'E', 'B', 'P', 'V', 'P', '8', 'X', 0, 0, 0, 0});
         try { load.invoke(null, webp); throw new AssertionError("WebP should be refused"); }

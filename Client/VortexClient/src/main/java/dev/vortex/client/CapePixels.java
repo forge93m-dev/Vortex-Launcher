@@ -13,8 +13,12 @@ public final class CapePixels {
     public static final int SIZE = 64 * 32 * 4;
     public static final int MAX_PACKED = 640 * 1024;
     /** Animated custom cape: "VCA1", width, height, frames, milliseconds per frame, then one zlib stream of all RGBA frames. */
-    public static final int MAX_ANIMATED = 768 * 1024;
-    public static final int MAX_FRAMES = 32;
+    public static final int MAX_ANIMATED = 1_000_000;
+    public static final int MAX_FRAMES = 120;
+    public static final int MIN_FRAME_MS = 20;
+    /** Frames x width x height: bounds the memory an animated cape needs on every player's computer (32 MB of RGBA). */
+    public static final long MAX_ANIMATED_PIXELS = 8_000_000L;
+    public static boolean withinBudget(int frames, int width) {return (long)frames*width*(width/2)<=MAX_ANIMATED_PIXELS;}
     public record Image(int width,int height,byte[] rgba) { }
     public record Animation(int width,int height,int frameMs,byte[][] frames) { }
     public static boolean animated(byte[] data) {return data!=null && data.length>=20 && ByteBuffer.wrap(data).getInt()==0x56434131;}
@@ -26,7 +30,7 @@ public final class CapePixels {
     public static void check(byte[] pixels) {
         if(animated(pixels)) {
             var header=ByteBuffer.wrap(pixels); header.getInt(); int w=header.getInt(),h=header.getInt(),frames=header.getInt(),frameMs=header.getInt();
-            if(pixels.length<24 || pixels.length>MAX_ANIMATED || !(w==64 || w==128 || w==256 || w==512) || h!=w/2 || frames<2 || frames>MAX_FRAMES || frameMs<50 || frameMs>1000)
+            if(pixels.length<24 || pixels.length>MAX_ANIMATED || !(w==64 || w==128 || w==256 || w==512) || h!=w/2 || frames<2 || frames>MAX_FRAMES || !withinBudget(frames,w) || frameMs<MIN_FRAME_MS || frameMs>1000)
                 throw new IllegalArgumentException("Invalid animated cape dimensions, frame count or size.");
         } else if(hd(pixels)) {
             var header=ByteBuffer.wrap(pixels); header.getInt(); int w=header.getInt(),h=header.getInt();
@@ -42,7 +46,7 @@ public final class CapePixels {
         byte[] data=output.toByteArray(); check(data); return data;
     }
     public static byte[] packAnimation(int width,int height,int frameMs,java.util.List<byte[]> frames) throws Exception {
-        if(!(width==64 || width==128 || width==256 || width==512) || height!=width/2 || frames.size()<2 || frames.size()>MAX_FRAMES || frameMs<50 || frameMs>1000)
+        if(!(width==64 || width==128 || width==256 || width==512) || height!=width/2 || frames.size()<2 || frames.size()>MAX_FRAMES || !withinBudget(frames.size(),width) || frameMs<MIN_FRAME_MS || frameMs>1000)
             throw new IllegalArgumentException("Invalid animated cape dimensions or frame count.");
         var output=new java.io.ByteArrayOutputStream();
         output.write(ByteBuffer.allocate(20).putInt(0x56434131).putInt(width).putInt(height).putInt(frames.size()).putInt(frameMs).array());

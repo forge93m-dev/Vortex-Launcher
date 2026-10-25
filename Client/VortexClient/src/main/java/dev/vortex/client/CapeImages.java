@@ -13,7 +13,10 @@ import net.minecraft.resources.Identifier;
 public final class CapeImages {
     private static final Map<String,ClientAsset.Texture> textures=new ConcurrentHashMap<>();
     private static final Map<String,Integer> widths=new ConcurrentHashMap<>();
-    private record Anim(ClientAsset.Texture[] frames,int frameMs) { }
+    private record Anim(ClientAsset.Texture[] frames,int frameMs,long pixels) { }
+    /** All animated capes on screen together may hold this many pixels of frames (about 96 MB), whatever players wear. */
+    private static final long ANIMATED_BUDGET=24_000_000L;
+    private static long animatedPixels;
     private static final Map<String,Anim> anims=new ConcurrentHashMap<>();
     public static boolean animated(String id) {return id!=null && anims.containsKey(id);}
     /** The frame to show now; every player wearing the same cape animates in step. */
@@ -34,6 +37,8 @@ public final class CapeImages {
     }
     private static void installAnimation(String id,byte[] pixels) throws Exception {
         var animation=CapePixels.unpackAnimation(pixels);
+        long cost=(long)animation.width()*animation.height()*animation.frames().length;
+        if(animatedPixels+cost>ANIMATED_BUDGET) throw new IllegalStateException("Too many animated capes are loaded at once.");
         var frames=new ClientAsset.Texture[animation.frames().length];
         var registered=new java.util.ArrayList<Identifier>();
         try {
@@ -57,7 +62,8 @@ public final class CapeImages {
             for(var location:registered) Minecraft.getInstance().getTextureManager().release(location);
             throw error;
         }
-        anims.put(id,new Anim(frames,animation.frameMs()));
+        anims.put(id,new Anim(frames,animation.frameMs(),cost));
+        animatedPixels+=cost;
         textures.put(id,frames[0]);
         widths.put(id,animation.width());
     }
@@ -90,7 +96,7 @@ public final class CapeImages {
             var removed=textures.remove(id);
             widths.remove(id);
             var animation=anims.remove(id);
-            if(animation!=null) {for(var frame:animation.frames()) Minecraft.getInstance().getTextureManager().release(frame.texturePath()); continue;}
+            if(animation!=null) {animatedPixels-=animation.pixels(); for(var frame:animation.frames()) Minecraft.getInstance().getTextureManager().release(frame.texturePath()); continue;}
             if(removed!=null) Minecraft.getInstance().getTextureManager().release(removed.texturePath());
         }
     }

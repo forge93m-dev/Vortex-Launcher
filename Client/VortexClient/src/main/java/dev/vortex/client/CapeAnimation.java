@@ -15,7 +15,7 @@ public final class CapeAnimation {
     private static final long MAX_TOTAL_PIXELS = 16L * 1024 * 1024;
     /** Decoded frames as RGBA, all the same size. Public so the crop screen can show and re-compose them. */
     public record Clip(int width, int height, int frameMs, List<byte[]> frames) { }
-    static final int MAX_CLIP_FRAMES = 32;
+    static final int MAX_CLIP_FRAMES = CapePixels.MAX_FRAMES;
     private CapeAnimation() { }
 
     public static boolean isGif(byte[] head) {
@@ -49,7 +49,7 @@ public final class CapeAnimation {
         if (total <= limit) return clip;
         var kept = new ArrayList<byte[]>();
         for (int i = 0; i < limit; i++) kept.add(clip.frames().get((int) ((long) i * total / limit)));
-        return new Clip(clip.width(), clip.height(), Math.clamp((int) Math.round(clip.frameMs() * (double) total / limit), 50, 1000), kept);
+        return new Clip(clip.width(), clip.height(), Math.clamp((int) Math.round(clip.frameMs() * (double) total / limit), CapePixels.MIN_FRAME_MS, 1000), kept);
     }
 
     /** Frames that already are cape textures (twice as wide as tall, a supported size) need no crop. */
@@ -114,7 +114,7 @@ public final class CapeAnimation {
                             centis = Integer.parseInt(attributes.getNamedItem("delayTime").getNodeValue());
                         }
                     }
-                    delay += centis <= 0 ? 10 : centis;
+                    delay += centis <= 1 ? 10 : centis; // like browsers: 0 or 1 hundredth of a second means "the usual 100 ms"
                     int[] before = disposal == 3 ? canvas.clone() : null;
                     int width = image.getWidth(), height = image.getHeight();
                     for (int y = 0; y < height; y++) for (int x = 0; x < width; x++) {
@@ -155,7 +155,7 @@ public final class CapeAnimation {
             frameMs = (int) Math.round(frameMs * (double) total / CapePixels.MAX_FRAMES);
             frames = kept;
         }
-        frameMs = Math.clamp(frameMs, 50, 1000);
+        frameMs = Math.clamp(frameMs, CapePixels.MIN_FRAME_MS, 1000);
         int width = source.width(), height = source.height();
         if (source.height() * 2 != source.width())
             throw new IllegalArgumentException("Each frame must be twice as wide as tall, like a cape texture (for example 128x64).");
@@ -176,29 +176,36 @@ public final class CapeAnimation {
 
     /**
      * Builds the animated cape from a clip the way the photo import builds a static one: each frame is cropped with the same
-     * zoom, pan and fit, laid out as a cape texture of the chosen width (64, 128, 256 or 512), and packed. When the result is
-     * over the service limit it is made lighter: every other frame is dropped (the speed is halved to keep the duration), and
-     * once only a few frames are left the texture gets smaller.
+     * zoom, pan and fit, laid out as a cape texture of the chosen width (64, 128, 256 or 512), and packed. Smoothness comes
+     * first: every frame and the original speed are kept as long as possible. When the result is over the service limit or
+     * the memory budget, the texture is made smaller first (down to 128 wide); only then are frames dropped, every other one,
+     * with the speed halved so the duration stays the same.
      */
     public static byte[] pack(Clip clip, double zoom, double panX, double panY, boolean fit, boolean textureMode, int width) throws Exception {
         if (!(width == 64 || width == 128 || width == 256 || width == 512)) throw new IllegalArgumentException("Choose a texture width of 64, 128, 256 or 512.");
         if (textureMode && !isTexture(clip)) throw new IllegalArgumentException("These frames are not in the cape texture layout.");
         var frames = new ArrayList<>(clip.frames());
         if (frames.size() < 2) throw new IllegalArgumentException("An animated cape needs at least two frames.");
-        int ms = clip.frameMs();
+        if (frames.size() > CapePixels.MAX_FRAMES) frames = new ArrayList<>(thin(clip, CapePixels.MAX_FRAMES).frames());
+        int ms = frames.size() == clip.frames().size() ? clip.frameMs() : thin(clip, CapePixels.MAX_FRAMES).frameMs();
         for (;;)
         {
-            var textures = new ArrayList<byte[]>();
-            for (byte[] frame : frames)
-                textures.add(textureMode ? resize(List.of(frame), clip.width(), clip.height(), width, width / 2).get(0)
-                    : texture(new CapeArtwork.Source(clip.width(), clip.height(), frame), zoom, panX, panY, fit, width));
-            byte[] packed = CapePixels.packAnimation(width, width / 2, Math.clamp(ms, 50, 1000), textures);
-            if (packed.length <= CapePixels.MAX_ANIMATED) return packed;
-            if (frames.size() > 8)
+            boolean fits = CapePixels.withinBudget(frames.size(), width);
+            if (fits)
+            {
+                var textures = new ArrayList<byte[]>();
+                for (byte[] frame : frames)
+                    textures.add(textureMode ? resize(List.of(frame), clip.width(), clip.height(), width, width / 2).get(0)
+                        : texture(new CapeArtwork.Source(clip.width(), clip.height(), frame), zoom, panX, panY, fit, width));
+                byte[] packed = CapePixels.packAnimation(width, width / 2, Math.clamp(ms, CapePixels.MIN_FRAME_MS, 1000), textures);
+                if (packed.length <= CapePixels.MAX_ANIMATED) return packed;
+            }
+            if (width > 128) width /= 2;
+            else if (frames.size() > 8)
             {
                 var half = new ArrayList<byte[]>();
                 for (int i = 0; i < frames.size(); i += 2) half.add(frames.get(i));
-                frames = half; ms *= 2;
+                frames = half; ms = Math.min(1000, ms * 2);
             }
             else if (width > 64) width /= 2;
             else throw new IllegalArgumentException("The animation is too large even at the smallest size. Use fewer frames.");
