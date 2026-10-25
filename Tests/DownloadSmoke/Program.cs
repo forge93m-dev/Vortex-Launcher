@@ -34,6 +34,7 @@ DataLocationChecks.Run(testRoot);
 await DirectDownloadChecks.RunAsync(testRoot);
 await LaunchSettingsChecks.RunAsync(testRoot);
 await CurseForgeImportChecks.RunAsync(testRoot);
+await NeoForgeChecks.RunAsync(testRoot);
 await InstallationSpeedChecks.RunAsync(testRoot);
 if (args.Contains("--installation-speed")) return;
 await ModPreflightChecks.RunAsync(testRoot);

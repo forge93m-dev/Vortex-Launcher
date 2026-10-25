@@ -66,10 +66,12 @@ Run both smoke suites after every change. UI motion tests are timing-sensitive.
 - The owner does NOT want Microsoft account login. Keep offline profiles.
 
 ## Backlog (owner's choice of order)
-1. NeoForge support (shown in the UI but disabled).
+1. ~~NeoForge support~~ done: `ForgeService.InstallNeoForgeProfileAsync` (official NeoForged Maven only, SHA-1 checked, no mirror),
+   `GameLauncher` treats NeoForge as part of the Forge family (`ForgeService.IsForgeFamily`). The installer and a real launch
+   were NOT run live (needs a download); verify 1.21.1 first, and the 26.x line (its main class is unconfirmed).
 2. ~~Import Modrinth `.mrpack` and CurseForge packs~~ Done: `.mrpack` was already supported; CurseForge `manifest.json` packs
    import through the CurseForge API with the user's own key (Settings → Java → CurseForge). Files whose authors block other
-   launchers are listed in `CurseForge manual downloads.txt`. NeoForge packs are refused until NeoForge is supported.
+   launchers are listed in `CurseForge manual downloads.txt`. NeoForge packs are imported like the others.
 3. ~~Java, RAM and JVM settings per instance~~ Done (`Core/Launch/LaunchSettings.cs`, panel on the instance Settings tab).
 4. Avalonia upgrade (see above).
 5. Split `MainWindowViewModel`; move the tests to xUnit.

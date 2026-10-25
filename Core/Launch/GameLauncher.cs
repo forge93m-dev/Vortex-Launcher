@@ -62,7 +62,9 @@ public class GameLauncher
         bool isFabricLike = (loaderType.Equals("Fabric", StringComparison.OrdinalIgnoreCase) ||
                              loaderType.Equals("Quilt", StringComparison.OrdinalIgnoreCase)) &&
                             fabricProfile != null;
-        bool isForge = loaderType.Equals("Forge", StringComparison.OrdinalIgnoreCase);
+        bool isNeoForge = loaderType.Equals("NeoForge", StringComparison.OrdinalIgnoreCase);
+        // NeoForge is a fork of Forge and starts through the same ModLauncher pipeline; "isForge" means the whole family.
+        bool isForge = loaderType.Equals("Forge", StringComparison.OrdinalIgnoreCase) || isNeoForge;
 
         if (!isFabricLike && !isForge && !loaderType.Equals("Vanilla", StringComparison.OrdinalIgnoreCase))
         {
@@ -82,22 +84,38 @@ public class GameLauncher
         if (isForge)
         {
             var forgeService = new ForgeService();
-            forgeVersion = string.IsNullOrWhiteSpace(loaderVersion)
-                ? await forgeService.GetPromotedForgeVersionAsync(version).WaitAsync(cancellationToken)
-                : (loaderVersion.StartsWith(version + "-", StringComparison.Ordinal)
-                    ? loaderVersion : version + "-" + loaderVersion);
+            if (isNeoForge)
+            {
+                forgeVersion = string.IsNullOrWhiteSpace(loaderVersion)
+                    ? await forgeService.GetLatestNeoForgeVersionAsync(version, cancellationToken).WaitAsync(cancellationToken)
+                    : loaderVersion.Trim();
+            }
+            else
+            {
+                forgeVersion = string.IsNullOrWhiteSpace(loaderVersion)
+                    ? await forgeService.GetPromotedForgeVersionAsync(version).WaitAsync(cancellationToken)
+                    : (loaderVersion.StartsWith(version + "-", StringComparison.Ordinal)
+                        ? loaderVersion : version + "-" + loaderVersion);
+            }
             if (!string.IsNullOrEmpty(forgeVersion))
             {
-                await forgeService.InstallForgeProfileAsync(forgeVersion, version, baseDir, javaPath, (status, prog) =>
-                {
-                    progressCallback?.Invoke(status, prog);
-                }, cancellationToken, transfer);
+                if (isNeoForge)
+                    await forgeService.InstallNeoForgeProfileAsync(forgeVersion, version, baseDir, javaPath, (status, prog) =>
+                    {
+                        progressCallback?.Invoke(status, prog);
+                    }, cancellationToken, transfer);
+                else
+                    await forgeService.InstallForgeProfileAsync(forgeVersion, version, baseDir, javaPath, (status, prog) =>
+                    {
+                        progressCallback?.Invoke(status, prog);
+                    }, cancellationToken, transfer);
 
-                string processedForgeClient = Path.Combine(
-                    librariesDir, "net", "minecraftforge", "forge", forgeVersion,
-                    $"forge-{forgeVersion}-client.jar");
+                string processedForgeClient = isNeoForge
+                    ? Path.Combine(librariesDir, "net", "neoforged", "neoforge", forgeVersion, $"neoforge-{forgeVersion}-client.jar")
+                    : Path.Combine(librariesDir, "net", "minecraftforge", "forge", forgeVersion, $"forge-{forgeVersion}-client.jar");
 
-                if (!File.Exists(processedForgeClient))
+                // NeoForge's client jar is made only by its installer; a copy of the vanilla jar would not start.
+                if (!isNeoForge && !File.Exists(processedForgeClient))
                 {
                     string? clientDir = Path.GetDirectoryName(processedForgeClient);
                     if (!string.IsNullOrEmpty(clientDir))
@@ -116,7 +134,7 @@ public class GameLauncher
                     clientJar = processedForgeClient;
                 }
 
-                forgeProfile = LoadForgeLaunchProfile(baseDir, version, forgeVersion);
+                forgeProfile = LoadForgeLaunchProfile(baseDir, version, forgeVersion, isNeoForge);
             }
         }
 
@@ -136,7 +154,7 @@ public class GameLauncher
         if (isForge && !string.IsNullOrEmpty(forgeVersion))
         {
             var profileLibraries = ResolveForgeProfileLibraries(
-                baseDir, version, forgeVersion, librariesDir);
+                baseDir, version, forgeVersion, librariesDir, isNeoForge);
             if (profileLibraries.Count > 0)
             {
                 libJars = profileLibraries.ToArray();
@@ -146,13 +164,13 @@ public class GameLauncher
         if (isForge && string.IsNullOrWhiteSpace(forgeVersion))
         {
             throw new InvalidOperationException(
-                $"Forge version is not available for Minecraft {version}.");
+                $"{loaderType} version is not available for Minecraft {version}.");
         }
 
         if (isForge && forgeProfile == null)
         {
             throw new InvalidOperationException(
-                $"Forge profile was not found for Minecraft {version} ({forgeVersion}).");
+                $"{loaderType} profile was not found for Minecraft {version} ({forgeVersion}).");
         }
 
         bool isLegacyForge = version.StartsWith("1.20") || version.StartsWith("1.19") || version.StartsWith("1.18");
@@ -350,12 +368,16 @@ public class GameLauncher
             if (isLegacyBootstrapForge)
             {
                 sb.AppendLine("--add-opens=java.base/java.lang.invoke=cpw.mods.securejarhandler");
-                sb.AppendLine("-DignoreList=bootstraplauncher,securejarhandler,asm-commons,asm-util,asm-analysis,asm-tree,asm,JarJarFileSystems,client-extra,fmlcore,javafmllanguage,lowcodelanguage,mclanguage,forge-,${version_name}.jar");
+                // NeoForge's own profile already carries its ignore list (it names neoforge-, not forge-).
+                if (!isNeoForge) sb.AppendLine("-DignoreList=bootstraplauncher,securejarhandler,asm-commons,asm-util,asm-analysis,asm-tree,asm,JarJarFileSystems,client-extra,fmlcore,javafmllanguage,lowcodelanguage,mclanguage,forge-,${version_name}.jar");
                 sb.AppendLine(FormatArgument($"-DlibraryDirectory={librariesDir}"));
             }
 
-            sb.AppendLine(FormatArgument($"-Dforgesvc.net.minecraftforge.fml.libs={librariesDir}"));
-            sb.AppendLine("-Dnet.minecraftforge.vulkan=false");
+            if (!isNeoForge)
+            {
+                sb.AppendLine(FormatArgument($"-Dforgesvc.net.minecraftforge.fml.libs={librariesDir}"));
+                sb.AppendLine("-Dnet.minecraftforge.vulkan=false");
+            }
             sb.AppendLine(FormatArgument($"-Djava.library.path={nativesDir}"));
             sb.AppendLine(FormatArgument($"-Dorg.lwjgl.librarypath={nativesDir}"));
             sb.AppendLine("-cp");
@@ -425,11 +447,13 @@ public class GameLauncher
             if (!HasGameOption("--launchTarget") && usesModLauncherTarget)
             {
                 sb.AppendLine("--launchTarget");
-                sb.AppendLine(isModernForge ? "forge_client" :
+                sb.AppendLine(isNeoForge ? "neoforgeclient" :
+                              isModernForge ? "forge_client" :
                               isLegacyBootstrapForge ? "forgeclient" : "fmlclient");
             }
 
-            if (!string.IsNullOrEmpty(forgeVersion))
+            // NeoForge's profile passes its own --fml.* arguments (neoForgeVersion, fmlVersion, mcVersion, neoFormVersion).
+            if (!string.IsNullOrEmpty(forgeVersion) && !isNeoForge)
             {
                 if (!HasGameOption("--fml.forgeGroup"))
                 {
@@ -675,10 +699,11 @@ public class GameLauncher
     private static ForgeLaunchProfile? LoadForgeLaunchProfile(
         string baseDir,
         string minecraftVersion,
-        string forgeVersion)
+        string forgeVersion,
+        bool isNeoForge = false)
     {
         string releaseVersion = GetForgeReleaseVersion(forgeVersion);
-        string profileId = $"{minecraftVersion}-forge-{releaseVersion}";
+        string profileId = isNeoForge ? $"neoforge-{forgeVersion}" : $"{minecraftVersion}-forge-{releaseVersion}";
         string profilePath = Path.Combine(
             baseDir, "versions", profileId, $"{profileId}.json");
 
@@ -687,9 +712,11 @@ public class GameLauncher
             string versionsDir = Path.Combine(baseDir, "versions");
             if (Directory.Exists(versionsDir))
             {
-                profilePath = Directory.GetFiles(versionsDir, "*forge*.json", SearchOption.AllDirectories)
-                    .FirstOrDefault(f => Path.GetFileName(f).Contains(minecraftVersion))
-                    ?? string.Empty;
+                profilePath = isNeoForge
+                    ? string.Empty
+                    : Directory.GetFiles(versionsDir, "*forge*.json", SearchOption.AllDirectories)
+                        .FirstOrDefault(f => Path.GetFileName(f).Contains(minecraftVersion))
+                        ?? string.Empty;
             }
         }
 
@@ -870,7 +897,8 @@ public class GameLauncher
         string baseDir,
         string minecraftVersion,
         string forgeVersion,
-        string librariesDir)
+        string librariesDir,
+        bool isNeoForge = false)
     {
         var result = new List<string>();
         var seenProfiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -948,11 +976,10 @@ public class GameLauncher
             catch { }
         }
 
-        string forgeProfile = Path.Combine(
-            baseDir, "versions", $"{minecraftVersion}-forge-{forgeVersion.Split('-').Last()}",
-            $"{minecraftVersion}-forge-{forgeVersion.Split('-').Last()}.json");
+        string forgeProfileId = isNeoForge ? $"neoforge-{forgeVersion}" : $"{minecraftVersion}-forge-{forgeVersion.Split('-').Last()}";
+        string forgeProfile = Path.Combine(baseDir, "versions", forgeProfileId, $"{forgeProfileId}.json");
 
-        if (!File.Exists(forgeProfile))
+        if (!File.Exists(forgeProfile) && !isNeoForge)
         {
             string versionsDir = Path.Combine(baseDir, "versions");
             if (Directory.Exists(versionsDir))

@@ -53,6 +53,13 @@ public static class InstanceRepair
             versions = Directory.Exists(forge) ? Directory.GetDirectories(forge).Select(Path.GetFileName)
                 .OfType<string>().Where(v => v.StartsWith(instance.Version + "-", StringComparison.Ordinal)).ToArray() : Array.Empty<string>();
         }
+        else if (instance.Loader == "NeoForge")
+        {
+            string neoForge = Path.Combine(libraries, "net", "neoforged", "neoforge");
+            string? neoPrefix = VortexLauncher.Core.Network.ForgeService.NeoForgePrefix(instance.Version);
+            versions = Directory.Exists(neoForge) && neoPrefix != null ? Directory.GetDirectories(neoForge).Select(Path.GetFileName)
+                .OfType<string>().Where(v => v.StartsWith(neoPrefix, StringComparison.Ordinal) && VortexLauncher.Core.Network.ForgeService.IsSafeNeoForgeVersion(v)).ToArray() : Array.Empty<string>();
+        }
         else versions = (SharedGameFiles.LibrariesFor(instance.InstancePath, instance.Version) ?? Directory.EnumerateFiles(libraries, prefix + "*.jar", SearchOption.AllDirectories).ToArray())
             .Where(p => Path.GetFileName(p).StartsWith(prefix, StringComparison.Ordinal))
             .Select(Path.GetFileNameWithoutExtension).OfType<string>().Select(n => n[prefix.Length..]).Where(v => Regex.IsMatch(v, @"^\d+(\.\d+)+([-.][\w.]+)?$")).Distinct().ToArray();

@@ -57,18 +57,16 @@ public partial class CreateInstanceViewModel : ObservableObject
     public string SelectedLoader => SelectedLoaderOption?.Name ?? "Fabric";
 
     public bool CanCreate => SelectedLoaderOption?.IsAvailable == true &&
-                             (!IsCheckingForge || !string.Equals(
-                                 SelectedLoader, "Forge", StringComparison.OrdinalIgnoreCase));
+                             (!IsCheckingForge || !ForgeService.IsForgeFamily(SelectedLoader));
 
     public CreateInstanceViewModel()
     {
         AvailableLoaders.Add(new LoaderOption("Vanilla"));
         AvailableLoaders.Add(new LoaderOption("Fabric"));
         AvailableLoaders.Add(new LoaderOption("Forge", false));
-        // NeoForge is intentionally disabled until its installer/profile
-        // format has a dedicated implementation. It must never be routed to
-        // Forge because the two loaders are not interchangeable.
-        AvailableLoaders.Add(new LoaderOption("NeoForge", false, "NeoForge (not supported yet)"));
+        // NeoForge has its own installer path (ForgeService.InstallNeoForgeProfileAsync); it is never routed to Forge
+        // because the two loaders are not interchangeable.
+        AvailableLoaders.Add(new LoaderOption("NeoForge", false));
         AvailableLoaders.Add(new LoaderOption("Quilt", false));
         SelectedLoaderOption = AvailableLoaders[1];
         _ = LoadVersionsAsync();
@@ -125,6 +123,8 @@ public partial class CreateInstanceViewModel : ObservableObject
     {
         var forge = AvailableLoaders.FirstOrDefault(loader =>
             string.Equals(loader.Name, "Forge", StringComparison.OrdinalIgnoreCase));
+        var neoForge = AvailableLoaders.FirstOrDefault(loader =>
+            string.Equals(loader.Name, "NeoForge", StringComparison.OrdinalIgnoreCase));
         var quilt = AvailableLoaders.FirstOrDefault(loader =>
             string.Equals(loader.Name, "Quilt", StringComparison.OrdinalIgnoreCase));
         if (string.IsNullOrWhiteSpace(minecraftVersion)) return;
@@ -135,6 +135,12 @@ public partial class CreateInstanceViewModel : ObservableObject
             forge.IsAvailable = false;
             forge.DisplayName = "Forge (checking...)";
             forge.ItemOpacity = 0.42;
+        }
+        if (neoForge != null)
+        {
+            neoForge.IsAvailable = false;
+            neoForge.DisplayName = "NeoForge (checking...)";
+            neoForge.ItemOpacity = 0.42;
         }
         if (quilt != null)
         {
@@ -150,11 +156,13 @@ public partial class CreateInstanceViewModel : ObservableObject
         {
             var forgeTask = SafeLookupAsync(() => _forgeService.GetPromotedForgeVersionAsync(minecraftVersion));
             var quiltTask = SafeLookupAsync(() => _quiltService.GetLatestLoaderVersionAsync(minecraftVersion));
-            string?[] results = await Task.WhenAll(forgeTask, quiltTask);
+            var neoForgeTask = SafeLookupAsync(() => _forgeService.GetLatestNeoForgeVersionAsync(minecraftVersion)!);
+            string?[] results = await Task.WhenAll(forgeTask, quiltTask, neoForgeTask);
             if (request != _availabilityRequest) return; // a newer Minecraft version was selected meanwhile
 
             ApplyAvailability(forge, "Forge", results[0]);
             ApplyAvailability(quilt, "Quilt", results[1]);
+            ApplyAvailability(neoForge, "NeoForge", results[2]);
         }
         finally
         {

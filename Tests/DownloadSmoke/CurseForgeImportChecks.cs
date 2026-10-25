@@ -84,7 +84,8 @@ internal static class CurseForgeImportChecks
         Check(preview.Downloads == 7 && preview.Mods >= 7 && preview.Note.Contains("API key") && preview.Summary.Contains("CurseForge pack"), "the preview counts the pack's files and says an API key is needed");
         Check(ArchivePreview.Inspect(WriteZip(work, "fabric.zip", Manifest("fabric-0.15.11"))).Loader == "Fabric" && ArchivePreview.Inspect(WriteZip(work, "quilt.zip", Manifest("quilt-0.26.0"))).LoaderVersion == "0.26.0" &&
               ArchivePreview.Inspect(WriteZip(work, "vanilla.zip", Manifest(""))).Loader == "Vanilla", "Fabric, Quilt and loader-free packs are recognised");
-        Reject(() => ArchivePreview.Inspect(WriteZip(work, "neo.zip", Manifest("neoforge-47.1.0"))), "NeoForge packs are refused with a clear reason");
+        var neoPreview = ArchivePreview.Inspect(WriteZip(work, "neo.zip", Manifest("neoforge-21.1.172")));
+        Check(neoPreview.Loader == "NeoForge" && neoPreview.LoaderVersion == "21.1.172", "a CurseForge NeoForge pack is recognised with its exact NeoForge version");
         Reject(() => ArchivePreview.Inspect(WriteZip(work, "odd.zip", Manifest("forge-1", type: "somethingElse"))), "an unrelated manifest.json is not mistaken for a CurseForge pack");
         Reject(() => ArchivePreview.Inspect(WriteZip(work, "slip.zip", Manifest("forge-1", overrides: "../outside"))), "an overrides folder outside the archive is refused");
         string tooMany = "[" + string.Join(",", Enumerable.Range(1, 2001).Select(i => $"{{\"projectID\":{i},\"fileID\":{i}}}")) + "]";

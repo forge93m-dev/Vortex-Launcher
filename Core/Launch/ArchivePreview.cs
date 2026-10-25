@@ -103,7 +103,7 @@ internal sealed class ArchiveImportPlan
             int loaders = 0;
             foreach (var dependency in deps.EnumerateObject().Where(p => p.Name != "minecraft"))
             {
-                plan.Instance.Loader = dependency.Name switch { "fabric-loader" => "Fabric", "quilt-loader" => "Quilt", "forge" => "Forge",
+                plan.Instance.Loader = dependency.Name switch { "fabric-loader" => "Fabric", "quilt-loader" => "Quilt", "forge" => "Forge", "neoforge" => "NeoForge",
                     _ => throw new InvalidDataException($"Unsupported pack loader: {dependency.Name}") };
                 plan.Instance.LoaderVersion = dependency.Value.GetString() ?? "";
                 loaders++;
@@ -142,7 +142,7 @@ internal sealed class ArchiveImportPlan
             if (plan.Instance.LoaderVersion.Contains('/') || plan.Instance.LoaderVersion.Contains('\\')) throw new InvalidDataException("Invalid loader version.");
         }
         if (string.IsNullOrWhiteSpace(plan.Instance.Name)) plan.Instance.Name = fallback;
-        if (plan.Instance.Loader is not ("Vanilla" or "Fabric" or "Forge" or "Quilt")) throw new InvalidDataException("Unsupported loader in the archive.");
+        if (plan.Instance.Loader is not ("Vanilla" or "Fabric" or "Forge" or "NeoForge" or "Quilt")) throw new InvalidDataException("Unsupported loader in the archive.");
         // A shared pack or archive never brings its own Java, memory or arguments: they would run on this computer.
         LaunchSettings.RejectImported(plan.Instance);
         // Discard machine-specific absolute artwork paths from another computer.
@@ -175,7 +175,7 @@ internal sealed class ArchiveImportPlan
         plan.Instance.Loader = loaderName.ToLowerInvariant() switch
         {
             "" => "Vanilla", "forge" => "Forge", "fabric" => "Fabric", "quilt" => "Quilt",
-            "neoforge" => throw new InvalidDataException("NeoForge packs are not supported yet."),
+            "neoforge" => "NeoForge",
             _ => throw new InvalidDataException($"Unsupported pack loader: {loaderName}")
         };
         plan.Instance.LoaderVersion = dash > 0 ? loader[(dash + 1)..] : "";

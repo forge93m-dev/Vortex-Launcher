@@ -56,6 +56,7 @@ internal sealed class PolyMcArchive
             {
                 "net.fabricmc.fabric-loader" => "Fabric",
                 "net.minecraftforge" => "Forge",
+                "net.neoforged" => "NeoForge",
                 "org.quiltmc.quilt-loader" => "Quilt",
                 _ => null
             };

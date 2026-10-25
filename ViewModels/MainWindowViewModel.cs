@@ -534,7 +534,7 @@ public partial class MainWindowViewModel : ObservableObject
                     instanceFolderName,
                     instance.Version,
                     versionJsonUrl,
-                    UpdateStatus, cancellation.Token, transfer, shareLibraries: !instance.Loader.Equals("Forge", StringComparison.OrdinalIgnoreCase)), prefetchedFabric);
+                    UpdateStatus, cancellation.Token, transfer, shareLibraries: !ForgeService.IsForgeFamily(instance.Loader)), prefetchedFabric);
                 timing.Mark("Minecraft files and Fabric metadata");
 
                 var gameArchitecture = PlatformSupport.GetGameArchitecture(instance.InstancePath, instance.Version);
@@ -590,6 +590,22 @@ public partial class MainWindowViewModel : ObservableObject
                         throw new InvalidOperationException($"Failed to install Forge {forgeVersion}.");
                     }
                     instance.LoaderVersion = forgeVersion;
+                }
+                else if (instance.Loader.Equals("NeoForge", StringComparison.OrdinalIgnoreCase))
+                {
+                    UpdateStatus("Installing NeoForge...");
+                    if (!File.Exists(javaPath))
+                        javaPath = await new JavaRuntimeManager().EnsureJavaAsync(
+                            JavaResolver.GetRequiredJavaVersion(instance.Version), UpdateStatus, cancellation.Token, gameArchitecture);
+                    var neoForgeService = new ForgeService();
+                    string? neoForgeVersion = string.IsNullOrWhiteSpace(instance.LoaderVersion)
+                        ? await neoForgeService.GetLatestNeoForgeVersionAsync(instance.Version, cancellation.Token).WaitAsync(cancellation.Token)
+                        : instance.LoaderVersion.Trim();
+                    if (string.IsNullOrWhiteSpace(neoForgeVersion))
+                        throw new InvalidOperationException($"NeoForge is not available for Minecraft {instance.Version}.");
+                    await neoForgeService.InstallNeoForgeProfileAsync(neoForgeVersion, instance.Version, instance.InstancePath, javaPath,
+                        UpdateStatus, cancellation.Token, transfer, repair);
+                    instance.LoaderVersion = neoForgeVersion;
                 }
                 else if (instance.Loader.Equals("Quilt", StringComparison.OrdinalIgnoreCase))
                 {
@@ -814,7 +830,7 @@ public partial class MainWindowViewModel : ObservableObject
                     (status, progress) =>
                     {
                         UpdateStatus(status, progress);
-                    }, cancellation.Token, transfer, shareLibraries: !target.Loader.Equals("Forge", StringComparison.OrdinalIgnoreCase)), prefetchedFabric);
+                    }, cancellation.Token, transfer, shareLibraries: !ForgeService.IsForgeFamily(target.Loader)), prefetchedFabric);
 
                 FabricProfile? fabricProfile = null;
                 if (target.Loader.Equals("Fabric", StringComparison.OrdinalIgnoreCase))
@@ -847,7 +863,7 @@ public partial class MainWindowViewModel : ObservableObject
                     }
                 }
                 else if (!target.Loader.Equals("Vanilla", StringComparison.OrdinalIgnoreCase) &&
-                         !target.Loader.Equals("Forge", StringComparison.OrdinalIgnoreCase))
+                         !ForgeService.IsForgeFamily(target.Loader))
                 {
                     throw new InvalidOperationException(
                         $"The {target.Loader} loader is not supported by this launcher yet.");

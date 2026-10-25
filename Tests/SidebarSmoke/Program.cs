@@ -109,6 +109,7 @@ try
     HubMotionChecks.Run(window, fixture, Pump, output);
     LaunchSettingsPanelChecks.Run(Pump);
     CurseForgeSettingsChecks.Run(window, fixture, Pump);
+    NeoForgeUiChecks.Run();
     AlignmentSettingsChecks.Run(window, fixture, Pump, output);
     if (args.Contains("--library")) { Console.WriteLine("Rendered previews: " + output); return; }
     WorkspaceMotionChecks.Run(window, fixture, Pump, output);

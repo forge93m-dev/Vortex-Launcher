@@ -31,7 +31,7 @@ public partial class ModpacksViewModel : ObservableObject
     public IReadOnlyList<ModSearchFilter> Loaders { get; } = new ModSearchFilter[]
     {
         new("", "All loaders"), new("fabric", "Fabric"), new("forge", "Forge"),
-        new("quilt", "Quilt"), new("neoforge", "NeoForge (not supported yet)")
+        new("quilt", "Quilt"), new("neoforge", "NeoForge")
     };
 
     [ObservableProperty] private ModSearchFilter _selectedCategory = new("", "All categories");
