@@ -16,6 +16,15 @@ public partial class AccountModel : ObservableObject
     [ObservableProperty]
     private bool _isActive;
 
+    /// <summary>A real Microsoft account. Its tokens are never part of this file; see MicrosoftTokenStore.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(KindLabel))]
+    [NotifyPropertyChangedFor(nameof(KindChip))]
+    private bool _isMicrosoft;
+
+    public string KindLabel => IsMicrosoft ? "Microsoft account" : "Local player";
+    public string KindChip => IsMicrosoft ? "MICROSOFT ACCOUNT" : "LOCAL PROFILE";
+
     [ObservableProperty]
     private DateTimeOffset? _lastUsedUtc;
 

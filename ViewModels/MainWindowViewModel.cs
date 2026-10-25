@@ -378,6 +378,7 @@ public partial class MainWindowViewModel : ObservableObject
         CustomJavaPath = settings.CustomJavaPath;
         JvmArgs = settings.JvmArguments;
         CurseForgeApiKey = settings.CurseForgeApiKey ?? string.Empty;
+        MicrosoftClientId = settings.MicrosoftClientId ?? string.Empty;
         ThemeName = settings.ThemeName;
         AccentColor = string.IsNullOrWhiteSpace(settings.AccentColor) ? "#A78BFA" : settings.AccentColor;
         // Players still on the untouched pre-0.2.6 default move to the new default look;
@@ -447,6 +448,7 @@ public partial class MainWindowViewModel : ObservableObject
         settings.CustomJavaPath = CustomJavaPath;
         settings.JvmArguments = JvmArgs;
         settings.CurseForgeApiKey = (CurseForgeApiKey ?? string.Empty).Trim();
+        settings.MicrosoftClientId = (MicrosoftClientId ?? string.Empty).Trim();
         settings.AccentColor = AccentColor;
         settings.ThemeName = ThemeName;
         settings.InterfaceAnimationsEnabled = InterfaceAnimationsEnabled;
@@ -887,6 +889,13 @@ public partial class MainWindowViewModel : ObservableObject
                 cancellation.Token.ThrowIfCancellationRequested();
 
                 var launchAccount = ActiveAccount;
+                string? minecraftToken = null;
+                if (launchAccount.IsMicrosoft)
+                {
+                    UpdateStatus("Checking your Microsoft sign-in...");
+                    try { minecraftToken = (await _microsoftSessions.GetAsync(launchAccount.Uuid, MicrosoftClientId, cancellation.Token)).AccessToken; }
+                    catch (MicrosoftAuthException ex) { throw new InvalidOperationException(ex.Message); }
+                }
                 string? wardrobeToken = null;
                 var signedInVortex = _vortexSession;
                 if (signedInVortex != null)
@@ -907,7 +916,7 @@ public partial class MainWindowViewModel : ObservableObject
                     fabricProfile,
                     line => logWindow?.AppendLog(line),
                     (status, progress) => UpdateStatus(status, progress),
-                    serverAddress, cancellation.Token, transfer, target.LoaderVersion, wardrobeToken
+                    serverAddress, cancellation.Token, transfer, target.LoaderVersion, wardrobeToken, minecraftToken
                 );
 
                 gameStarted = true;

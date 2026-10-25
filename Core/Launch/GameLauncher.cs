@@ -27,8 +27,10 @@ public class GameLauncher
         Action<string>? logCallback,
         Action<string, double>? progressCallback,
         string? serverAddress = null, CancellationToken cancellationToken = default, TransferProgress? transfer = null,
-        string? loaderVersion = null, string? wardrobeToken = null)
+        string? loaderVersion = null, string? wardrobeToken = null, string? minecraftAccessToken = null)
     {
+        if (!string.IsNullOrEmpty(minecraftAccessToken) && !ValidAccessToken(minecraftAccessToken))
+            throw new InvalidOperationException("The Minecraft sign-in token has an unexpected format. Sign in with Microsoft again.");
         cancellationToken.ThrowIfCancellationRequested();
         string baseDir = Path.Combine(PlatformSupport.DataRoot, "instances", instanceName);
         var gameArchitecture = PlatformSupport.GetGameArchitecture(baseDir, version);
@@ -416,10 +418,14 @@ public class GameLauncher
         sb.AppendLine(FormatArgument(assetIndex));
         sb.AppendLine("--uuid");
         sb.AppendLine(FormatArgument(uuid));
-        sb.AppendLine("--accessToken");
-        sb.AppendLine("0");
-        sb.AppendLine("--userType");
-        sb.AppendLine("legacy");
+        // A Microsoft session passes its real token separately (see below), never inside the saved argument file.
+        if (string.IsNullOrEmpty(minecraftAccessToken))
+        {
+            sb.AppendLine("--accessToken");
+            sb.AppendLine("0");
+            sb.AppendLine("--userType");
+            sb.AppendLine("legacy");
+        }
         sb.AppendLine("--versionType");
         sb.AppendLine("release");
 
@@ -502,6 +508,18 @@ public class GameLauncher
             ? string.Join(" ", File.ReadAllLines(argFilePath)
                 .Where(line => !string.IsNullOrWhiteSpace(line)))
             : $"\"@{argFilePath}\"";
+        string? authFilePath = null;
+        if (!string.IsNullOrEmpty(minecraftAccessToken))
+        {
+            var authArguments = AuthArguments(minecraftAccessToken);
+            if (IsJava8(javaPath)) processArguments += " " + string.Join(" ", authArguments); // Java 8 has no @argfiles
+            else
+            {
+                authFilePath = Path.Combine(baseDir, "java_auth.txt");
+                await File.WriteAllTextAsync(authFilePath, string.Join("\n", authArguments) + "\n", new UTF8Encoding(false));
+                processArguments += $" \"@{authFilePath}\"";
+            }
+        }
         logCallback?.Invoke($"[AUTO JAVA RESOLVED]: {javaPath}");
         logCallback?.Invoke($"[ARGS FILE GENERATED]: {argFilePath}");
 
@@ -539,12 +557,26 @@ public class GameLauncher
 
         await MacMicrophonePermission.PrepareAsync(baseDir, logCallback, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
-        process.Start();
+        try { process.Start(); }
+        catch { DeleteAuthFile(authFilePath); throw; }
 
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
+        // Java reads the argument files while it starts; the token must not stay on disk afterwards.
+        if (authFilePath != null) _ = Task.Run(async () => { await Task.Delay(TimeSpan.FromSeconds(8)); DeleteAuthFile(authFilePath); });
 
         return process;
+    }
+
+    internal static bool ValidAccessToken(string token) => token.Length is >= 20 and <= 8192 && token.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '-' or '_' or '~' or '+' or '/' or '=');
+
+    /// <summary>The game arguments that carry a Microsoft session. The token is checked first: it ends up in a text file and a command line.</summary>
+    internal static string[] AuthArguments(string accessToken) => new[] { "--accessToken", accessToken, "--userType", "msa" };
+
+    private static void DeleteAuthFile(string? path)
+    {
+        if (path == null) return;
+        try { File.Delete(path); } catch (IOException) { } catch (UnauthorizedAccessException) { }
     }
 
     internal static string FormatArgument(string p)
