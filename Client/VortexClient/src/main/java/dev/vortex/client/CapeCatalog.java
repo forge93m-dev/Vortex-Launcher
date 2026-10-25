@@ -16,7 +16,7 @@ public final class CapeCatalog {
      * Until both are deployed, sending one would only fail, so animated capes stay on this computer.
      * Flip to true together with the service deployment described in Services/VortexCosmetics/DEPLOYMENT.md.
      */
-    public static final boolean ANIMATED_ONLINE = false;
+    public static final boolean ANIMATED_ONLINE = true;
     public static boolean animated(String id) { return id != null && ANIMATED.containsKey(id); }
     /** Frame shown at a given time; every player wearing the cape animates in step. */
     public static int frameAt(String id, long millis) {

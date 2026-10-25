@@ -1,4 +1,4 @@
-# Prepared, NOT yet deployed — animated capes (2026-10-25)
+# Animated capes — cosmetics worker DEPLOYED 2026-10-25 (version b62e974e); accounts worker NOT yet redeployed
 
 Code and tests are ready; nothing has been deployed. The change adds the cape ids `nebula`, `flow` and `pulse`
 (shared list in `capes.mjs`, used by `worker.mjs` and `wardrobe.mjs`). No database change is needed: `cape` is a
