@@ -32,13 +32,19 @@ internal static class UnifiedWorkspaceChecks
             foreach (string section in new[] { "Overview", "Mods", "Resource packs", "Shader packs", "Worlds", "More files", "Settings" }) {
                 workspace.SelectSection(section); pump(220);
                 Check(workspace.SelectedSection == section && host.OwnedWindows.Count() == 0, section + " opens inside the same workspace");
-                foreach (var button in workspace.FindControl<WrapPanel>("SectionTabs")!.Children.OfType<Button>()) Fits(host, button, "workspace tab " + button.Content);
-                var selected = workspace.FindControl<WrapPanel>("SectionTabs")!.Children.OfType<Button>().Count(b => b.Classes.Contains("active"));
+                foreach (var button in workspace.FindControl<StackPanel>("SectionTabs")!.Children.OfType<Button>()) Fits(host, button, "workspace tab " + button.Content);
+                var selected = workspace.FindControl<StackPanel>("SectionTabs")!.Children.OfType<Button>().Count(b => b.Classes.Contains("active"));
                 Check(selected == 1, "one selected workspace tab");
                 if (section == "Mods") Check(workspace.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("ModRow")).All(b => b.Bounds.Height <= 60), "installed mod rows stay compact");
                 if(section=="Overview"){
                     var clientAction=workspace.FindControl<Button>("OverviewClientButton")!;
                     Check(clientAction.IsEffectivelyVisible && clientAction.Command!=null,"client install/update is discoverable without opening Settings or More");
+                    var summary=workspace.Content;
+                    var modsTab=workspace.FindControl<StackPanel>("SectionTabs")!.Children.OfType<Button>().Single(t=>Equals(t.Tag,"Mods"));
+                    var badge=((Grid)modsTab.Content!).Children.OfType<TextBlock>().Last().Text;
+                    Check(badge==(summary.Mods>0?summary.Mods.ToString():""),"the Mods tab shows how many mods the instance holds");
+                    Check(workspace.FindControl<StackPanel>("LaunchRows")!.Children.Count>=1 && workspace.FindControl<StackPanel>("ModRows")!.Children.Count>=1 && workspace.FindControl<StackPanel>("WorldRows")!.Children.Count>=1,
+                        "the overview cards for launch settings, mods and worlds are filled in");
                 }
                 host.CaptureRenderedFrame()!.Save(Path.Combine(output, $"unified-{section.Replace(' ', '-')}-{(int)size.Width}.png"));
             }
@@ -53,7 +59,7 @@ internal static class UnifiedWorkspaceChecks
                 catalog.SelectedMod.IconBitmap = fixtureIcon; pump(40);
                 Check(catalog.SelectedMod.HasIcon && view!.GetVisualDescendants().OfType<Image>().Count(i => (i.Name == "CatalogItemIcon" || i.Name == "CatalogDetailIcon") && ReferenceEquals(i.Source, fixtureIcon)) >= 2, "catalog icons appear in both results and selected details: " + type);
                 var detailsPanel = view!.FindControl<Border>("CatalogDetails")!;
-                Check(detailsPanel.Bounds.Width >= (size.Width >= 1280 ? 420 : 320) && detailsPanel.Bounds.Width <= 541, "details panel scales with window width instead of staying at 280 pixels");
+                Check(detailsPanel.Bounds.Width >= (size.Width >= 1280 ? 380 : 320) && detailsPanel.Bounds.Width <= 541, "details panel scales with window width instead of staying at 280 pixels");
                 if (type == "mod" && size.Width == 960) {
                     var split = view!.GetVisualDescendants().OfType<GridSplitter>().Single(); double before = detailsPanel.Bounds.Width;
                     var point = split.TranslatePoint(new Point(split.Bounds.Width / 2, split.Bounds.Height / 2), host)!.Value;

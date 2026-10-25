@@ -14,6 +14,7 @@ internal static class CurseForgeImportChecks
         public readonly Dictionary<string, byte[]> Cdn = new();
         public string? KeySeen; public int ApiCalls, CdnCalls; public bool Refuse;
         public readonly HashSet<string> Hosts = new();
+        public readonly List<string> Urls = new();
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             string url = request.RequestUri!.ToString();
@@ -28,7 +29,7 @@ internal static class CurseForgeImportChecks
                     : Mods();
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") });
             }
-            CdnCalls++; if (request.RequestUri!.Host.Length > 0) Hosts.Add(request.RequestUri.Host);
+            lock (Hosts) { CdnCalls++; Urls.Add(url); Hosts.Add(request.RequestUri!.Host); } // downloads run in parallel: unsynchronised sets corrupt themselves
             return Task.FromResult(Cdn.TryGetValue(url, out var bytes)
                 ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) }
                 : new HttpResponseMessage(HttpStatusCode.NotFound));
@@ -132,7 +133,7 @@ internal static class CurseForgeImportChecks
         Check(manual.Contains("Blocked Mod") && manual.Contains("does not allow downloads") && manual.Contains("https://www.curseforge.com/minecraft/mc-mods/blocked") && manual.Contains("untrusted download address") &&
               manual.Contains("unsafe file name") && manual.Contains("was not found on CurseForge") && !manual.Contains(key), "files that must be fetched by hand are listed with their pages, and the key is never written down");
         Check(manager.ImportNotes.Count == 1 && manager.ImportNotes[0].Contains("by hand"), "the import reports how many files need manual downloads");
-        Check(fixture.CdnCalls > 0 && fixture.Hosts.All(h => h is "edge.forgecdn.net" or "mediafilez.forgecdn.net" or "media.forgecdn.net"), "only CurseForge's own CDN hosts are ever requested for files (calls " + fixture.CdnCalls + ", hosts " + string.Join(",", fixture.Hosts) + ")");
+        Check(fixture.CdnCalls > 0 && fixture.Hosts.All(h => h is "edge.forgecdn.net" or "mediafilez.forgecdn.net" or "media.forgecdn.net"), "only CurseForge's own CDN hosts are ever requested for files (calls " + fixture.CdnCalls + ", hosts " + string.Join(",", fixture.Hosts) + ", urls " + string.Join(" ", fixture.Urls) + ")");
 
         // Settings: the key persists in the launcher settings file only.
         var settings = new SettingsManager(Path.Combine(work, "settings"));

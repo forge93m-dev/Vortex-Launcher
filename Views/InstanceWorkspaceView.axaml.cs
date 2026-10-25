@@ -8,6 +8,8 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
+using LaunchRules = VortexLauncher.Core.Launch.LaunchSettings;
+using VortexLauncher.Core.Management;
 using VortexLauncher.Core.Network;
 using VortexLauncher.Models;
 using VortexLauncher.ViewModels;
@@ -26,8 +28,15 @@ public partial class InstanceWorkspaceView : UserControl, IDisposable
     public Action? LauncherSettingsRequested { get; set; }
     public InstanceLaunchSettingsPanel? LaunchSettings => LaunchSettingsHost.Content as InstanceLaunchSettingsPanel;
     /// <summary>Shows this instance's Java / memory / argument overrides; defaults come from the launcher's settings.</summary>
-    public void AttachLaunchSettings(Func<InstanceLaunchSettingsPanel.Defaults> defaults, Action save) =>
+    public void AttachLaunchSettings(Func<InstanceLaunchSettingsPanel.Defaults> defaults, Action save)
+    {
         LaunchSettingsHost.Content = new InstanceLaunchSettingsPanel(Instance, defaults, save);
+        _launchDefaults = defaults; RefreshOverview();
+    }
+    private Func<InstanceLaunchSettingsPanel.Defaults>? _launchDefaults;
+    /// <summary>What the instance holds right now; read from its folders each time the overview or a section opens.</summary>
+    public InstanceContentSummary Content { get; private set; } = InstanceContentSummary.Empty;
+    private static readonly Dictionary<string, string> CountedSections = new() { ["Mods"] = "Mods", ["Resource packs"] = "Resource packs", ["Shader packs"] = "Shaders", ["Worlds"] = "Worlds" };
     public event Action? BusyChanged;
     private readonly Dictionary<string, ContentCatalogView> _catalogs = new();
     private readonly Func<string, DownloadModsViewModel> _catalogFactory;
@@ -46,6 +55,7 @@ public partial class InstanceWorkspaceView : UserControl, IDisposable
         _catalogFactory = catalogFactory ?? (type => new(instance.Version, instance.Loader, instance.InstancePath, type));
         InitializeComponent(); DataContext = this;
         ExtraSections.ItemsSource = new[] { "Screenshots", "Logs", "Options", "Servers" }; ExtraSections.SelectedIndex = 0;
+        foreach (var tab in SectionTabs.Children.OfType<Button>().Where(b => b.Tag is string section && CountedSections.ContainsKey(section))) tab.Content = TabContent((string)tab.Content!, 0);
         ModsPage.OverviewRequested = () => SelectSection("Overview");
         ModsPage.AddFilesRequested = async () => { if (IsBusy) return; Details.SelectedSection = "Mods"; await Files.AddFilesAsync(); Mods.ReloadAfterContentChange(); Mods.StatusMessage = Details.StatusMessage; };
         DragDrop.SetAllowDrop(ModsPage, true);
@@ -90,7 +100,7 @@ public partial class InstanceWorkspaceView : UserControl, IDisposable
     {
         if (IsBusy || _disposed) return;
         if (section is not ("Overview" or "Mods" or "Resource packs" or "Shader packs" or "Worlds" or "More files" or "Settings")) return;
-        SelectedSection = section; CatalogPage.IsVisible = false;
+        SelectedSection = section; CatalogPage.IsVisible = false; RefreshOverview();
         OverviewPage.IsVisible = section == "Overview"; ModsPage.IsVisible = section == "Mods"; SettingsPage.IsVisible = section == "Settings";
         FilesPage.IsVisible = section is "Resource packs" or "Shader packs" or "Worlds" or "More files";
         ExtraSections.IsVisible = section == "More files";
@@ -98,6 +108,59 @@ public partial class InstanceWorkspaceView : UserControl, IDisposable
         if (section == "Mods") { Details.SelectedSection = "Mods"; Mods.RefreshInstalledMods(); }
         foreach (var b in SectionTabs.Children.OfType<Button>()) { if (Equals(b.Tag, section)) b.Classes.Add("active"); else b.Classes.Remove("active"); }
         UpdateAvailability(); UiMotion.Reveal(WorkspaceBody);
+    }
+    private static Grid TabContent(string label, int count)
+    {
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        grid.Children.Add(new TextBlock { Text = label, FontWeight = Avalonia.Media.FontWeight.Medium });
+        var badge = new TextBlock { Text = count > 0 ? count.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) : "", FontSize = 11, Opacity = .75, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center };
+        Grid.SetColumn(badge, 1); grid.Children.Add(badge);
+        return grid;
+    }
+    private static string TabLabel(Button tab) => (tab.Content as Grid)?.Children.OfType<TextBlock>().FirstOrDefault()?.Text ?? tab.Content as string ?? "";
+    private static void Row(Panel rows, string label, string value, string? tip = null)
+    {
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        var name = new TextBlock { Text = label, FontSize = 12, TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis }; name.Classes.Add("Muted");
+        var text = new TextBlock { Text = value, FontSize = 12, Margin = new Avalonia.Thickness(10, 0, 0, 0), TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right };
+        if (tip != null) ToolTip.SetTip(text, tip);
+        Grid.SetColumn(text, 1); grid.Children.Add(name); grid.Children.Add(text); rows.Children.Add(grid);
+    }
+    /// <summary>Re-reads the instance's folders and refreshes the sidebar counts and the overview cards.</summary>
+    public void RefreshOverview()
+    {
+        if (_disposed) return;
+        Content = InstanceContentSummary.Read(Instance.InstancePath);
+        var counts = new Dictionary<string, int> { ["Mods"] = Content.Mods, ["Resource packs"] = Content.ResourcePacks, ["Shader packs"] = Content.ShaderPacks, ["Worlds"] = Content.Worlds };
+        foreach (var tab in SectionTabs.Children.OfType<Button>().Where(b => b.Tag is string section && counts.ContainsKey(section)))
+            tab.Content = TabContent(TabLabel(tab), counts[(string)tab.Tag!]);
+        LaunchRows.Children.Clear(); ModRows.Children.Clear(); WorldRows.Children.Clear();
+        var defaults = _launchDefaults?.Invoke();
+        if (defaults != null)
+        {
+            int ram = LaunchRules.RamGb(Instance, defaults.Value.RamGb);
+            Row(LaunchRows, "Memory", $"{ram} GB" + (Instance.RamGbOverride > 0 ? " · this instance" : " · launcher"));
+            string java = LaunchRules.JavaPath(Instance, defaults.Value.JavaPath);
+            Row(LaunchRows, "Java", java.Length == 0 ? "Automatic" : "Custom", java.Length == 0 ? null : java);
+            Row(LaunchRows, "Arguments", Instance.JvmArgsOverride != null ? "this instance" : "launcher");
+        }
+        else Row(LaunchRows, "Memory", "launcher default");
+        if (Content.Mods == 0) Row(ModRows, "No mods installed", "");
+        else
+        {
+            foreach (string name in Content.ModNames.Take(3)) Row(ModRows, name, "");
+            if (Content.Mods > 3) Row(ModRows, $"and {Content.Mods - 3} more", "");
+            if (Content.DisabledMods > 0) Row(ModRows, "Switched off", Content.DisabledMods.ToString());
+            if (Mods.AvailableUpdates.Count > 0) Row(ModRows, "Updates available", Mods.AvailableUpdates.Count.ToString());
+        }
+        if (Content.Worlds == 0) Row(WorldRows, "No worlds yet", "");
+        else foreach (var world in Content.RecentWorlds) Row(WorldRows, world.Name, Ago(world.LastPlayed));
+    }
+    private static string Ago(DateTime when)
+    {
+        var span = DateTime.Now - when;
+        return span.TotalMinutes < 2 ? "just now" : span.TotalHours < 1 ? $"{(int)span.TotalMinutes} min ago" : span.TotalDays < 1 ? $"{(int)span.TotalHours} h ago" :
+            span.TotalDays < 2 ? "yesterday" : span.TotalDays < 30 ? $"{(int)span.TotalDays} days ago" : when.ToString("d MMM yyyy", System.Globalization.CultureInfo.InvariantCulture);
     }
     public void OpenCatalog(string type)
     {
