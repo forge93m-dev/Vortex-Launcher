@@ -88,7 +88,6 @@ try
     ModPreflightUiChecks.Run(Pump, output);
     if (args.Contains("--mod-check")) { Console.WriteLine("Rendered previews: " + output); return; }
     ProfileChecks.Run(Pump, output);
-    MicrosoftUiChecks.Run(Pump, output);
     if (args.Contains("--profiles")) { Console.WriteLine("Rendered previews: " + output); return; }
     if (args.Contains("--unified")) { UnifiedWorkspaceChecks.Run(window, fixture, Pump, output); Console.WriteLine("Rendered previews: " + output); return; }
     QolUiChecks.Run(Pump, output);

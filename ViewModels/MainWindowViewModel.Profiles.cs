@@ -45,7 +45,7 @@ public partial class MainWindowViewModel
         {
             // Save before changing selection/list so failed writes leave the UI intact.
             _accountManager.SaveAccounts(profiles.OrderByDescending(a => a.LastUsedUtc).Select(a => new AccountModel
-            { Username = a.Username, Uuid = a.Uuid, LastUsedUtc = a.LastUsedUtc, IsActive = ReferenceEquals(a, active), IsMicrosoft = a.IsMicrosoft }).ToList());
+            { Username = a.Username, Uuid = a.Uuid, LastUsedUtc = a.LastUsedUtc, IsActive = ReferenceEquals(a, active) }).ToList());
             foreach (var old in Accounts.Where(a => !profiles.Contains(a)).ToArray()) Accounts.Remove(old);
             foreach (var item in profiles)
             {
@@ -69,7 +69,6 @@ public partial class MainWindowViewModel
     [RelayCommand] private void EditAccount(AccountModel? account)
     {
         if (IsInitializing || account == null || !Accounts.Contains(account)) return;
-        if (account.IsMicrosoft) { ProfileError = "A Microsoft player's name comes from their Minecraft profile and cannot be edited here."; return; }
         PendingDeleteAccount = null;
         EditingAccount = account;
         EditedAccountUsername = account.Username;
@@ -94,10 +93,6 @@ public partial class MainWindowViewModel
         var list = Accounts.Where(a => !ReferenceEquals(a, old)).ToList();
         if (list.Count == 0) { ProfileError = "Keep at least one player profile. Add another name first."; return; }
         var active = ReferenceEquals(old, ActiveAccount) ? list.OrderByDescending(a => a.LastUsedUtc).First() : ActiveAccount;
-        if (CommitProfiles(list, active))
-        {
-            PendingDeleteAccount = null;
-            if (old.IsMicrosoft) _microsoftSessions.Forget(old.Uuid);
-        }
+        if (CommitProfiles(list, active)) PendingDeleteAccount = null;
     }
 }

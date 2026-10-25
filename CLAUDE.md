@@ -10,7 +10,7 @@ The owner speaks Russian: reply in Russian.
   Java (`JavaResolver`, `JavaRuntimeManager`), shared assets/libraries, resumable downloads.
 - `Core/Network`: Mojang, Fabric, Quilt, Forge, Modrinth services; launcher updates
   (`UpdateService`, `LauncherUpdateInstaller`, `LauncherUpdateManifest.cs`); Vortex Client install.
-- `Core/Management`: instances, settings, accounts (offline nicknames, or Microsoft sign-in), atomic JSON (`SafeJsonStore`).
+- `Core/Management`: instances, settings, accounts (offline nicknames only), atomic JSON (`SafeJsonStore`).
 - `Core/Diagnostics`: crash analysis, offline mod preflight checks, diagnostic reports.
 - `ViewModels`, `Views`, `Styles`: Avalonia UI. `MainWindowViewModel` is large and split into partial files.
 - `Services/`: separate server projects (VortexParty, VortexCosmetics), excluded from the app build.
@@ -63,12 +63,7 @@ Run both smoke suites after every change. UI motion tests are timing-sensitive.
   idle periods (`NavigationMotionChecks` "press surface" check). Before upgrading, verify on real
   Windows. This would also remove the vulnerable `Tmds.DBus.Protocol 0.15.0`, which is Linux-only.
 - `DragEventArgs.Data` is obsolete in newer Avalonia; it will need `DataTransfer`.
-- Microsoft account login exists since the 0.2.10 work (owner asked for it on 2026-10-25; earlier notes said the opposite).
-  Device-code flow (`Core/Network/MicrosoftAuthService.cs`): the player types a code on microsoft.com, the launcher never sees a
-  password. Refresh tokens are sealed with Windows DPAPI (`MicrosoftTokenStore`); access tokens stay in memory. The game gets the
-  token through a private `java_auth.txt` argument file that is deleted ~8 s after the game starts. Offline profiles still work.
-  It needs the owner's own Azure "Application (client) ID" (Settings are in the Microsoft account section of Profiles) and that app
-  must be approved for Minecraft by Mojang; this has NOT been tried against the real Microsoft yet (tests use a fake server).
+- The owner does NOT want Microsoft account login. Keep offline profiles.
 
 ## Backlog (owner's choice of order)
 1. ~~NeoForge support~~ done: `ForgeService.InstallNeoForgeProfileAsync` (official NeoForged Maven only, SHA-1 checked, no mirror),

@@ -15,8 +15,6 @@ public class LauncherSettings
     public string JvmArguments { get; set; } = "-XX:+UseG1GC -XX:+UnlockExperimentalVMOptions";
     /// <summary>The user's own CurseForge API key (needed to import CurseForge packs); stored only in this settings file.</summary>
     public string CurseForgeApiKey { get; set; } = string.Empty;
-    /// <summary>The Application (client) ID of the owner's own Azure app, used for Microsoft sign-in. Not a secret.</summary>
-    public string MicrosoftClientId { get; set; } = string.Empty;
     public string AccentColor { get; set; } = "#A78BFA";
     public string ThemeName { get; set; } = "Midnight";
     public bool HasLaunchedBefore { get; set; }
