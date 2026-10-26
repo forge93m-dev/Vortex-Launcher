@@ -1,32 +1,32 @@
 {
-  "version": "0.2.10",
-  "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.10/VortexLauncherSetup-0.2.10.exe",
+  "version": "0.2.11",
+  "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.11/VortexLauncherSetup-0.2.11.exe",
   "platforms": {
-    "win-x64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.10/VortexLauncherSetup-0.2.10.exe",
-    "osx-arm64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.10/VortexLauncher-0.2.10-osx-arm64.zip",
-    "osx-x64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.10/VortexLauncher-0.2.10-osx-x64.zip"
+    "win-x64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.11/VortexLauncherSetup-0.2.11.exe",
+    "osx-arm64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.11/VortexLauncher-0.2.11-osx-arm64.zip",
+    "osx-x64": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.11/VortexLauncher-0.2.11-osx-x64.zip"
   },
   "packages": {
     "win-x64": {
-      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.10/VortexLauncher-0.2.10-win-x64.zip",
-      "sha256": "87aaf971611d0158c7ad4d9fd718176b4ea0cd235aa2ec5b95e993198a9d8c34",
-      "size": 53357011,
+      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.11/VortexLauncher-0.2.11-win-x64.zip",
+      "sha256": "b168c6ff1d2a176986d1ca6b0fa9756e0f28ba56268156259d30c9a836b514c2",
+      "size": 53357651,
       "kind": "windows-singlefile-zip"
     },
     "osx-arm64": {
-      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.10/VortexLauncher-0.2.10-osx-arm64.zip",
-      "sha256": "b985ddd263ae6984e93e55f96a822a3520678d935b04ae6c4ec4ea7813ff615e",
-      "size": 53290038,
+      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.11/VortexLauncher-0.2.11-osx-arm64.zip",
+      "sha256": "d6e6b88af2a9b39835f5a18c31b9bce88013e4a9254616384939d236a7ed6c11",
+      "size": 53290659,
       "kind": "mac-app-zip"
     },
     "osx-x64": {
-      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.10/VortexLauncher-0.2.10-osx-x64.zip",
-      "sha256": "4dcfe5de26599ecc63ab8cb64e4f33f371bbe8aedd4c6cf001d64b008a5d7b68",
-      "size": 55157046,
+      "url": "https://github.com/forge93m-dev/Vortex-Launcher/releases/download/v0.2.11/VortexLauncher-0.2.11-osx-x64.zip",
+      "sha256": "d4b8decb209e62ef2335cae9e07ac016abb211239b20dde1f779633f5e337ab1",
+      "size": 55156916,
       "kind": "mac-app-zip"
     }
   },
-  "notes": "Vortex Launcher 0.2.10 - Compact vertically scrolling library with direct Play/Manage actions, shared Minecraft assets and libraries, remembered verification for unchanged assets, parallel content downloads and clearer client install/update buttons. Includes Vortex Client 0.2.6: Resource Counter, remembered Storage Finder with a temporary marker, clearer labeled menus and animation fixes. Exact Fabric builds for 26.1-26.3 and 1.21.11; ports remain experimental. Existing instances: use Update Vortex Client. Worlds, mods and settings are preserved. Mac ARM64/Intel packages are ad-hoc signed, not notarized; Open Anyway may be required.",
+  "notes": "Vortex Launcher 0.2.11 - Compact vertically scrolling library with direct Play/Manage actions, shared Minecraft assets and libraries, remembered verification for unchanged assets, parallel content downloads and clearer client install/update buttons. Includes Vortex Client 0.2.7: Resource Counter, remembered Storage Finder with a temporary marker, clearer labeled menus and animation fixes. Exact Fabric builds for 26.1-26.3 and 1.21.11; ports remain experimental. Existing instances: use Update Vortex Client. Worlds, mods and settings are preserved. Mac ARM64/Intel packages are ad-hoc signed, not notarized; Open Anyway may be required.",
   "keyId": "vortex-2026-10b",
-  "signature": "QjtO/qBJCb0QbwX1MVvjisyM9j9GTOa1Qg1fH8fyA3Pa6ZxnRSA\u002BTK3Uv\u002BAXC4/0DzfOee7\u002BUarA0\u002B2tKVRxeQ=="
+  "signature": "6qGfk0hVCkbo0RgnMK0kZCJH2vbp4c8PVtr5Wx4fltOQ1ewipAlsOP8/wlZ4tvIqdnZt4w4A4kS/dcLZ\u002BQizLg=="
 }
