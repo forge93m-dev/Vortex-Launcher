@@ -1,6 +1,6 @@
 import {createHash,randomBytes} from "node:crypto";
 import {authenticate} from "./accounts.mjs";
-import {BUILT_IN_CAPES} from "./capes.mjs";
+import {BUILT_IN_CAPES,ANIMATED_MAX_BYTES,validateAnimated} from "./capes.mjs";
 const hash=value=>createHash("sha256").update(value).digest("hex");
 const id=value=>typeof value==="string" && /^[a-f0-9]{32}$/.test(value.replaceAll("-","").toLowerCase())?value.replaceAll("-","").toLowerCase():null;
 const reply=(value,status=200)=>Response.json(value,{status,headers:{"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
@@ -32,9 +32,13 @@ function pixels(value,max){
   const bytes=Buffer.from(value,"base64");if(bytes.length>max || bytes.toString("base64")!==value)throw fail("invalid_pixels");return bytes;
 }
 async function capeBytes(value){
-  const bytes=pixels(value,655360);
+  const bytes=pixels(value,ANIMATED_MAX_BYTES);
   if(bytes.length===8192)return {bytes,cape:"custom:"+hash(bytes)};
-  if(bytes.length<18 || bytes.readUInt32BE(0)!==0x56435032)throw fail("invalid_pixels");
+  if(bytes.length>=24 && bytes.readUInt32BE(0)===0x56434131){
+    try{await validateAnimated(bytes);}catch{throw fail("invalid_pixels");}
+    return {bytes,cape:"anim:"+hash(bytes)};
+  }
+  if(bytes.length>655360 || bytes.length<18 || bytes.readUInt32BE(0)!==0x56435032)throw fail("invalid_pixels");
   const width=bytes.readUInt32BE(4),height=bytes.readUInt32BE(8);
   if(![64,128,256,512,1024].includes(width) || height!==width/2)throw fail("invalid_pixels");
   const reader=new Response(bytes.subarray(12)).body.pipeThrough(new DecompressionStream("deflate")).getReader();let total=0;
@@ -65,14 +69,14 @@ export async function handleWardrobe(request,env){
     }
     if(/^\/v3\/wardrobe\/textures\/[a-f0-9]{64}$/.test(path) && request.method==="GET"){
       const key=path.split("/").at(-1);
-      const rows=await db.prepare("SELECT cape_pixels,skin_pixels,skin_hash FROM vortex_wardrobe WHERE skin_hash=? OR cape=? OR cape=? LIMIT 1").bind(key,"custom:"+key,"hd:"+key).all();
+      const rows=await db.prepare("SELECT cape_pixels,skin_pixels,skin_hash FROM vortex_wardrobe WHERE skin_hash=? OR cape=? OR cape=? OR cape=? LIMIT 1").bind(key,"custom:"+key,"hd:"+key,"anim:"+key).all();
       const row=rows.results[0];if(!row)throw fail("not_found",404);
       const bytes=Buffer.from(row.skin_hash===key?row.skin_pixels:row.cape_pixels,"base64");
       return new Response(bytes,{headers:{"Cache-Control":"public, max-age=300","Content-Type":"application/octet-stream","X-Content-Type-Options":"nosniff"}});
     }
     const access=await grant(request,db);await throttle(db,access.account_id);
     if((path==="/v3/wardrobe/cape" || path==="/v3/wardrobe/skin") && request.method==="PUT"){
-      const value=await body(request,path.endsWith("/skin")?24000:900000);
+      const value=await body(request,path.endsWith("/skin")?24000:1500000);
       if(value.uuid!==undefined){const target=id(value.uuid),aliases=offlineIds(access.nickname);if(!target || target!==access.profile_uuid && !(aliases.includes(target) && aliases.includes(access.profile_uuid)))throw fail("invalid_profile",403);access.profile_uuid=target;}
       const current=(await db.prepare("SELECT account_id FROM vortex_wardrobe WHERE uuid=?").bind(access.profile_uuid).all()).results[0];
       let inheritedCape="none",inheritedPixels=null;
@@ -86,8 +90,8 @@ export async function handleWardrobe(request,env){
           if(typeof value.legacy_owner!=="string" || !/^[a-f0-9]{64}$/.test(value.legacy_owner) || hash(value.legacy_owner)!==legacy.owner_hash)throw fail("legacy_proof_required",403);
           if(path.endsWith("/skin")){
             if(BUILT_IN_CAPES.includes(legacy.cape))inheritedCape=legacy.cape;
-            else if(/^(custom|hd):[a-f0-9]{64}$/.test(legacy.cape)){
-              const table=legacy.cape.startsWith("hd:")?"cape_hd_textures":"cape_textures";
+            else if(/^(custom|hd|anim):[a-f0-9]{64}$/.test(legacy.cape)){
+              const table=legacy.cape.startsWith("custom:")?"cape_textures":"cape_hd_textures";
               const texture=(await env.LEGACY_DB.prepare(`SELECT pixels FROM ${table} WHERE uuid=? AND hash=?`).bind(access.profile_uuid,legacy.cape.split(":")[1]).all()).results[0];
               if(texture){const checked=await capeBytes(texture.pixels);if(checked.cape!==legacy.cape)throw fail("legacy_texture_unavailable",503);inheritedCape=checked.cape;inheritedPixels=texture.pixels;}
               else throw fail("legacy_texture_unavailable",503);

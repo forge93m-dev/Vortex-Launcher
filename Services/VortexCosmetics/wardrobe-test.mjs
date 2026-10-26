@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {DatabaseSync} from "node:sqlite";
 import {readFileSync} from "node:fs";
 import {createHash} from "node:crypto";
+import {deflateSync} from "node:zlib";
 import {handleAccounts} from "./accounts.mjs";
 import {handleWardrobe,offlineIds} from "./wardrobe.mjs";
 const hash=v=>createHash("sha256").update(v).digest("hex");
@@ -31,9 +32,24 @@ assert.deepEqual((await call("/v3/wardrobe/textures/"+skinHash)).data,skin);
 const cape=Buffer.alloc(8192,127);
 assert.equal((await call("/v3/wardrobe/cape","PUT",{pixels:cape.toString("base64")},token)).status,200);
 assert.deepEqual((await call("/v3/wardrobe/textures/"+hash(cape))).data,cape);
+// Animated custom capes are stored in the account too: same bounds as the cosmetics service, exact pixels, hidden from nobody but the owner's changes.
+function anim(width=128,frames=8,frameMs=100,length=width*(width/2)*4*frames,height=width/2){
+  const header=Buffer.alloc(20);header.writeUInt32BE(0x56434131,0);header.writeUInt32BE(width,4);header.writeUInt32BE(height,8);header.writeUInt32BE(frames,12);header.writeUInt32BE(frameMs,16);
+  return Buffer.concat([header,deflateSync(Buffer.alloc(length,63))]);
+}
+const animated=anim();
+const animSaved=await call("/v3/wardrobe/cape","PUT",{pixels:animated.toString("base64")},token);
+assert.equal(animSaved.status,200);assert.equal(animSaved.data.cape,"anim:"+hash(animated));
+lookup=await call("/v3/wardrobe/lookup","POST",{uuids:[uuid]});assert.equal(lookup.data.profiles[0].cape,"anim:"+hash(animated));
+assert.deepEqual((await call("/v3/wardrobe/textures/"+hash(animated))).data,animated);
+for(const frames of [anim(512,61,20),anim(128,120,20),anim(64,2,1000)])assert.equal((await call("/v3/wardrobe/cape","PUT",{pixels:frames.toString("base64")},token)).status,200);
+sql.exec("DELETE FROM vortex_auth_limits"); // the write limit is per account and not what is being checked here
+for(const bad of [anim(128,1),anim(128,121),anim(128,8,19),anim(128,8,1001),anim(1024,8),anim(128,8,100,undefined,32),anim(512,62),anim(128,8,100,128*64*4*8-1),anim(128,8,100,128*64*4*9),animated.subarray(0,animated.length-1),Buffer.concat([animated,Buffer.from([0])])])
+  assert.equal((await call("/v3/wardrobe/cape","PUT",{pixels:bad.toString("base64")},token)).data.error,"invalid_pixels");
+sql.exec("DELETE FROM vortex_auth_limits");
 assert.equal((await call("/v3/wardrobe/skin","PUT",{enabled:false},token)).status,200);
 assert.equal((await call("/v3/wardrobe/skin","PUT",{enabled:true,slim:false,pixels:"AA=="},token)).status,400);
-assert.equal((await call("/v3/wardrobe/cape","PUT",{pixels:"A".repeat(900001)},token)).status,413);
+assert.equal((await call("/v3/wardrobe/cape","PUT",{pixels:"A".repeat(1600000)},token)).status,413);
 const old="1".repeat(32),owner="a".repeat(64);legacy.prepare("INSERT INTO cape_profiles VALUES(?,?,?)").run(old,hash(owner),"vortex");
 const oldToken=(await call("/v3/accounts/wardrobe-session","POST",{uuid:old},first.token)).data.token;
 assert.equal((await call("/v3/wardrobe/cape","PUT",{cape:"aurora"},oldToken)).status,403);

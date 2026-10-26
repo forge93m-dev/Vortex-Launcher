@@ -120,7 +120,7 @@ public final class Capes {
             var pending=new java.util.ArrayList<java.util.concurrent.CompletableFuture<Void>>();
             for(String cape:new java.util.HashSet<>(found.values())) if(CapeCatalog.custom(cape) && CapeImages.asset(cape)==null) {
                 pending.add(java.util.concurrent.CompletableFuture.runAsync(()-> {
-                    try {images.put(cape,accountCapes.contains(cape)?AccountWardrobe.texture(cape.substring(cape.indexOf(':')+1),CapePixels.MAX_PACKED):connection.download(cape));} catch(Exception unavailable) { /* Other capes stay usable. */ }
+                    try {images.put(cape,accountCapes.contains(cape)?AccountWardrobe.texture(cape.substring(cape.indexOf(':')+1),cape.startsWith("anim:")?CapePixels.MAX_ANIMATED:CapePixels.MAX_PACKED):connection.download(cape));} catch(Exception unavailable) { /* Other capes stay usable. */ }
                 },TEXTURE_IO));
             }
             for(String skin:accountProfiles.entrySet().stream().filter(e->!AccountSkinTextures.has(e.getKey(),e.getValue().skin(),e.getValue().slim())).map(e->e.getValue().skin()).filter(s->!s.isEmpty()).distinct().toList()){
@@ -308,8 +308,7 @@ public final class Capes {
         if (!VortexClient.config.capesEnabled || id == null) { message = "Enable capes and choose a valid launch profile first.";ClientNotifications.info("cape-publish-needs-profile","Publish cape","Enable capes and choose a valid launch profile first."); return; }
         var request=PUBLICATION.begin(id,cape);
         submit(() -> {
-            // Animated custom capes are stored by the cosmetics service only (the accounts service does not know them yet).
-            if(AccountWardrobe.connected() && !cape.startsWith("anim:")){
+            if(AccountWardrobe.connected()){
                 byte[] pixels=CapeCatalog.custom(cape)?loadSelection(cape):null;
                 AccountWardrobe.cape(id,cape,pixels);
                 return ()->{message="Cape saved to your Vortex account. No activation code required.";nextPoll=0;
