@@ -16,7 +16,7 @@ $sources = @(Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'src/main/java'
 # Use the installed official game/Fabric dependencies, but never package them.
 & (Join-Path $JdkPath 'bin/javac.exe') --release 25 -proc:none -encoding UTF-8 -classpath $classPath -d $buildDir @($sources.FullName)
 if ($LASTEXITCODE -ne 0) { throw 'Vortex Client compilation failed.' }
-$jarPath = Join-Path $distDir 'vortex-client-26.3-fabric-0.2.6.jar'
+$jarPath = Join-Path $distDir 'vortex-client-26.3-fabric-0.2.7.jar'
 & (Join-Path $JdkPath 'bin/jar.exe') --create --date '2026-10-14T00:00:00Z' --file $jarPath -C $buildDir . -C (Join-Path $PSScriptRoot 'src/main/resources') .
 if ($LASTEXITCODE -ne 0) { throw 'Vortex Client packaging failed.' }
 Write-Host "Built: $jarPath"
